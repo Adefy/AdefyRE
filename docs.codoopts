@@ -1,0 +1,7 @@
+--name    "AdefyWebGL"
+--readme  Readme.md
+--title   "AdefyWebGL Documentation"
+--private
+--quiet
+--output-dir ./doc
+./lib
