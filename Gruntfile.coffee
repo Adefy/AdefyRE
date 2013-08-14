@@ -41,14 +41,14 @@ module.exports = (grunt) ->
         options:
           sourceMap: true
           bare: true
-        cwd: "#{buildDir}"
+        cwd: buildDir
         files: __coffeeConcatFiles
       lib:
         expand: true
         options:
           bare: true
         src: __coffeeFiles
-        dest: "#{buildDir}"
+        dest: buildDir
         ext: ".js"
       tests:
         expand: true
@@ -109,8 +109,8 @@ module.exports = (grunt) ->
         ]
 
     clean: [
-      "./#{buildDir}/"
-      "./#{docDir}/"
+      buildDir
+      docDir
     ]
 
   grunt.loadNpmTasks "grunt-contrib-coffee"
