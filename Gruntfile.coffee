@@ -32,6 +32,4 @@ module.exports = (grunt) ->
       done err
 
   # Perform a full build
-  grunt.registerTask "prepare", ["clean", "mkbuilddir"]
-  grunt.registerTask "full", ["prepare", "coffee"]
   grunt.registerTask "default", ["coffee"]
