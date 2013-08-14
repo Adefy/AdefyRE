@@ -14,22 +14,39 @@ module.exports = (grunt) ->
   __awglOut["#{buildDir}/build-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
   __awglOut["#{devDir}/build-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
 
-  __coffeeFiles = {}
-  __coffeeFiles["#{devDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
-  __coffeeFiles["#{buildDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
+  __coffeeConcatFiles = {}
+
+  # Build concat output
+  __coffeeConcatFiles["#{buildDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
+
+  # Dev concat output, used for browser testing
+  __coffeeConcatFiles["#{devDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
+
+  # 1 to 1 compiled files, for unit tests
+  __coffeeFiles = [
+    "#{libDir}/*.coffee"
+    "#{libDir}/**/*.coffee"
+  ]
 
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"
     coffee:
-      awgl:
+      concat:
         options:
           sourceMap: true
           bare: true
         cwd: "#{buildDir}"
-        files: __coffeeFiles
+        files: __coffeeConcatFiles
+      lib:
+        expand: true
+        options:
+          bare: true
+        src: __coffeeFiles
+        dest: "#{buildDir}"
+        ext: ".js"
 
     concat_in_order:
-      awgl:
+      lib:
         files: __awglOut
         options:
           extractRequired: (path, content) ->
