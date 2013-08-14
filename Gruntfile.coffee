@@ -1,7 +1,25 @@
 module.exports = (grunt) ->
 
+  # Output
+  libName = "awgl.js"
+
+  # Directories
   buildDir = "build"
   libDir = "lib"
+  devDir = "dev"
+  docDir = "doc"
+
+  # Intermediate vars
+  __coffeeFiles = {}
+  __coffeeFiles["#{buildDir}/#{libName}"] =  [
+    "#{libDir}/*.coffee"
+    "#{libDir}/**/*.coffee"
+  ]
+
+  __coffeeFiles["#{devDir}/#{libName}"] = [
+    "#{libDir}/*.coffee"
+    "#{libDir}/**/*.coffee"
+  ]
 
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"
@@ -11,29 +29,39 @@ module.exports = (grunt) ->
         join: true
         options:
           bare: true
-        files:
-          "build/awgl.js": [ "#{libDir}/*.coffee", "#{libDir}/**/*.coffee" ]
-          "test/awgl.js": [ "#{libDir}/*.coffee", "#{libDir}/**/*.coffee" ]
+        files: __coffeeFiles
+
     watch:
       coffeescript:
-        files: [ "#{libDir}/**/*.coffee", "#{libDir}/*.coffee" ]
-        tasks: ["coffee"]
+        files: [
+          "#{libDir}/**/*.coffee"
+          "#{libDir}/*.coffee"
+        ]
+        tasks: ["coffee", "codo"]
+
+    connect:
+      server:
+        options:
+          port: 8080
+          base: "./#{devDir}/"
+
+    clean: [
+      "./#{buildDir}/"
+      "./#{docDir}/"
+    ]
 
   grunt.loadNpmTasks "grunt-contrib-coffee"
   grunt.loadNpmTasks "grunt-contrib-watch"
+  grunt.loadNpmTasks "grunt-contrib-connect"
+  grunt.loadNpmTasks "grunt-contrib-clean"
 
-  grunt.registerTask "clean", "delete build directory", ->
+  grunt.registerTask "codo", "build html documentation", ->
     done = this.async()
-    require("child_process").exec "rm #{buildDir} -rf", (err, stdout) ->
-      grunt.log.write stdout
-      done err
-
-  grunt.registerTask "mkbuilddir", "create build folder", ->
-    done = this.async()
-    require("child_process").exec "mkdir #{buildDir}", (err, stdout) ->
+    require("child_process").exec "codo", (err, stdout) ->
       grunt.log.write stdout
       done err
 
   # Perform a full build
   grunt.registerTask "default", ["coffee"]
-  grunt.registerTask "full", ["clean", "mkbuilddir", "coffee"]
+  grunt.registerTask "full", ["clean", "codo", "coffee"]
+  grunt.registerTask "dev", ["connect", "watch"]
