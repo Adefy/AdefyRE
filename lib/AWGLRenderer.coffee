@@ -24,18 +24,38 @@ class AWGLRenderer
   # @param [Number] width canvas width
   # @param [Number] height canvas height
   # @return [Boolean] success
-  constructor: (canvsId, @_width, @_height) ->
+  constructor: (canvasId, @_width, @_height) ->
+
+    log = AWGLEngine.getLog()
+
+    if @_width == undefined or @_width == null or @_height == undefined or @_height == null
+
+      log.warn "No/invalid dimensions provided, continuing with defaults"
+      @_width = 800
+      @_height = 600
+
+    if @_width <= 1 or @_height <= 1
+      throw "Canvas must be at least 2x2 in size"
 
     # Start out with black
     @_clearColor = new AWGLColor3 0, 0, 0
 
     # Create a new canvas, or pull it in if provided
-    if @_width is undefined or @_height is undefined
+    if canvasId == undefined or canvasId == null
+
+      # Create canvas
       @_canvas = document.createElement "canvas"
       @_canvas.width = @_width
       @_canvas.height = @_height
+      @_canvas.id = "awgl_canvas"
+
+      # Attach to the body
+      document.getElementsByTagName("body")[0].appendChild @_canvas
+
+      log.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
     else
       @_canvas = document.getElementById canvasId
+      log.info "Using canvas ##{canvasId}"
 
     # Initialize GL context
     try
@@ -50,10 +70,14 @@ class AWGLRenderer
 
     @_ctx = @_canvas.getContext "2d"
 
+    log.info "Created WebGL context"
+
     # Perform rendering setup
     @_gl.clearColor 0.0, 0.0, 0.0, 1.0 # Default to black
     @_gl.enable @_gl.DEPTH_TEST
     @_gl.depthFunc @_gl.LEQUAL
+
+    log.info "Renderer initialized"
 
     true
 
