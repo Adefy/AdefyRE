@@ -10,26 +10,38 @@ module.exports = (grunt) ->
   docDir = "doc"
 
   # Intermediate vars
-  __coffeeFiles = {}
-  __coffeeFiles["#{buildDir}/#{libName}"] =  [
-    "#{libDir}/*.coffee"
-    "#{libDir}/**/*.coffee"
-  ]
+  __awglOut = {}
+  __awglOut["#{buildDir}/build-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
 
-  __coffeeFiles["#{devDir}/#{libName}"] = [
-    "#{libDir}/*.coffee"
-    "#{libDir}/**/*.coffee"
-  ]
+  __coffeeFiles = {}
+  __coffeeFiles["#{devDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
+  __coffeeFiles["#{buildDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
 
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"
     coffee:
-      app:
-        expand: true
-        join: true
+      awgl:
         options:
           bare: true
         files: __coffeeFiles
+
+    concat_in_order:
+      awgl:
+        files: __awglOut
+        options:
+          extractRequired: (path, content) ->
+
+            workingDir = path.split "/"
+            workingDir.pop()
+
+            deps = @getMatches /\#\s\@depend\s(.*\.coffee)/g, content
+            deps.forEach (dep, i) ->
+              deps[i] = "#{workingDir.join()}/#{dep}"
+              console.log "Got dep #{deps[i]}"
+
+            return deps
+          extractDeclared: (path) -> [path]
+          onlyConcatRequiredFiles: true
 
     watch:
       coffeescript:
@@ -37,7 +49,7 @@ module.exports = (grunt) ->
           "#{libDir}/**/*.coffee"
           "#{libDir}/*.coffee"
         ]
-        tasks: ["coffee", "codo"]
+        tasks: ["concat_in_order", "coffee", "codo"]
 
     connect:
       server:
@@ -54,6 +66,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks "grunt-contrib-watch"
   grunt.loadNpmTasks "grunt-contrib-connect"
   grunt.loadNpmTasks "grunt-contrib-clean"
+  grunt.loadNpmTasks "grunt-concat-in-order"
 
   grunt.registerTask "codo", "build html documentation", ->
     done = this.async()
@@ -62,6 +75,6 @@ module.exports = (grunt) ->
       done err
 
   # Perform a full build
-  grunt.registerTask "default", ["coffee"]
-  grunt.registerTask "full", ["clean", "codo", "coffee"]
+  grunt.registerTask "default", ["concat_in_order", "coffee"]
+  grunt.registerTask "full", ["clean", "codo", "concat_in_order", "coffee"]
   grunt.registerTask "dev", ["connect", "watch"]

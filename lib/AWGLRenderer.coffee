@@ -1,4 +1,5 @@
 # AWGLRenderer
+# @depend objects/AWGLColor3.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the
 # necessary functionality from the AdefyLib renderer
