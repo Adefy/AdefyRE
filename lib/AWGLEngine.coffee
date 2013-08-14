@@ -28,6 +28,9 @@ class AWGLEngine
   # @property [Object] Initialized to a new instance of AWGLAjax
   ajax: null
 
+  # Initialized after Ad package is downloaded and verified
+  _renderer: null
+
   # Constructor, takes a path to the root of the ad intended to be displayed
   # An attempt is made to load and parse a package.json
   #
@@ -63,21 +66,29 @@ class AWGLEngine
 
     # [ASYNC] Grab the package.json
     @ajax.r "#{@url}/package.json", (res) ->
-      log.info "Fetched package.json"
+      log.info "...fetched package.json"
       me.package = JSON.parse res
 
       # [ASYNC] Package.json is valid, continue
       validStructure = me.verifyPackage me.package, (sourcesObj) ->
 
-        log.info "Downloaded, continuing"
+        log.info "...downloaded. Creating Renderer"
+        me._renderer = new AWGLRenderer()
+
+        framerate = 1.0 / 60.0
+
+        log.info "Jumping into loop! Good luck!"
+        setInterval ->
+          me._renderer.render()
+        , framerate
 
       if validStructure
-        log.info "package.json valid, downloading assets"
+        log.info "package.json valid, downloading assets..."
       else
         log.error "Invalid package.json"
         return false
 
-    log.info "Engine initialized, awaiting package.json"
+    log.info "Engine initialized, awaiting package.json..."
 
     true
 
