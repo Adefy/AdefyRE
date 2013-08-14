@@ -16,6 +16,9 @@
 # AWGLLog is used for all logging throughout the application
 class AWGLEngine
 
+  # Privatized log to make it a static variable of sorts
+  @_log: new AWGLLog()
+
   # @property [Object] Holds fetched package.json
   package: null
 
@@ -35,19 +38,17 @@ class AWGLEngine
   # @return [Boolean] success
   constructor: (@url, logLevel) ->
 
+    log = AWGLEngine.getLog()
+
     # Ensure https://code.google.com/p/microajax/ is loaded
     if window.ajax is null or window.ajax is undefined
-      @log.error "Ajax library is not on the window object!"
+      log.error "Ajax library is not on the window object!"
       return false
 
     # Ensure Underscore.js is loaded
     if _ is null or _ is undefined
-      @log.error "Underscore.js is not present!"
+      log.error "Underscore.js is not present!"
       return false
-
-    # First things first, create an instance of AWGLLog and attach
-    # it to the window
-    @log = window.log = new AWGLLog
 
     # Create an instance of AWGLAjax
     @ajax = new AWGLAjax
@@ -55,25 +56,25 @@ class AWGLEngine
     # Store instance for callbacks
     me = @
 
-    if logLevel != undefined then @log.level = logLevel
+    if logLevel != undefined then log.level = logLevel
 
     # [ASYNC] Grab the package.json
     @ajax.r "#{@url}/package.json", (res) ->
-      me.log.info "Fetched package.json"
+      log.info "Fetched package.json"
       me.package = JSON.parse res
 
       # [ASYNC] Package.json is valid, continue
       validStructure = me.verifyPackage me.package, (sourcesObj) ->
 
-        me.log.info "Downloaded, continuing"
+        log.info "Downloaded, continuing"
 
       if validStructure
-        me.log.info "package.json valid, downloading assets"
+        log.info "package.json valid, downloading assets"
       else
-        me.log.error "Invalid package.json"
+        log.error "Invalid package.json"
         return false
 
-    @log.info "Engine initialized, awaiting package.json"
+    log.info "Engine initialized, awaiting package.json"
 
     true
 
@@ -87,6 +88,8 @@ class AWGLEngine
   # @return [Boolean] validity
   verifyPackage: (obj, cb) ->
 
+    log = AWGLEngine.getLog()
+
     # Build definition of valid package.json
     validPackage =
       company: ""     # Owner
@@ -97,12 +100,12 @@ class AWGLEngine
     # Ensure required fields are present
     for k of validPackage
       if obj[k] == undefined
-        @log.error "package.json invalid, missing key #{k}"
+        log.error "package.json invalid, missing key #{k}"
         return false
 
     # Ensure at least one scene is provided
     if obj.scenes.length == 0
-      @log.warning "package.json does not specify any scenes, can't continue"
+      log.warning "package.json does not specify any scenes, can't continue"
       return false
 
     # Container for downloaded files
@@ -142,3 +145,8 @@ class AWGLEngine
 
     # Returns before files are downloaded, mearly to guarantee file validity
     true
+
+  # Returns the static private AWGLLog instance
+  #
+  # @return [AWGLLog] log
+  @getLog: -> @_log
