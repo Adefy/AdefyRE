@@ -10,7 +10,10 @@
     "grunt-contrib-watch": "~0.5.1",
     "grunt-contrib-connect": "~0.3.0",
     "grunt-contrib-clean": "~0.5.0",
-    "grunt-concat-in-order": "~0.1.5"
+    "grunt-concat-in-order": "~0.1.5",
+    "grunt-mocha": "~0.4.1",
+    "grunt-lib-phantomjs": "~0.3.1",
+    "grunt-contrib-copy": "~0.4.1"
   },
   "private": true,
   "engine": "node >= 0.10.12"

@@ -6,6 +6,7 @@ module.exports = (grunt) ->
   # Directories
   buildDir = "build"
   libDir = "lib"
+  testDir = "test"
   devDir = "dev"
   docDir = "doc"
 
@@ -27,6 +28,11 @@ module.exports = (grunt) ->
     "#{libDir}/*.coffee"
     "#{libDir}/**/*.coffee"
   ]
+  __testFiles = {}
+  __testFiles["#{buildDir}/test/spec.js"] = [
+    "#{testDir}/spec/*.coffee"
+    "#{testDir}/spec/**/*.coffee"
+  ]
 
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"
@@ -44,6 +50,11 @@ module.exports = (grunt) ->
         src: __coffeeFiles
         dest: "#{buildDir}"
         ext: ".js"
+      tests:
+        expand: true
+        options:
+          bare: true
+        files: __testFiles
 
     concat_in_order:
       lib:
@@ -68,14 +79,34 @@ module.exports = (grunt) ->
         files: [
           "#{libDir}/**/*.coffee"
           "#{libDir}/*.coffee"
+          "#{testDir}/**/*.coffee"
+          "#{testDir}/*.coffee"
         ]
-        tasks: ["concat_in_order", "coffee", "codo"]
+        tasks: ["concat_in_order", "coffee", "mocha", "codo"]
 
     connect:
       server:
         options:
           port: 8080
           base: "./"
+
+    mocha:
+      all:
+        src: [ "#{buildDir}/#{testDir}/test.html" ]
+        options:
+          bail: false
+          log: true
+          reporter: "Nyan"
+          run: true
+
+    copy:
+      test_page:
+        files: [
+          expand: true
+          cwd: "#{testDir}/env"
+          src: [ "**" ]
+          dest: "#{buildDir}/#{testDir}"
+        ]
 
     clean: [
       "./#{buildDir}/"
@@ -87,6 +118,8 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks "grunt-contrib-connect"
   grunt.loadNpmTasks "grunt-contrib-clean"
   grunt.loadNpmTasks "grunt-concat-in-order"
+  grunt.loadNpmTasks "grunt-contrib-copy"
+  grunt.loadNpmTasks "grunt-mocha"
 
   grunt.registerTask "codo", "build html documentation", ->
     done = this.async()
@@ -96,5 +129,5 @@ module.exports = (grunt) ->
 
   # Perform a full build
   grunt.registerTask "default", ["concat_in_order", "coffee"]
-  grunt.registerTask "full", ["clean", "codo", "concat_in_order", "coffee"]
-  grunt.registerTask "dev", ["connect", "watch"]
+  grunt.registerTask "full", ["clean", "codo", "copy:test_page", "concat_in_order", "coffee", "mocha"]
+  grunt.registerTask "dev", ["connect", "copy:test_page", "watch"]
