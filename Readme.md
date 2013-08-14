@@ -6,9 +6,9 @@ window before deploying to the AdefyLib android backend.
 
 Development Setup [Important]
 =============================
-As usual, run `npm install` on the root directory after a fresh clone. As of 8/14/2013 grunt-lib-phantomjs thows an error with the phantomjs version that comes with it.
+As usual, run `npm install` on the root directory after a fresh clone. As of 8/14/2013 grunt-lib-phantomjs throws an error with the phantomjs version that comes with it.
 
-To fix this (and enable unit tests), go into node_modules/grunt-lib-phantomjs and change the version of phantomjs in package.json to ~1.8.1-1. Then go into grunt-lib-phantomjs's node_modules folder and delete phantomjs/. Finally, run `npm install` inside of the grunt-lib-phantomjs root directory. This will pull down phantomjs 1.8.1-1 and tests will work.
+To fix this (and enable unit tests), go into node_modules/grunt-lib-phantomjs and change the version of phantomjs in package.json to ~1.8.1-1. Then go into grunt-lib-phantomjs's node_modules folder and delete phantomjs/. Finally, run `npm install` inside of grunt-lib-phantomjs's root directory. This will pull down phantomjs 1.8.1-1 and tests will work.
 
 Documentation
 =============
