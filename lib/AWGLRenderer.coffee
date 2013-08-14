@@ -4,9 +4,13 @@
 # necessary functionality from the AdefyLib renderer
 class AWGLRenderer
 
-  _canvas: null   # HTML <canvas> element
-  _ctx: null      # Drawing context
-  _gl: null       # GL context
+  _canvas: null     # HTML <canvas> element
+  _ctx: null        # Drawing context
+  _gl: null         # GL context
+  _clearColor: null # blanking color
+
+  # @property [Array<Object>] actors for rendering
+  actors: []
 
   # Sets up the renderer, using either an existing canvas or creating a new one
   #
@@ -21,6 +25,8 @@ class AWGLRenderer
   # @return [Boolean] success
   constructor: (canvsId, @_width, @_height) ->
 
+    # Start out with black
+    @_clearColor = new AWGLColor3 0, 0, 0
 
     # Create a new canvas, or pull it in if provided
     if @_width is undefined or @_height is undefined
@@ -42,6 +48,11 @@ class AWGLRenderer
       return false
 
     @_ctx = @_canvas.getContext "2d"
+
+    # Perform rendering setup
+    @_gl.clearColor 0.0, 0.0, 0.0, 1.0 # Default to black
+    @_gl.enable @_gl.DEPTH_TEST
+    @_gl.depthFunc @_gl.LEQUAL
 
     true
 
@@ -70,7 +81,49 @@ class AWGLRenderer
   # @return [Number] height
   getHeight: -> @_height
 
+  # Returns the clear color
+  #
+  # @return [AWGLColor3] clearCol
+  getClearColor: -> @_clearColor
+
+  # Sets the clear color
+  #
+  # @overload setClearCol(col)
+  #   Set using an AWGLColor3 object
+  #   @param [AWGLColor3] col
+  #
+  # @overload setClearCol(r, g, b)
+  #   Set using component values (0.0-1.0 or 0-255)
+  #   @param [Number] r red component
+  #   @param [Number] g green component
+  #   @param [Number] b blue component
+  setClearCol: (colOrR, g, b) ->
+
+    if colorOrR instanceof AWGLColor3
+      @_clearColor = colOrR
+      return
+    else
+
+      # Sanity checks
+      if colOrR == undefined or colOrR == null then colOrR = 0
+      if g == undefined or g == null then g = 0
+      if b == undefined or b == null then b = 0
+
+      @_clearColor.setR colOrR
+      @_clearColor.setG g
+      @_clearColor.setB b
+
+    # Actually set the color if possible
+    if @_gl != null
+      @_gl.clearColor @_clearColor.getR(true), @_clearColor.getG(true), @_clearColor.getB(true), 1.0
+
   # Draws a frame
   render: ->
 
+    gl = @_gl # Code asthetics
 
+    # Probably unecessary, but better to be safe
+    if gl == undefined or gl == null then return
+
+    # Clear the screen
+    gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
