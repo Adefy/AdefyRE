@@ -12,6 +12,7 @@ module.exports = (grunt) ->
   # Intermediate vars
   __awglOut = {}
   __awglOut["#{buildDir}/build-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
+  __awglOut["#{devDir}/build-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
 
   __coffeeFiles = {}
   __coffeeFiles["#{devDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
@@ -22,7 +23,9 @@ module.exports = (grunt) ->
     coffee:
       awgl:
         options:
+          sourceMap: true
           bare: true
+        cwd: "#{buildDir}"
         files: __coffeeFiles
 
     concat_in_order:
@@ -55,7 +58,7 @@ module.exports = (grunt) ->
       server:
         options:
           port: 8080
-          base: "./#{devDir}/"
+          base: "./"
 
     clean: [
       "./#{buildDir}/"
