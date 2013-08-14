@@ -17,10 +17,10 @@ class AWGLRenderer
   # @return [Boolean] success
   constructor: (canvsId, width, height) ->
 
-    # Private vars
-    canvas = null
-    ctx = null
-    gl = null
+    ## Private vars
+    canvas = null   # HTML <canvas> element
+    ctx = null      # Drawing context
+    gl = null       # GL context
 
     # Create a new canvas, or pull it in if provided
     if width is undefined or height is undefined
@@ -44,30 +44,42 @@ class AWGLRenderer
     ##
     ## Accessor functions
     ##
-
-    # Returns canvas element
-    #
-    # @return [Object] canvas
-    @getCanvas = -> canvas
-
-    # Returns canvas rendering context
-    #
-    # @return [Object] ctx
-    @getContext = -> canvas.getContext "2d"
-
-    # Returns gl object
-    #
-    # @return [Object] gl
-    @getGL = -> gl
-
-    # Returns canvas width
-    #
-    # @return [Number] width
-    @getWidth = -> width
-
-    # Returns canvas height
-    #
-    # @return [Number] height
-    @getHeight = -> height
+    ## Defined here to make them private, duplicates are defined below
+    ## so as to appear in the documentation
+    @__getCanvas = -> canvas
+    @__getContext = -> canvas.getContext "2d"
+    @__getGL = -> gl
+    @__getWidth = -> width
+    @__getHeight = -> height
 
     true
+
+  # Returns canvas element
+  #
+  # @return [Object] canvas
+  getCanvas: -> __getCanvas()
+
+  # Returns canvas rendering context
+  #
+  # @return [Object] ctx
+  getContext: -> __getContext()
+
+  # Returns gl object
+  #
+  # @return [Object] gl
+  getGL: -> __getGL()
+
+  # Returns canvas width
+  #
+  # @return [Number] width
+  getWidth: -> __getWidth()
+
+  # Returns canvas height
+  #
+  # @return [Number] height
+  getHeight: -> __getHeight()
+
+  # Draws a frame
+  render: ->
+
+
