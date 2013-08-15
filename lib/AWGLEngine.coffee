@@ -87,6 +87,17 @@ class AWGLEngine
 
         log.info "...downloaded. Creating Renderer"
         me._renderer = new AWGLRenderer()
+
+        ##
+        # At this point, we have a renderer instance ready to go, and we can
+        # load up the scenes one at a time and execute them. We create
+        # an instance of AWGLInterface on the window, so our middleware
+        # can interface with AWGL.
+        #
+        # Scenes create a window.currentScene object, which we run with
+        # window.currentScene();
+        ##
+
         me.startRendering()
 
       if validStructure
