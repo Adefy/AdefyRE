@@ -1,6 +1,5 @@
 # AWGLRenderer
 #
-# @depend AWGLEngine.coffee
 # @depend objects/AWGLColor3.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the
