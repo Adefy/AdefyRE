@@ -1,0 +1,6 @@
+# Actor class, skeleton for now
+class AWGLActor
+
+  # ...
+  constructor: ->
+    # ...
