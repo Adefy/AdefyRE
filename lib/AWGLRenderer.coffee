@@ -10,9 +10,10 @@ class AWGLRenderer
   _ctx: null        # Drawing context
   _gl: null         # GL context
   _clearColor: null # blanking color
+  _nextID: 0
 
   # @property [Array<Object>] actors for rendering
-  actors: []
+  @actors: []
 
   # Sets up the renderer, using either an existing canvas or creating a new one
   #
@@ -153,3 +154,7 @@ class AWGLRenderer
 
     # Clear the screen
     gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
+
+  # Returns a unique id, used by actors
+  # @return [Number] id unique id
+  getNextId: -> @_nextID++

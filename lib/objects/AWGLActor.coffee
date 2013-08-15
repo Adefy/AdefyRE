@@ -1,104 +1,88 @@
 # Actor class, skeleton for now
+#
+# @depend ../AWGLRenderer.coffee
 class AWGLActor
 
-  #private int id;
-  #private Body body = null;
+  # Default physical properties
+  @defaultFriction: 0.3
+  @defaultDensity: 1.0
+  @defaultRestitution: 0.2
 
-  #protected FloatBuffer vertBuffer;
-  #protected FloatBuffer texBuffer;
+  color: new AWGLColor3 255, 255, 255
 
-  #protected float vertices[];
-  #protected float texVerts[] = null;
-  #protected int[] texture = new int[1];
+  lit: false
+  visible: false
 
-  #protected Vec2 position = new Vec2(0.0f, 0.0f);
-  #protected float rotation = 0.0f;
+  _id: -1
+  _position: new b2Vec2 0, 0
+  _rotation: 0 # Degrees
 
-  color: new AWGLColor3(255, 255, 255)
+  _body: null
+  _friction: null
+  _density: null
+  _restitution: null
 
-  lit = false
-  visible = false
+  _vertices: []
 
-  #how do you make this declaration in coffee?
-  #private float friction;
-  #private float density;
-  #private float restitution;
+  ###
+  _positionHandle: gl.glGetAttribLocation Renderer.getShaderProg, "Position"
+  _colorHandle: gl.glGetUniformLocation Renderer.getShaderProg, "Color"
+  _modelHandle: gl.glGetUniformLocation Renderer.getShaderProg "ModelView"
+  ###
 
-  _positionHandle = gl.glGetAttribLocation Renderer.getShaderProg, "Position"
-  _colorHandle = gl.glGetUniformLocation Renderer.getShaderProg, "Color"
-  _modelHandle = gl.glGetUniformLocation Renderer.getShaderProg "ModelView"
+  # Adds the actor to the renderer actor list, gets a unique id from the
+  # renderer
+  constructor: (@_vertices) ->
 
+    if @_vertices == undefined or @_vertices == null
+      throw "Actor needs vertices!"
 
-  constructor: (id, vertices) ->
+    if @_vertices.length < 3 then throw "At least 3 vertices make up an actor"
 
-    # ...
-    @_id = id
-    @_vertices = vertices
+    @_id = AWGLRenderer.getNextID()
+    AWGLRenderer.actors.add @
 
-    AWGLRenderer.actors.add(@)
+  # Creates the internal physics body, if one does not already exist
+  #
+  # @param [Number] density 0.0 - 1.0
+  # @param [Number] friction 0.0 - 1.0
+  # @param [Number] restitution 0.0 - 1.0
+  createPhysicsBody: (@_density, @_friction, @_restitution) ->
 
-    refreshVertBuffer
+    if @_body is null then return
 
-  @refreshVertBuffer: ->
+    # Sanity checks
+    if @_density == undefined
+      @_density = AWGLActor.defaultDensity
+    else
+      if @_density < 0 then @_density = 0
+      if @_density > 1 then @_density = 1
 
-    #ByteBuffer byteBuffer = ByteBuffer.allocateDirect(vertices.length * 4);
-    byteBuffer.order ByteOrder.nativeOrder
-    vertBuffer = byteBuffer.asFloatBuffer
-    vertBuffer.put _vertices
-    vertBuffer.position 0
+    if @_friction == undefined
+      @_friction = AWGLActor.defaultFriction
+    else
+      if @_friction < 0 then @_friction = 0
+      if @_friction > 1 then @_friction = 1
 
-    if body != null
-      destroyPhysicsBody
-      createPhysicsBody(_density, _friction, _restitution)
+    if @_restitution == undefined
+      @_restitution = AWGLActor.defaultRestitution
+    else
+      if @_restitution < 0 then @_restitution = 0
+      if @_restitution > 1 then @_restitution = 1
 
-  createPhysicsBody: (density, friction, restitution) ->
+    # TODO: Actually create the body
 
-    if body is null
-      return
+  # Destroys the physics body if one exists
+  destroyPhysicsBody: ->
 
-    @_density = density
-    @_friction = friction
-    @_restitution = restitution
-    #....
+    if @_body is null then return
+    #PhysicsEngine.destroyBody body
+    @_body = null
 
-
-  onBodyCreation: (body) ->
-    #// Threads ftw
-    #synchronized (this) {
-    #body = _body;
-
-    #// Body has been created, make fixture and finalize it
-    #// Physics world waits for completion before continuing
-
-    #// Create fixture from vertices
-    #PolygonShape shape = new PolygonShape();
-    #Vec2[] verts = new Vec2[vertices.length / 3];
-
-    #int vertIndex = 0;
-    #for(int i = 0; i < vertices.length; i += 3) {
-    #  verts[vertIndex] = new Vec2(vertices[i] / Renderer.getPPM(), vertices[i + 1] / Renderer.getPPM());
-    #  vertIndex++;
-    #}
-
-    #shape.set(verts, verts.length);
-
-    #// Attach fixture
-    #FixtureDef fd = new FixtureDef();
-    #fd.shape = shape;
-    #fd.density = density;
-    #fd.friction = friction;
-    #fd.restitution = restitution;
-
-    #body.createFixture(fd);
-  #}
-
-
-  @destroyPhysicsBody: ->
-
-    if body is null
-      return
-    PhysicsEngine.destroyBody body
-    body = null
+  # Renders the actor
+  #
+  # @param [Object] gl gl context
+  draw: (gl) ->
 
   #public void draw()
 
@@ -132,37 +116,52 @@ class AWGLActor
     #GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, vertices.length / 3);
     #GLES20.glDisableVertexAttribArray(positionHandle);
 
-
-  @setPosition: (position) ->
-    if body is null
+  # Set actor position, effects either the actor or the body directly if one
+  # exists
+  #
+  # @param [Object] position x, y
+  setPosition: (position) ->
+    if @_body is null
       @_position = position
     else
-      body.setTransform Renderer.screenToWorld position, body.getAngle
+      return # @_body.setTransform Renderer.screenToWorld position, @_body.getAngle
 
-
-  @setRotation: (rotation) ->
-    if body is null
+  # Set actor rotation, affects either the actor or the body directly if one
+  # exists
+  #
+  # @param [Number] rotation degrees
+  setRotation: (rotation) ->
+    if @_body is null
       @_rotation = rotation
     else
-      # how do you convert the number?
-      #body.setTransform body.getPosition, rotation * 0.0174532925f
+      return #@_body.setTransform @_body.getPosition, rotation * 0.0174532925f
 
-  @getPosition: ->
-
-    if body is null
-      return position
+  # Returns the actor position as an object with x and y properties
+  #
+  # @return [Object] position x, y
+  getPosition: ->
+    if @_body is null
+      return @_position
     else
       # how do you translate this to CS?
-      # return Renderer.worldToScreen(body.getPosition());
+      return null # return Renderer.worldToScreen(@_body.getPosition());
 
-  @getRotation: ->
-    if body is null
-      return rotation
+  # Returns actor rotation as an angle in degrees
+  #
+  # @return [Number] angle rotation in degrees on z axis
+  getRotation: ->
+    if @_body is null
+      return @_rotation
     else
       # how do you get the funky 57.2957795786f in coffeescript?
-      # return body.getAngle * 57.2957795786f
+      return null # return @_body.getAngle * 57.2957795786f
 
+  # Get array of vertices
+  #
+  # @return [Array<Object>] vertices
+  getVertices: -> @_vertices
 
-  @getVertices: -> @_vertices
-
-  @getId: -> @_id
+  # Get body id
+  #
+  # @return [Number] id
+  getId: -> @_id
