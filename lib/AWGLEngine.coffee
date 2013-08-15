@@ -1,7 +1,9 @@
 # AWGLEngine
+#
 # @depend AWGLRenderer.coffee
 # @depend util/AWGLLog.coffee
 # @depend util/AWGLAjax.coffee
+# @depend interface/AWGLInterface.coffee
 #
 # Takes a path to a directory containing an Adefy ad and runs it
 #
@@ -14,7 +16,9 @@
 # Requires the ajax library from https://code.google.com/p/microajax/ and
 # expects the ajax object to be bound to the window as window.ajax
 #
-# Also requires Underscore.js fromhttp://documentcloud.github.io/underscore
+# Requires Underscore.js fromhttp://documentcloud.github.io/underscore
+#
+# Requires Box2dWeb https://box2dweb.googlecode.com/files/Box2dWeb-2.1a.3.zip
 #
 # AWGLLog is used for all logging throughout the application
 class AWGLEngine
@@ -30,6 +34,12 @@ class AWGLEngine
 
   # Initialized after Ad package is downloaded and verified
   _renderer: null
+
+  # Holds a handle on the render loop interval
+  _renderIntervalId: null
+
+  # Framerate for renderer, defaults to 60FPS
+  _framerate: 1.0 / 60.0
 
   # Constructor, takes a path to the root of the ad intended to be displayed
   # An attempt is made to load and parse a package.json
@@ -48,12 +58,17 @@ class AWGLEngine
 
     # Ensure https://code.google.com/p/microajax/ is loaded
     if window.ajax is null or window.ajax is undefined
-      log.error "Ajax library is not on the window object!"
+      log.error "Ajax library is not present!"
       return false
 
     # Ensure Underscore.js is loaded
-    if _ is null or _ is undefined
+    if window._ is null or window._ is undefined
       log.error "Underscore.js is not present!"
+      return false
+
+    # Ensure Box2DWeb is loaded
+    if window.Box2D is undefined or window.Box2D is null
+      log.error "Box2DWeb is not present!"
       return false
 
     # Create an instance of AWGLAjax
@@ -75,12 +90,17 @@ class AWGLEngine
         log.info "...downloaded. Creating Renderer"
         me._renderer = new AWGLRenderer()
 
-        framerate = 1.0 / 60.0
+        ##
+        # At this point, we have a renderer instance ready to go, and we can
+        # load up the scenes one at a time and execute them. We create
+        # an instance of AWGLInterface on the window, so our middleware
+        # can interface with AWGL.
+        #
+        # Scenes create a window.currentScene object, which we run with
+        # window.currentScene();
+        ##
 
-        log.info "Jumping into loop! Good luck!"
-        setInterval ->
-          me._renderer.render()
-        , framerate
+        me.startRendering()
 
       if validStructure
         log.info "package.json valid, downloading assets..."
@@ -160,7 +180,29 @@ class AWGLEngine
     # Returns before files are downloaded, mearly to guarantee file validity
     true
 
+  # Set framerate as an FPS figure
+  # @param [Number] fps
+  setFPS: (fps) -> @_framerate = 1.0 / fps
+
   # Returns the static private AWGLLog instance
   #
   # @return [AWGLLog] log
   @getLog: -> @_log
+
+  # Start render loop if it isn't already running
+  startRendering: ->
+    if @_renderIntervalId != null then return
+
+    me = @
+    AWGLEngine.getLog().info "Starting render loop"
+
+    @_renderIntervalId = setInterval ->
+      me._renderer.render()
+    , @_framerate
+
+  # Halt render loop if it's running
+  stopRendering: ->
+    if @_renderIntervalId == null then return
+    AWGLEngine.getLog().info "Halting render loop"
+    clearInterval @_renderIntervalId
+    @_renderIntervalId = null
