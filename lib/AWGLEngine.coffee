@@ -14,7 +14,9 @@
 # Requires the ajax library from https://code.google.com/p/microajax/ and
 # expects the ajax object to be bound to the window as window.ajax
 #
-# Also requires Underscore.js fromhttp://documentcloud.github.io/underscore
+# Requires Underscore.js fromhttp://documentcloud.github.io/underscore
+#
+# Requires Box2dWeb https://box2dweb.googlecode.com/files/Box2dWeb-2.1a.3.zip
 #
 # AWGLLog is used for all logging throughout the application
 class AWGLEngine
@@ -54,6 +56,11 @@ class AWGLEngine
     # Ensure Underscore.js is loaded
     if _ is null or _ is undefined
       log.error "Underscore.js is not present!"
+      return false
+
+    # Ensure Box2DWeb is loaded
+    if Box2D is undefined or Box2D is null
+      log.error "Box2DWeb is not present!"
       return false
 
     # Create an instance of AWGLAjax
