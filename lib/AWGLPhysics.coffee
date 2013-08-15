@@ -1,4 +1,5 @@
 # Box2D wrapper
+# @depend AWGLEngine.coffee
 class AWGLPhysics
 
   # @property [Number] velocity iterations
@@ -20,17 +21,19 @@ class AWGLPhysics
 
   # Starts the world step loop if not already running
   startStepping: ->
+    if @_stepIntervalId != null then return
 
     me = @
+    AWGLEngine.getLog().info "Starting world update loop"
 
-    if @_stepIntervalId != null then return
-    _stepIntervalId = setInterval ->
+    @_stepIntervalId = setInterval ->
       me._world.step me.frameTime, me.velIterations, me.posIterations
-    , frameTime
+    , @frameTime
 
   # Halt the world step loop if running
   stopStepping: ->
     if @_stepIntervalId == null then return
+    AWGLEngine.getLog().info "Halting world update loop"
     clearInterval @_stepIntervalId
     @_stepIntervalId = null
 

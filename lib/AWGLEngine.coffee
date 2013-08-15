@@ -56,16 +56,16 @@ class AWGLEngine
 
     # Ensure https://code.google.com/p/microajax/ is loaded
     if window.ajax is null or window.ajax is undefined
-      log.error "Ajax library is not on the window object!"
+      log.error "Ajax library is not present!"
       return false
 
     # Ensure Underscore.js is loaded
-    if _ is null or _ is undefined
+    if window._ is null or window._ is undefined
       log.error "Underscore.js is not present!"
       return false
 
     # Ensure Box2DWeb is loaded
-    if Box2D is undefined or Box2D is null
+    if window.Box2D is undefined or window.Box2D is null
       log.error "Box2DWeb is not present!"
       return false
 
