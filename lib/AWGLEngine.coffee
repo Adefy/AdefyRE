@@ -33,6 +33,12 @@ class AWGLEngine
   # Initialized after Ad package is downloaded and verified
   _renderer: null
 
+  # Holds a handle on the render loop interval
+  _renderIntervalId: null
+
+  # Framerate for renderer, defaults to 60FPS
+  _framerate: 1.0 / 60.0
+
   # Constructor, takes a path to the root of the ad intended to be displayed
   # An attempt is made to load and parse a package.json
   #
@@ -81,13 +87,7 @@ class AWGLEngine
 
         log.info "...downloaded. Creating Renderer"
         me._renderer = new AWGLRenderer()
-
-        framerate = 1.0 / 60.0
-
-        log.info "Jumping into loop! Good luck!"
-        setInterval ->
-          me._renderer.render()
-        , framerate
+        me.startRendering()
 
       if validStructure
         log.info "package.json valid, downloading assets..."
@@ -167,7 +167,29 @@ class AWGLEngine
     # Returns before files are downloaded, mearly to guarantee file validity
     true
 
+  # Set framerate as an FPS figure
+  # @param [Number] fps
+  setFPS: (fps) -> @_framerate = 1.0 / fps
+
   # Returns the static private AWGLLog instance
   #
   # @return [AWGLLog] log
   @getLog: -> @_log
+
+  # Start render loop if it isn't already running
+  startRendering: ->
+    if @_renderIntervalId != null then return
+
+    me = @
+    AWGLEngine.getLog().info "Starting render loop"
+
+    @_renderIntervalId = setInterval ->
+      me._renderer.render()
+    , @_framerate
+
+  # Halt render loop if it's running
+  stopRendering: ->
+    if @_renderIntervalId == null then return
+    AWGLEngine.getLog().info "Halting render loop"
+    clearInterval @_renderIntervalId
+    @_renderIntervalId = null
