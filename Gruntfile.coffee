@@ -67,7 +67,7 @@ module.exports = (grunt) ->
 
             deps = @getMatches /\#\s\@depend\s(.*\.coffee)/g, content
             deps.forEach (dep, i) ->
-              deps[i] = "#{workingDir.join()}/#{dep}"
+              deps[i] = "#{workingDir.join().replace(',', '/')}/#{dep}"
               console.log "Got dep #{deps[i]}"
 
             return deps
