@@ -1,7 +1,9 @@
 # AWGLEngine
+#
 # @depend AWGLRenderer.coffee
 # @depend util/AWGLLog.coffee
 # @depend util/AWGLAjax.coffee
+# @depend interface/AWGLInterface.coffee
 #
 # Takes a path to a directory containing an Adefy ad and runs it
 #

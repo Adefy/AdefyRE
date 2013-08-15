@@ -1,4 +1,6 @@
 # Engine interface, used by the ads themselves, serves as an API
+#
+# @depend AWGLActorInterface.coffee
 class AWGLInterface
 
   # @property [AWGLActorInterface] actor interface

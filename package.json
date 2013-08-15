@@ -1,6 +1,6 @@
 {
   "name": "awgl",
-  "description": "",
+  "description": "Adefy WebGL platform",
   "author": "Cris Mihalache <cris.mihalache@spectrumit.eu>",
   "version": "0.0.1",
   "dependencies": {},
