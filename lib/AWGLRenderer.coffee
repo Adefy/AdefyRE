@@ -6,11 +6,64 @@
 # necessary functionality from the AdefyLib renderer
 class AWGLRenderer
 
+  @defaultVertShaderSrc: "" +
+    "attribute vec3 Position;" +
+    "uniform mat4 Projection;" +
+    "uniform mat4 ModelView;" +
+    "void main() {" +
+    "  mat4 mvp = Projection * ModelView;" +
+    "  gl_Position = mvp * vec4(Position.xy, 1, 1);" +
+    "}\n";
+
+  @defaultFragShaderSrc: "" +
+    "void main() {" +
+    "  gl_FragColor = vec4(1, 0, 0, 1);" +
+    "}\n";
+
+  @defaultVertShader: null
+  @defaultFragShader: null
+
+  @defaultShaderProg: null
+
+  @attrVertPosition: null
+  @attrModelView: null
+  @attrProjection: null
+
   _canvas: null     # HTML <canvas> element
   _ctx: null        # Drawing context
-  _gl: null         # GL context
   _clearColor: null # blanking color
-  _nextID: 0
+  @_nextID: 0
+
+  @_gl: null        # GL context
+  @_PPM: 128         # Physics pixel-per-meter ratio
+
+  # Returns PPM ratio
+  # @return [Number] ppm pixels-per-meter
+  @getPPM: -> AWGLRenderer._PPM
+
+  # Returns MPP ratio
+  # @return [Number] mpp meters-per-pixel
+  @getMPP: -> 1.0 / AWGLRenderer._PPM
+
+  # Converts screen coords to world coords
+  #
+  # @param [B2Vec2] v vector in x, y form
+  # @return [B2Vec2] ret v in world coords
+  @screenToWorld: (v) ->
+    ret = new cp.v
+    ret.x = v.x / AWGLRenderer._PPM
+    ret.y = v.y / AWGLRenderer._PPM
+    ret
+
+  # Converts world coords to screen coords
+  #
+  # @param [B2Vec2] v vector in x, y form
+  # @return [B2Vec2] ret v in screen coords
+  @worldToScreen: (v) ->
+    ret = new cp.v
+    ret.x = v.x * AWGLRenderer._PPM
+    ret.y = v.y * AWGLRenderer._PPM
+    ret
 
   # @property [Array<Object>] actors for rendering
   @actors: []
@@ -28,7 +81,8 @@ class AWGLRenderer
   # @return [Boolean] success
   constructor: (canvasId, @_width, @_height) ->
 
-    log = AWGLEngine.getLog()
+    log = AWGLEngine._log
+    gl = null
 
     if @_width == undefined or @_width == null or @_height == undefined or @_height == null
 
@@ -61,25 +115,73 @@ class AWGLRenderer
 
     # Initialize GL context
     try
-      @_gl = @_canvas.getContext("webgl") || @_canvas.getContext("experimental-webgl")
+      gl = @_canvas.getContext("webgl") || @_canvas.getContext("experimental-webgl")
     catch e
       console.error e
       return false
 
-    if @_gl is null
+    if gl is null
       alert "Your browser does not support WebGL!"
       return false
 
+    AWGLRenderer._gl = gl
     @_ctx = @_canvas.getContext "2d"
 
     log.info "Created WebGL context"
 
     # Perform rendering setup
-    @_gl.clearColor 0.0, 0.0, 0.0, 1.0 # Default to black
-    @_gl.enable @_gl.DEPTH_TEST
-    @_gl.depthFunc @_gl.LEQUAL
+    gl.clearColor 0.0, 0.0, 0.0, 1.0 # Default to black
+    gl.enable gl.DEPTH_TEST
+    gl.depthFunc gl.LEQUAL
 
     log.info "Renderer initialized"
+
+    ## Shaders
+    # Create them
+    AWGLRenderer.defaultVertShader = gl.createShader gl.VERTEX_SHADER
+    AWGLRenderer.defaultFragShader = gl.createShader gl.FRAGMENT_SHADER
+
+    # Grab shader source
+    gl.shaderSource AWGLRenderer.defaultVertShader, AWGLRenderer.defaultVertShaderSrc
+    gl.shaderSource AWGLRenderer.defaultFragShader, AWGLRenderer.defaultFragShaderSrc
+
+    # Compile shaders
+    gl.compileShader AWGLRenderer.defaultVertShader
+    gl.compileShader AWGLRenderer.defaultFragShader
+
+    if !gl.getShaderParameter(AWGLRenderer.defaultVertShader, gl.COMPILE_STATUS)
+      log.error "Unable to compile shader: #{gl.getShaderInfoLog(AWGLRenderer.defaultVertShader)}"
+
+    if !gl.getShaderParameter(AWGLRenderer.defaultFragShader, gl.COMPILE_STATUS)
+      log.error "Unable to compile shader: #{gl.getShaderInfoLog(AWGLRenderer.defaultFragShader)}"
+
+    # Link into program
+    AWGLRenderer.defaultShaderProg = gl.createProgram()
+    gl.attachShader AWGLRenderer.defaultShaderProg, AWGLRenderer.defaultVertShader
+    gl.attachShader AWGLRenderer.defaultShaderProg, AWGLRenderer.defaultFragShader
+    gl.linkProgram AWGLRenderer.defaultShaderProg
+
+    # Check for errors
+    if !gl.getProgramParameter(AWGLRenderer.defaultShaderProg, gl.LINK_STATUS)
+      log.error "Unable to link shader program"
+
+    # Use program
+    gl.useProgram AWGLRenderer.defaultShaderProg
+
+    # Grab handles
+    AWGLRenderer.attrVertPosition = gl.getAttribLocation AWGLRenderer.defaultShaderProg, "Position"
+
+    AWGLRenderer.attrModelView = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "ModelView";
+
+    AWGLRenderer.attrProjection = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "Projection";
+
+    gl.enableVertexAttribArray AWGLRenderer.attrVertPosition
+    gl.enableVertexAttribArray AWGLRenderer.attrVertColor
+
+    # Set up projection
+    gl.uniformMatrix4fv AWGLRenderer.attrProjection, false, makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+
+    log.info "Initialized shaders"
 
     true
 
@@ -93,10 +195,10 @@ class AWGLRenderer
   # @return [Object] ctx
   getContext: -> @_ctx
 
-  # Returns gl object
+  # Returns static gl object
   #
   # @return [Object] gl
-  getGL: -> @_gl
+  @getGL: -> AWGLRenderer._gl
 
   # Returns canvas width
   #
@@ -141,13 +243,13 @@ class AWGLRenderer
       @_clearColor.setB b
 
     # Actually set the color if possible
-    if @_gl != null
-      @_gl.clearColor @_clearColor.getR(true), @_clearColor.getG(true), @_clearColor.getB(true), 1.0
+    if gl != null
+      gl.clearColor @_clearColor.getR(true), @_clearColor.getG(true), @_clearColor.getB(true), 1.0
 
   # Draws a frame
   render: ->
 
-    gl = @_gl # Code asthetics
+    gl = AWGLRenderer._gl # Code asthetics
 
     # Probably unecessary, but better to be safe
     if gl == undefined or gl == null then return
@@ -155,6 +257,10 @@ class AWGLRenderer
     # Clear the screen
     gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
+    # Draw everything!
+    for a in AWGLRenderer.actors
+      a.draw gl
+
   # Returns a unique id, used by actors
   # @return [Number] id unique id
-  getNextId: -> @_nextID++
+  @getNextId: -> AWGLRenderer._nextID++

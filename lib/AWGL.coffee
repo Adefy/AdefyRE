@@ -5,3 +5,4 @@
 # essentially serving as the root node in the dep tree.
 #
 # @depend AWGLEngine.coffee
+# @depend objects/AWGLActor.coffee

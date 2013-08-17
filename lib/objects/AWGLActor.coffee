@@ -1,62 +1,75 @@
 # Actor class, skeleton for now
-#
-# @depend ../AWGLRenderer.coffee
 class AWGLActor
 
   # Default physical properties
   @defaultFriction: 0.3
-  @defaultDensity: 1.0
-  @defaultRestitution: 0.2
+  @defaultMass: 10
+  @defaultElasticity: 0.2
 
+  # @property [AWGLColor3] color
   color: new AWGLColor3 255, 255, 255
 
+  # @property [Boolean] lit
   lit: false
-  visible: false
+
+  # @property [Boolean] visible
+  visible: true
 
   _id: -1
-  _position: new b2Vec2 0, 0
-  _rotation: 0 # Degrees
+  _position: new cp.v 0, 0
+  _rotation: 0 # Radians, but set in degrees by default
 
+  _shape: null
   _body: null
   _friction: null
-  _density: null
-  _restitution: null
+  _mass: null
+  _elasticity: null
 
   _vertices: []
+  _vertBuffer: null
 
-  ###
-  _positionHandle: gl.glGetAttribLocation Renderer.getShaderProg, "Position"
-  _colorHandle: gl.glGetUniformLocation Renderer.getShaderProg, "Color"
-  _modelHandle: gl.glGetUniformLocation Renderer.getShaderProg "ModelView"
-  ###
+  # Null offset, used when creating dynamic bodies
+  @_nullV: new cp.v 0, 0
 
   # Adds the actor to the renderer actor list, gets a unique id from the
-  # renderer
+  # renderer, and builds our vert buffer
+  #
+  # @param [Array<Object>] vertices <x, y>
   constructor: (@_vertices) ->
+
+    @_gl = AWGLRenderer._gl
+
+    if @_gl == undefined or @_gl == null
+      throw "GL context is required for actor initialization!"
 
     if @_vertices == undefined or @_vertices == null
       throw "Actor needs vertices!"
 
-    if @_vertices.length < 3 then throw "At least 3 vertices make up an actor"
+    if @_vertices.length < 6 then throw "At least 3 vertices make up an actor"
 
-    @_id = AWGLRenderer.getNextID()
-    AWGLRenderer.actors.add @
+    @_id = AWGLRenderer._nextID++
+
+    AWGLRenderer.actors.push @
+
+    # Initialize our buffer
+    @_vertBuffer = @_gl.createBuffer()
+    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
+    @_gl.bufferData @_gl.ARRAY_BUFFER, new Float32Array(@_vertices), @_gl.STATIC_DRAW
 
   # Creates the internal physics body, if one does not already exist
   #
-  # @param [Number] density 0.0 - 1.0
+  # @param [Number] mass 0.0 - unbound
   # @param [Number] friction 0.0 - 1.0
-  # @param [Number] restitution 0.0 - 1.0
-  createPhysicsBody: (@_density, @_friction, @_restitution) ->
+  # @param [Number] elasticity 0.0 - 1.0
+  createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
-    if @_body is null then return
+    if @_shape is not null then return
 
     # Sanity checks
-    if @_density == undefined
-      @_density = AWGLActor.defaultDensity
+    if @_mass == undefined
+      @_mass = AWGLActor.defaultDensity
     else
-      if @_density < 0 then @_density = 0
-      if @_density > 1 then @_density = 1
+      if @_mass < 0 then @_mass = 0
 
     if @_friction == undefined
       @_friction = AWGLActor.defaultFriction
@@ -64,19 +77,58 @@ class AWGLActor
       if @_friction < 0 then @_friction = 0
       if @_friction > 1 then @_friction = 1
 
-    if @_restitution == undefined
-      @_restitution = AWGLActor.defaultRestitution
+    if @_elasticity == undefined
+      @_elasticity = AWGLActor.defaultElasticity
     else
-      if @_restitution < 0 then @_restitution = 0
-      if @_restitution > 1 then @_restitution = 1
+      if @_elasticity < 0 then @_elasticity = 0
+      if @_elasticity > 1 then @_elasticity = 1
 
-    # TODO: Actually create the body
+    # Convert vertices
+    verts = []
+    vertIndex = 0
+
+    for i in [0...@_vertices.length - 1] by 2
+
+      # Actual coord system conversion
+      verts.push @_vertices[i] / AWGLRenderer.getPPM()
+      verts.push @_vertices[i + 1] / AWGLRenderer.getPPM()
+
+      # Rotate vert if mass is 0, since we can't set static body angle
+      if @_mass == 0
+        x = verts[verts.length - 2]
+        y = verts[verts.length - 1]
+        a = @_rotation
+
+        verts[verts.length - 2] = (x * Math.cos(a)) - (y * Math.sin(a))
+        verts[verts.length - 1] = (x * Math.sin(a)) + (y * Math.cos(a))
+
+    # Grab world handle to shorten future calls
+    space = AWGLEngine.getPsyx().getWorld()
+    pos = AWGLRenderer.screenToWorld @_position
+
+    if @_mass == 0
+      @_shape = space.addShape new cp.PolyShape space.staticBody, verts, pos
+    else
+
+      moment = cp.momentForPoly @_mass, verts, AWGLActor._nullV
+      @_body = space.addBody new cp.Body @_mass, moment
+      @_body.setPos pos
+      @_body.setAngle @_rotation
+
+      @_shape = space.addShape new cp.PolyShape @_body, verts, AWGLActor._nullV
+
+    @_shape.setFriction @_friction
+    @_shape.setElasticity @_elasticity
 
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
 
-    if @_body is null then return
-    #PhysicsEngine.destroyBody body
+    if @_shape is null then return
+
+    AWGLEngine.getPsyx().getWorld().removeShape @_shape
+    AWGLEngine.getPsyx().getWorld().removeBody @_body
+
+    @_shape = null
     @_body = null
 
   # Renders the actor
@@ -84,77 +136,69 @@ class AWGLActor
   # @param [Object] gl gl context
   draw: (gl) ->
 
-  #public void draw()
+    if not @visible then return
 
-    #if(!visible) { return; }
+    modelView = Matrix.I 4
 
-    #// Update local data from physics engine, if applicable
-    #if(body != null) {
-    #  position = Renderer.worldToScreen(body.getPosition());
-    #  rotation = body.getAngle() * 57.2957795786f;
-    #}
+    # @_body is null for static bodies!
+    if @_body != null
+      @_position = AWGLRenderer.worldToScreen @_body.getPos()
+      @_rotation = @_body.a
+      modelView = modelView.x (Matrix.Translation($V([@_position.x, @_position.y, 1])).ensure4x4())
+      modelView = modelView.x (Matrix.Rotation(@_rotation, $V([0, 0, 1])).ensure4x4())
+    else
+      modelView = modelView.x (Matrix.Translation($V([@_position.x, @_position.y, 1])).ensure4x4())
+      modelView = modelView.x (Matrix.Rotation(@_rotation, $V([0, 0, 1])).ensure4x4())
 
-    #// Construct mvp to be applied to every vertex
-    #float[] modelView = new float[16];
+    gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
+    gl.vertexAttribPointer AWGLRenderer.attrVertPosition, 2, gl.FLOAT, false, 0, 0
 
-    #// Equivalent of gl.glLoadIdentity()
-    #Matrix.setIdentityM(modelView, 0);
+    gl.uniformMatrix4fv AWGLRenderer.attrModelView, false, new Float32Array(modelView.flatten())
 
-    #// gl.glTranslatef()
-    #Matrix.translateM(modelView, 0, position.x, position.y, 1.0f);
-
-    #// gl.glRotatef()
-    #Matrix.rotateM(modelView, 0, rotation, 0, 0, 1.0f);
-
-    #// Load our matrix and color into our shader
-    #GLES20.glUniformMatrix4fv(modelHandle, 1, false, modelView, 0);
-    #GLES20.glUniform4fv(colorHandle, 1, color.toFloatArray(), 0);
-
-    #// Set up pointers, and draw using our vertBuffer as before
-    #GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, vertBuffer);
-    #GLES20.glEnableVertexAttribArray(positionHandle);
-    #GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, vertices.length / 3);
-    #GLES20.glDisableVertexAttribArray(positionHandle);
+    gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
 
   # Set actor position, effects either the actor or the body directly if one
   # exists
   #
   # @param [Object] position x, y
   setPosition: (position) ->
-    if @_body is null
-      @_position = position
-    else
-      return # @_body.setTransform Renderer.screenToWorld position, @_body.getAngle
+    if @_shape is null
+      if position instanceof cp.v
+        @_position = position
+      else
+        @_position = new cp.v position.x, position.y
+    else if @_body != null
+      @_body.setPos AWGLRenderer.screenToWorld position
 
   # Set actor rotation, affects either the actor or the body directly if one
   # exists
   #
+  # @param [Number] radians true if angle is in radians
   # @param [Number] rotation degrees
-  setRotation: (rotation) ->
-    if @_body is null
+  setRotation: (rotation, radians) ->
+
+    if radians != true
+      rotation = rotation * 0.0174532925
+
+    if @_shape is null
       @_rotation = rotation
-    else
-      return #@_body.setTransform @_body.getPosition, rotation * 0.0174532925f
+    else if @_body != null
+      @_body.SetAngle @_rotation
 
   # Returns the actor position as an object with x and y properties
   #
   # @return [Object] position x, y
-  getPosition: ->
-    if @_body is null
-      return @_position
-    else
-      # how do you translate this to CS?
-      return null # return Renderer.worldToScreen(@_body.getPosition());
+  getPosition: -> @_position
 
   # Returns actor rotation as an angle in degrees
   #
+  # @param [Boolean] radians true to return in radians
   # @return [Number] angle rotation in degrees on z axis
-  getRotation: ->
-    if @_body is null
-      return @_rotation
+  getRotation: (radians) ->
+    if radians != true
+      return @_rotation * 57.2957795
     else
-      # how do you get the funky 57.2957795786f in coffeescript?
-      return null # return @_body.getAngle * 57.2957795786f
+      return @_rotation
 
   # Get array of vertices
   #

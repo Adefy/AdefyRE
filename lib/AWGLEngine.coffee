@@ -1,6 +1,7 @@
 # AWGLEngine
 #
 # @depend AWGLRenderer.coffee
+# @depend AWGLPhysics.coffee
 # @depend util/AWGLLog.coffee
 # @depend util/AWGLAjax.coffee
 # @depend interface/AWGLInterface.coffee
@@ -18,13 +19,13 @@
 #
 # Requires Underscore.js fromhttp://documentcloud.github.io/underscore
 #
-# Requires Box2dWeb https://box2dweb.googlecode.com/files/Box2dWeb-2.1a.3.zip
+# Requires Chipmunk-js https://github.com/josephg/Chipmunk-js
 #
 # AWGLLog is used for all logging throughout the application
 class AWGLEngine
 
-  # Privatized log to make it a static variable of sorts
-  @_log: new AWGLLog()
+  @_log: new AWGLLog
+  @_physics: new AWGLPhysics
 
   # @property [Object] Holds fetched package.json
   package: null
@@ -51,8 +52,9 @@ class AWGLEngine
   #
   # @param [String] url ad location
   # @param [Number] logLevel level to start AWGLLog at, defaults to 4
+  # @param [Method] cb callback to execute when finished initializing
   # @return [Boolean] success
-  constructor: (@url, logLevel) ->
+  constructor: (@url, logLevel, cb) ->
 
     log = AWGLEngine.getLog()
 
@@ -66,9 +68,9 @@ class AWGLEngine
       log.error "Underscore.js is not present!"
       return false
 
-    # Ensure Box2DWeb is loaded
-    if window.Box2D is undefined or window.Box2D is null
-      log.error "Box2DWeb is not present!"
+    # Ensure Chipmunk-js is loaded
+    if window.cp is undefined or window.cp is null
+      log.error "Chipmunk-js is not present!"
       return false
 
     # Create an instance of AWGLAjax
@@ -101,6 +103,9 @@ class AWGLEngine
         ##
 
         me.startRendering()
+        AWGLEngine.getPsyx().startStepping()
+
+        if cb != null and cb != undefined then cb()
 
       if validStructure
         log.info "package.json valid, downloading assets..."
@@ -188,6 +193,11 @@ class AWGLEngine
   #
   # @return [AWGLLog] log
   @getLog: -> @_log
+
+  # Returns the static private AWGLPhysis instance
+  #
+  # @return [AWGLPhysics] psyx
+  @getPsyx: -> @_physics
 
   # Start render loop if it isn't already running
   startRendering: ->
