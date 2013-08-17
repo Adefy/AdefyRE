@@ -69,7 +69,7 @@ class AWGLActor
 
     # Sanity checks
     if @_mass == undefined
-      @_mass = AWGLActor.defaultDensity
+      @_mass = AWGLActor.defaultDensity * 100
     else
       if @_mass < 0 then @_mass = 0
 

@@ -87,6 +87,31 @@ class AWGLActorInterface
   # Uses id, fails with null
   #
   # @param [Number] id
+  # @return [AWGLColor3] col
   getActorColor: (id) ->
-    if a = @_findActor(id) != null then return a.getColor()
+    if (a = @_findActor(id)) != null then return a.getColor()
     null
+
+  # Creates the internal physics body, if one does not already exist
+  # Fails with false
+  #
+  # @param [Number] mass 0.0 - unbound
+  # @param [Number] friction 0.0 - 1.0
+  # @param [Number] elasticity 0.0 - 1.0
+  # @return [Boolean] success
+  enableActorPhysics: (mass, friction, elasticity, id) ->
+    if (a = @_findActor(id)) != null
+      a.createPhysicsBody mass, friction, elasticity
+      return true
+
+    false
+
+  # Destroys the physics body if one exists, fails with false
+  #
+  # @return [Boolean] success
+  destroyPhysicsBody: ->
+    if (a = @_findActor(id)) != null
+      a.destroyPhysicsBody()
+      true
+
+    false
