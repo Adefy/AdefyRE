@@ -23,7 +23,7 @@ class AWGLActorInterface
   # @return [Boolean] success
   setActorPosition: (vec, id) ->
 
-    if a = @_findActor(id) != null
+    if (a = @_findActor(id)) != null
       a.setPosition vec
       return true
 
@@ -35,7 +35,7 @@ class AWGLActorInterface
   # @return [Object] position
   getActorPosition: (id) ->
 
-    if a = @_findActor(id) != null
+    if (a = @_findActor(id)) != null
       return a.getPosition()
 
     null
@@ -45,9 +45,10 @@ class AWGLActorInterface
   # @param [Number] angle in degrees or radians
   # @param [Number] id
   # @param [Boolean] radians defaults to false
+  # @return [Boolean] success
   setActorRotation: (angle, id, radians) ->
 
-    if a = @_findActor(id) != null
+    if (a = @_findActor(id)) != null
       if radians != true then radians = false
       a.setRotation angle, radians
       return true
@@ -61,7 +62,7 @@ class AWGLActorInterface
   # @return [Number] angle in degrees or radians
   getActorRotation: (id, radians) ->
 
-    if a = @_findActor(id) != null
+    if (a = @_findActor(id)) != null
       if radians != true then radians = false
       return a.getRotation radians
 
@@ -76,7 +77,7 @@ class AWGLActorInterface
   # @return [Boolean] success
   setActorColor: (r, g, b, id) ->
 
-    if a = @_findActor(id) != null
+    if (a = @_findActor(id)) != null
       a.setColor new AWGLColor3 r, g, b
       return true
 
