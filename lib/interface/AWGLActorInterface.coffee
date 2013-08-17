@@ -1,6 +1,12 @@
 # Actor interface class
 class AWGLActorInterface
 
+  # Fails with null
+  _findActor: (id) ->
+    for a in AWGLRenderer
+      if a.getId() == id then return a
+    return null
+
   # Create actor using the supplied vertices, passed in as { x: , y: } objects
   # Fails with -1
   #
