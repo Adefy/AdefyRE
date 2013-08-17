@@ -105,6 +105,9 @@ class AWGLEngine
         me.startRendering()
         AWGLEngine.getPsyx().startStepping()
 
+        # Break out interface
+        window.AWGLI = new AWGLInterface
+
         if cb != null and cb != undefined then cb()
 
       if validStructure
