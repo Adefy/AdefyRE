@@ -10,7 +10,7 @@ class AWGLPhysics
   # @property [Number] time to step for
   frameTime: 1.0 / 60.0
 
-  _gravity: new cp.v 0, -1
+  _gravity: null
   _stepIntervalId: null
   _world: null
 
@@ -18,6 +18,9 @@ class AWGLPhysics
 
   # Constructor, creates the world
   constructor: ->
+
+    @_gravity = new cp.v 0, -10
+
     @_world = new cp.Space
     @_world.gravity = @_gravity
     @_world.iterations = 60
@@ -51,3 +54,19 @@ class AWGLPhysics
   #
   # @return [Number] densityRatio
   getDensityRatio: -> @_densityRatio
+
+  # Get gravity
+  #
+  # @return [cp.v] gravity
+  getGravity: -> @_gravity
+
+  # Set gravity
+  #
+  # @param [cp.v] gravity
+  setGravity: (v) ->
+
+    if v !instanceof cp.v
+      throw "You need to set space gravity using cp.v!"
+
+    @_gravity = v
+    @_world.gravity = v
