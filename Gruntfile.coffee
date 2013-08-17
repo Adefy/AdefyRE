@@ -64,11 +64,11 @@ module.exports = (grunt) ->
 
             workingDir = path.split "/"
             workingDir.pop()
+            workingDir = workingDir.join().replace /,/g, "/"
 
             deps = @getMatches /\#\s\@depend\s(.*\.coffee)/g, content
             deps.forEach (dep, i) ->
-              deps[i] = "#{workingDir.join().replace(',', '/')}/#{dep}"
-              console.log "Got dep #{deps[i]}"
+              deps[i] = "#{workingDir}/#{dep}"
 
             return deps
           extractDeclared: (path) -> [path]
