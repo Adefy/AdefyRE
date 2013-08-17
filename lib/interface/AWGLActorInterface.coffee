@@ -3,7 +3,7 @@ class AWGLActorInterface
 
   # Fails with null
   _findActor: (id) ->
-    for a in AWGLRenderer
+    for a in AWGLRenderer.actors
       if a.getId() == id then return a
     return null
 
