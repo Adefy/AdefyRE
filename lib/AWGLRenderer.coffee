@@ -16,8 +16,10 @@ class AWGLRenderer
     "}\n";
 
   @defaultFragShaderSrc: "" +
+    "precision mediump float;" +
+    "uniform vec4 Color;" +
     "void main() {" +
-    "  gl_FragColor = vec4(1, 0, 0, 1);" +
+    "  gl_FragColor = Color;" +
     "}\n";
 
   @defaultVertShader: null
@@ -28,6 +30,7 @@ class AWGLRenderer
   @attrVertPosition: null
   @attrModelView: null
   @attrProjection: null
+  @attrColor: null
 
   _canvas: null     # HTML <canvas> element
   _ctx: null        # Drawing context
@@ -174,6 +177,8 @@ class AWGLRenderer
     AWGLRenderer.attrModelView = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "ModelView";
 
     AWGLRenderer.attrProjection = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "Projection";
+
+    AWGLRenderer.attrColor = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "Color";
 
     gl.enableVertexAttribArray AWGLRenderer.attrVertPosition
     gl.enableVertexAttribArray AWGLRenderer.attrVertColor

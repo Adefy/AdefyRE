@@ -6,8 +6,8 @@ class AWGLActor
   @defaultMass: 10
   @defaultElasticity: 0.2
 
-  # @property [AWGLColor3] color
-  color: new AWGLColor3 255, 255, 255
+  _color: null
+  _colArray: null
 
   # @property [Boolean] lit
   lit: false
@@ -55,6 +55,8 @@ class AWGLActor
     @_vertBuffer = @_gl.createBuffer()
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
     @_gl.bufferData @_gl.ARRAY_BUFFER, new Float32Array(@_vertices), @_gl.STATIC_DRAW
+
+    @setColor new AWGLColor3 255, 255, 255
 
   # Creates the internal physics body, if one does not already exist
   #
@@ -153,6 +155,7 @@ class AWGLActor
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer AWGLRenderer.attrVertPosition, 2, gl.FLOAT, false, 0, 0
 
+    gl.uniform4f AWGLRenderer.attrColor, @_colArray[0], @_colArray[1], @_colArray[2], 1
     gl.uniformMatrix4fv AWGLRenderer.attrModelView, false, new Float32Array(modelView.flatten())
 
     gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
@@ -209,3 +212,15 @@ class AWGLActor
   #
   # @return [Number] id
   getId: -> @_id
+
+  # Get color
+  #
+  # @return [AWGLColor3] color
+  getColor: -> @_color
+
+  # Set color
+  #
+  # @param [AWGLColor3] color
+  setColor: (col) ->
+    @_color = col
+    @_colArray = [ col.getR(true), col.getG(true), col.getB(true) ]

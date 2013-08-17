@@ -29,39 +29,24 @@ class AWGLColor3
   # @param [Boolean] float true if a float is requested
   # @return [Number] red
   getR: (asFloat) ->
-    if asFloat == undefined then return @_r
-    if @_r == 0
-      if asFloat
-        return 0.0
-      else
-        return 0
-    return @_r / 255
+    if asFloat != true then return @_r
+    @_r / 255
 
   # Returns the green component as either an int or float
   #
   # @param [Boolean] float true if a float is requested
   # @return [Number] green
   getG: (asFloat) ->
-    if asFloat == undefined then return @_g
-    if @_g == 0
-      if asFloat
-        return 0.0
-      else
-        return 0
-    return @_g / 255
+    if asFloat != true then return @_g
+    @_g / 255
 
   # Returns the blue component as either an int or float
   #
   # @param [Boolean] float true if a float is requested
   # @return [Number] blue
   getB: (asFloat) ->
-    if asFloat == undefined then return @_b
-    if @_b == 0
-      if asFloat
-        return 0.0
-      else
-        return 0
-    return @_b / 255
+    if asFloat != true then return @_b
+    @_b / 255
 
   # Set red component, takes a value between 0-255
   #
