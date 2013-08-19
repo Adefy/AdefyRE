@@ -15,6 +15,10 @@ class AWGLPhysics
   @_world: null
 
   @_densityRatio: 1 / 10000
+<<<<<<< HEAD
+  @bodyCount: 0
+=======
+>>>>>>> 60cc5cb51179e6d5291283fccf53573145585812
 
   # Constructor, creates the world
   constructor: ->

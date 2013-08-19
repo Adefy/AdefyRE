@@ -65,6 +65,10 @@ class AWGLActor
   # @param [Number] elasticity 0.0 - 1.0
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
+    if AWGLPhysics.bodyCount == 0
+      AWGLPhysics.bodyCount++
+      AWGLPhysics.startStepping
+
     if @_shape is not null then return
 
     # Sanity checks
@@ -124,6 +128,10 @@ class AWGLActor
 
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
+
+    if AWGLPhysics.bodyCount > 0
+      AWGLPhysics.bodyCount--
+      AWGLPhysics.stopStepping
 
     if @_shape is null then return
 
