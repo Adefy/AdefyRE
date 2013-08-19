@@ -105,7 +105,7 @@ class AWGLActor
         verts[verts.length - 1] = (x * Math.sin(a)) + (y * Math.cos(a))
 
     # Grab world handle to shorten future calls
-    space = AWGLEngine.getPsyx().getWorld()
+    space = AWGLPhysics.getWorld()
     pos = AWGLRenderer.screenToWorld @_position
 
     if @_mass == 0
@@ -127,8 +127,8 @@ class AWGLActor
 
     if @_shape is null then return
 
-    AWGLEngine.getPsyx().getWorld().removeShape @_shape
-    AWGLEngine.getPsyx().getWorld().removeBody @_body
+    AWGLPhysics.getWorld().removeShape @_shape
+    AWGLPhysics.getWorld().removeBody @_body
 
     @_shape = null
     @_body = null

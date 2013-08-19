@@ -25,7 +25,6 @@
 class AWGLEngine
 
   @_log: new AWGLLog
-  @_physics: new AWGLPhysics
 
   # @property [Object] Holds fetched package.json
   package: null
@@ -103,7 +102,7 @@ class AWGLEngine
         ##
 
         me.startRendering()
-        AWGLEngine.getPsyx().startStepping()
+        AWGLPhysics.startStepping()
 
         # Break out interface
         window.AdefyGLI = new AWGLInterface
@@ -196,11 +195,6 @@ class AWGLEngine
   #
   # @return [AWGLLog] log
   @getLog: -> @_log
-
-  # Returns the static private AWGLPhysis instance
-  #
-  # @return [AWGLPhysics] psyx
-  @getPsyx: -> @_physics
 
   # Start render loop if it isn't already running
   startRendering: ->
