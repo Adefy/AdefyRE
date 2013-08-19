@@ -65,11 +65,11 @@ class AWGLActor
   # @param [Number] elasticity 0.0 - 1.0
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
-    if AWGLPhysics.bodyCount == 0
-      AWGLPhysics.bodyCount++
-      AWGLPhysics.startStepping
-
     if @_shape is not null then return
+
+    if AWGLPhysics.bodyCount == 0 then AWGLPhysics.startStepping()
+
+    AWGLPhysics.bodyCount++
 
     # Sanity checks
     if @_mass == undefined
@@ -129,11 +129,14 @@ class AWGLActor
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
 
-    if AWGLPhysics.bodyCount > 0
-      AWGLPhysics.bodyCount--
-      AWGLPhysics.stopStepping
-
     if @_shape is null then return
+
+    AWGLPhysics.bodyCount--
+
+    if AWGLPhysics.bodyCount == 0
+      AWGLPhysics.stopStepping()
+    else if AWGLPhysics.bodyCount < 0
+      throw "Body count is negative!"
 
     AWGLPhysics.getWorld().removeShape @_shape
     AWGLPhysics.getWorld().removeBody @_body

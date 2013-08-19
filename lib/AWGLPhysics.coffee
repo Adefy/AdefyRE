@@ -15,20 +15,17 @@ class AWGLPhysics
   @_world: null
 
   @_densityRatio: 1 / 10000
-<<<<<<< HEAD
+
   @bodyCount: 0
-=======
->>>>>>> 60cc5cb51179e6d5291283fccf53573145585812
 
-  # Constructor, creates the world
-  constructor: ->
-
-    throw "Physics constructor called"
-
+  # Constructor, should never be called
+  # AWGLPhysics should only ever be accessed as static
+  constructor: -> throw "Physics constructor called"
 
   # Starts the world step loop if not already running
   @startStepping: ->
 
+    if @_stepIntervalId != null then return
     @_gravity = new cp.v 0, -10
 
     @_world = new cp.Space
@@ -36,8 +33,6 @@ class AWGLPhysics
     @_world.iterations = 60
     @_world.collisionSlop = 0.5
     @_world.sleepTimeThreshold = 0.5
-
-    if @_stepIntervalId != null then return
 
     me = @
     AWGLEngine.getLog().info "Starting world update loop"
