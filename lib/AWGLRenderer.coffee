@@ -1,31 +1,17 @@
 # AWGLRenderer
 #
 # @depend objects/AWGLColor3.coffee
+# @depend objects/AWGLShader.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the
 # necessary functionality from the AdefyLib renderer
 class AWGLRenderer
 
-  @defaultVertShaderSrc: "" +
-    "attribute vec3 Position;" +
-    "uniform mat4 Projection;" +
-    "uniform mat4 ModelView;" +
-    "void main() {" +
-    "  mat4 mvp = Projection * ModelView;" +
-    "  gl_Position = mvp * vec4(Position.xy, 1, 1);" +
-    "}\n";
-
-  @defaultFragShaderSrc: "" +
-    "precision mediump float;" +
-    "uniform vec4 Color;" +
-    "void main() {" +
-    "  gl_FragColor = Color;" +
-    "}\n";
-
   @defaultVertShader: null
   @defaultFragShader: null
 
   @defaultShaderProg: null
+  _defaultShader: null
 
   @attrVertPosition: null
   @attrModelView: null
@@ -145,45 +131,35 @@ class AWGLRenderer
     log.info "Renderer initialized"
 
     ## Shaders
-    # Create them
-    AWGLRenderer.defaultVertShader = gl.createShader gl.VERTEX_SHADER
-    AWGLRenderer.defaultFragShader = gl.createShader gl.FRAGMENT_SHADER
+    vertSrc = "" +
+      "attribute vec3 Position;" +
+      "uniform mat4 Projection;" +
+      "uniform mat4 ModelView;" +
+      "void main() {" +
+      "  mat4 mvp = Projection * ModelView;" +
+      "  gl_Position = mvp * vec4(Position.xy, 1, 1);" +
+      "}\n";
 
-    # Grab shader source
-    gl.shaderSource AWGLRenderer.defaultVertShader, AWGLRenderer.defaultVertShaderSrc
-    gl.shaderSource AWGLRenderer.defaultFragShader, AWGLRenderer.defaultFragShaderSrc
+    fragSrc = "" +
+      "precision mediump float;" +
+      "uniform vec4 Color;" +
+      "void main() {" +
+      "  gl_FragColor = Color;" +
+      "}\n";
 
-    # Compile shaders
-    gl.compileShader AWGLRenderer.defaultVertShader
-    gl.compileShader AWGLRenderer.defaultFragShader
-
-    if !gl.getShaderParameter(AWGLRenderer.defaultVertShader, gl.COMPILE_STATUS)
-      log.error "Unable to compile shader: #{gl.getShaderInfoLog(AWGLRenderer.defaultVertShader)}"
-
-    if !gl.getShaderParameter(AWGLRenderer.defaultFragShader, gl.COMPILE_STATUS)
-      log.error "Unable to compile shader: #{gl.getShaderInfoLog(AWGLRenderer.defaultFragShader)}"
-
-    # Link into program
-    AWGLRenderer.defaultShaderProg = gl.createProgram()
-    gl.attachShader AWGLRenderer.defaultShaderProg, AWGLRenderer.defaultVertShader
-    gl.attachShader AWGLRenderer.defaultShaderProg, AWGLRenderer.defaultFragShader
-    gl.linkProgram AWGLRenderer.defaultShaderProg
-
-    # Check for errors
-    if !gl.getProgramParameter(AWGLRenderer.defaultShaderProg, gl.LINK_STATUS)
-      log.error "Unable to link shader program"
+    @_defaultShader = new AWGLShader vertSrc, fragSrc, gl, true
+    @_defaultShader.generateHandles()
+    handles = @_defaultShader.getHandles()
 
     # Use program
-    gl.useProgram AWGLRenderer.defaultShaderProg
+    gl.useProgram @_defaultShader.getProgram()
 
     # Grab handles
-    AWGLRenderer.attrVertPosition = gl.getAttribLocation AWGLRenderer.defaultShaderProg, "Position"
+    AWGLRenderer.attrVertPosition = handles["Position"]
+    AWGLRenderer.attrModelView = handles["ModelView"]
+    AWGLRenderer.attrProjection = handles["Projection"]
+    AWGLRenderer.attrColor = handles["Color"]
 
-    AWGLRenderer.attrModelView = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "ModelView";
-
-    AWGLRenderer.attrProjection = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "Projection";
-
-    AWGLRenderer.attrColor = gl.getUniformLocation AWGLRenderer.defaultShaderProg, "Color";
 
     gl.enableVertexAttribArray AWGLRenderer.attrVertPosition
     gl.enableVertexAttribArray AWGLRenderer.attrVertColor
