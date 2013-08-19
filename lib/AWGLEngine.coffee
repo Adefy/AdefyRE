@@ -41,6 +41,9 @@ class AWGLEngine
   # Framerate for renderer, defaults to 60FPS
   _framerate: 1.0 / 60.0
 
+  # @property [String] Defined if there was an error during initialization
+  initError: undefined
+
   # Constructor, takes a path to the root of the ad intended to be displayed
   # An attempt is made to load and parse a package.json
   #
@@ -60,17 +63,20 @@ class AWGLEngine
     # Ensure https://code.google.com/p/microajax/ is loaded
     if window.ajax is null or window.ajax is undefined
       log.error "Ajax library is not present!"
-      return false
+      @initSuccess = "Ajax library is not present!"
+      return
 
     # Ensure Underscore.js is loaded
     if window._ is null or window._ is undefined
       log.error "Underscore.js is not present!"
-      return false
+      @initSuccess = "Underscore.js is not present!"
+      return
 
     # Ensure Chipmunk-js is loaded
     if window.cp is undefined or window.cp is null
       log.error "Chipmunk-js is not present!"
-      return false
+      @initSuccess = "Chipmunk-js is not present!"
+      return
 
     # Create an instance of AWGLAjax
     @ajax = new AWGLAjax
@@ -113,11 +119,10 @@ class AWGLEngine
         log.info "package.json valid, downloading assets..."
       else
         log.error "Invalid package.json"
-        return false
+        @initSuccess = "Invalid package.json"
+        return
 
     log.info "Engine initialized, awaiting package.json..."
-
-    true
 
   # Verifies the validity of the package.json file, ensuring we can actually
   # use it. Checks for existence of required fields, and if all is well

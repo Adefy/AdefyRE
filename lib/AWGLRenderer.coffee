@@ -38,7 +38,7 @@ class AWGLRenderer
   @_nextID: 0
 
   @_gl: null        # GL context
-  @_PPM: 128         # Physics pixel-per-meter ratio
+  @_PPM: 128        # Physics pixel-per-meter ratio
 
   # Returns PPM ratio
   # @return [Number] ppm pixels-per-meter
@@ -70,6 +70,9 @@ class AWGLRenderer
 
   # @property [Array<Object>] actors for rendering
   @actors: []
+
+  # @property [String] Defined if there was an error during initialization
+  initError: undefined
 
   # Sets up the renderer, using either an existing canvas or creating a new one
   #
@@ -121,11 +124,13 @@ class AWGLRenderer
       gl = @_canvas.getContext("webgl") || @_canvas.getContext("experimental-webgl")
     catch e
       console.error e
-      return false
+      @initSuccess = e
+      return
 
     if gl is null
       alert "Your browser does not support WebGL!"
-      return false
+      @initError = "Your browser does not support WebGL!"
+      return
 
     AWGLRenderer._gl = gl
     @_ctx = @_canvas.getContext "2d"
@@ -187,8 +192,6 @@ class AWGLRenderer
     gl.uniformMatrix4fv AWGLRenderer.attrProjection, false, makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
 
     log.info "Initialized shaders"
-
-    true
 
   # Returns canvas element
   #
