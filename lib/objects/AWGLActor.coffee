@@ -231,7 +231,33 @@ class AWGLActor
 
   # Set color
   #
-  # @param [AWGLColor3] color
-  setColor: (col) ->
-    @_color = col
-    @_colArray = [ col.getR(true), col.getG(true), col.getB(true) ]
+  # @overload setColor(col)
+  #   Sets the color using an AWGLColor3 instance
+  #   @param [AWGLColor3] color
+  #
+  # @overload setColor(r, g, b)
+  #   Sets the color using component values
+  #   @param [Integer] r red component
+  #   @param [Integer] g green component
+  #   @param [Integer] b blue component
+  setColor: (colOrR, g, b) ->
+
+    if colOrR instanceof AWGLColor3
+      @_color = colOrR
+
+      @_colArray = [
+        colOrR.getR true
+        colOrR.getG true
+        colOrR.getB true
+      ]
+
+    else
+      @_color.setR colOrR
+      @_color.setG g
+      @_color.setB b
+
+      @_colArray = [
+        @_color.getR true
+        @_color.getG true
+        @_color.getB true
+      ]
