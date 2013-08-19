@@ -234,9 +234,9 @@ class AWGLRenderer
   #   @param [Number] r red component
   #   @param [Number] g green component
   #   @param [Number] b blue component
-  setClearCol: (colOrR, g, b) ->
+  setClearColor: (colOrR, g, b) ->
 
-    if colorOrR instanceof AWGLColor3
+    if colOrR instanceof AWGLColor3
       @_clearColor = colOrR
       return
     else
@@ -251,8 +251,8 @@ class AWGLRenderer
       @_clearColor.setB b
 
     # Actually set the color if possible
-    if gl != null
-      gl.clearColor @_clearColor.getR(true), @_clearColor.getG(true), @_clearColor.getB(true), 1.0
+    if @_gl != null and @_gl != undefined
+      @_gl.clearColor @_clearColor.getR(true), @_clearColor.getG(true), @_clearColor.getB(true), 1.0
 
   # Draws a frame
   render: ->
