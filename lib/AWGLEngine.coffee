@@ -106,7 +106,7 @@ class AWGLEngine
         AWGLEngine.getPsyx().startStepping()
 
         # Break out interface
-        window.AWGLI = new AWGLInterface
+        window.AdefyGLI = new AWGLInterface
 
         if cb != null and cb != undefined then cb()
 
