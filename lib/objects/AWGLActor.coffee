@@ -6,6 +6,10 @@ class AWGLActor
   @defaultMass: 10
   @defaultElasticity: 0.2
 
+  # Null offset, used when creating dynamic bodies
+  @_nullV: new cp.v 0, 0
+
+  # Color used for drawing, colArray is pre-computed for the render routine
   _color: null
   _colArray: null
 
@@ -19,17 +23,28 @@ class AWGLActor
   _position: new cp.v 0, 0
   _rotation: 0 # Radians, but set in degrees by default
 
+  # Vectors and matrices used for drawing
+  _rotV: null
+  _transV: null
+  _modelM: null
+
+  # Chipmunk-js values
   _shape: null
   _body: null
   _friction: null
   _mass: null
   _elasticity: null
 
+  # Vertice containers
   _vertices: []
   _vertBuffer: null
+  _vertBufferFloats: null # Float32Array
 
-  # Null offset, used when creating dynamic bodies
-  @_nullV: new cp.v 0, 0
+  # Shader handles, for now there are only three
+  # TODO: Make this dynamic
+  _sh_modelview: null
+  _sh_position: null
+  _sh_color: null
 
   # Adds the actor to the renderer actor list, gets a unique id from the
   # renderer, and builds our vert buffer
@@ -53,10 +68,39 @@ class AWGLActor
 
     # Initialize our buffer
     @_vertBuffer = @_gl.createBuffer()
+    @_vertBufferFloats = new Float32Array(@_vertices)
+
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
-    @_gl.bufferData @_gl.ARRAY_BUFFER, new Float32Array(@_vertices), @_gl.STATIC_DRAW
+    @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
 
     @setColor new AWGLColor3 255, 255, 255
+
+    # Initialize our rendering objects
+    @_rotV = $V([0, 0, 1])
+    @_transV = $V([0, 0, 1])
+    @_modelM = Matrix.I 4
+
+    # Grab default shader from the renderer
+    @setShader AWGLRenderer.getMe().getDefaultShader()
+
+  # Set shader used to draw actor. For the time being, the routine mearly
+  # pulls out handles for the ModelView, Color, and Position structures
+  #
+  # @param [AWGLShader] shader
+  setShader: (shader) ->
+
+    # Ensure shader is built, and generate handles if not already done
+    if shader.getProgram() == null
+      throw new Error "Shader has to be built before it can be used!"
+
+    if shader.getHandles() == null
+      shader.generateHandles()
+
+    handles = shader.getHandles()
+
+    _sh_modelview = handles["ModelView"]
+    _sh_position = handles["Position"]
+    _sh_color = handles["Color"]
 
   # Creates the internal physics body, if one does not already exist
   #
@@ -151,23 +195,28 @@ class AWGLActor
 
     if not @visible then return
 
-    modelView = Matrix.I 4
+    # Prep our vectors and matrices
+    @_modelM = Matrix.I 4
+    @_transV.x = @_position.x
+    @_transV.y = @_position.y
 
     # @_body is null for static bodies!
     if @_body != null
       @_position = AWGLRenderer.worldToScreen @_body.getPos()
       @_rotation = @_body.a
-      modelView = modelView.x (Matrix.Translation($V([@_position.x, @_position.y, 1])).ensure4x4())
-      modelView = modelView.x (Matrix.Rotation(@_rotation, $V([0, 0, 1])).ensure4x4())
+      modelView = modelView.x (Matrix.Translation(@_transV).ensure4x4())
+      modelView = modelView.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
     else
-      modelView = modelView.x (Matrix.Translation($V([@_position.x, @_position.y, 1])).ensure4x4())
-      modelView = modelView.x (Matrix.Rotation(@_rotation, $V([0, 0, 1])).ensure4x4())
+      modelView = modelView.x (Matrix.Translation(@_transV).ensure4x4())
+      modelView = modelView.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+
+    flatMV = new Float32Array(modelView.flatten())
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
-    gl.vertexAttribPointer AWGLRenderer.attrVertPosition, 2, gl.FLOAT, false, 0, 0
+    gl.vertexAttribPointer @_sh_position, 2, gl.FLOAT, false, 0, 0
 
-    gl.uniform4f AWGLRenderer.attrColor, @_colArray[0], @_colArray[1], @_colArray[2], 1
-    gl.uniformMatrix4fv AWGLRenderer.attrModelView, false, new Float32Array(modelView.flatten())
+    gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
+    gl.uniformMatrix4fv @_sh_modelview, false, flatMV
 
     gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
 

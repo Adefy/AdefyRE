@@ -7,20 +7,10 @@
 # necessary functionality from the AdefyLib renderer
 class AWGLRenderer
 
-  @defaultVertShader: null
-  @defaultFragShader: null
-
-  @defaultShaderProg: null
-  _defaultShader: null
-
-  @attrVertPosition: null
-  @attrModelView: null
-  @attrProjection: null
-  @attrColor: null
-
-  _canvas: null     # HTML <canvas> element
-  _ctx: null        # Drawing context
-  _clearColor: null # blanking color
+  _defaultShader: null  # Default shader used for drawing actors
+  _canvas: null         # HTML <canvas> element
+  _ctx: null            # Drawing context
+  _clearColor: null     # blanking color
   @_nextID: 0
 
   @_gl: null        # GL context
@@ -170,18 +160,12 @@ class AWGLRenderer
     # Use program
     gl.useProgram @_defaultShader.getProgram()
 
-    # Grab handles
-    AWGLRenderer.attrVertPosition = handles["Position"]
-    AWGLRenderer.attrModelView = handles["ModelView"]
-    AWGLRenderer.attrProjection = handles["Projection"]
-    AWGLRenderer.attrColor = handles["Color"]
-
-
     gl.enableVertexAttribArray AWGLRenderer.attrVertPosition
     gl.enableVertexAttribArray AWGLRenderer.attrVertColor
 
     # Set up projection
-    gl.uniformMatrix4fv AWGLRenderer.attrProjection, false, makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+    ortho = makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+    gl.uniformMatrix4fv handles["Projection"], false, ortho
 
     log.info "Initialized shaders"
 
@@ -189,6 +173,11 @@ class AWGLRenderer
   #
   # @return [AWGLRenderer] me
   @getMe: -> AWGLRenderer.me
+
+  # Returns the internal default shader
+  #
+  # @return [AWGLShader] shader default shader
+  getDefaultShader: -> @_defaultShader
 
   # Returns canvas element
   #
