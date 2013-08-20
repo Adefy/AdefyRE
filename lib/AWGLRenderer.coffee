@@ -57,8 +57,16 @@ class AWGLRenderer
   # @property [Array<Object>] actors for rendering
   @actors: []
 
-  # @property [String] Defined if there was an error during initialization
+  # @property [String] defined if there was an error during initialization
   initError: undefined
+
+  # This is a tad ugly, but it works well. We need to be able to create
+  # instance objects in the constructor, and provide one resulting object
+  # to any class that asks for it, without an instance avaliable. @me is set
+  # in the constructor, and an error is thrown if it is not already null.
+  #
+  # @property [AWGLRenderer] instance reference, enforced const in constructor
+  @me: null
 
   # Sets up the renderer, using either an existing canvas or creating a new one
   #
@@ -72,6 +80,17 @@ class AWGLRenderer
   # @param [Number] height canvas height
   # @return [Boolean] success
   constructor: (canvasId, @_width, @_height) ->
+
+    # Two renderers cannot exist at the same time, or else we lose track of
+    # the default shaders actor-side. Specifically, we grab the default shader
+    # from the @me object, and if it ever changes, future actors will switch
+    # to the new @me, without any warning. Blegh.
+    #
+    # TODO: fugly
+    if AWGLRenderer.me != null
+      throw new Error "Only one instance of AWGLRenderer can be created!"
+    else
+      AWGLRenderer.me = @
 
     log = AWGLEngine._log
     gl = null
@@ -165,6 +184,11 @@ class AWGLRenderer
     gl.uniformMatrix4fv AWGLRenderer.attrProjection, false, makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
 
     log.info "Initialized shaders"
+
+  # Returns instance (only one may exist, enforced in constructor)
+  #
+  # @return [AWGLRenderer] me
+  @getMe: -> AWGLRenderer.me
 
   # Returns canvas element
   #
