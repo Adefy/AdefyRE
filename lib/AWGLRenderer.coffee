@@ -76,11 +76,8 @@ class AWGLRenderer
     log = AWGLEngine._log
     gl = null
 
-    if @_width == undefined or @_width == null or @_height == undefined or @_height == null
-
-      log.warn "No/invalid dimensions provided, continuing with defaults"
-      @_width = 800
-      @_height = 600
+    @_width = AWGLUtil.param @_width, 800, false, "Using width of 800"
+    @_height = AWGLUtil.param @_height, 600, false, "Using height of 600"
 
     if @_width <= 1 or @_height <= 1
       throw "Canvas must be at least 2x2 in size"
