@@ -8,8 +8,8 @@
 #
 # Takes a path to a directory containing an Adefy ad and runs it
 #
-# Intended useage is from the Ad editor, but it doesn't expect anything from its
-# environment besides WebGL support
+# Intended useage is from the Ad editor, but it doesn't expect anything from
+# its environment besides WebGL support
 #
 # Creating a new instance of this engine will launch the ad directly, creating
 # a renderer and loading up the scenes as required
@@ -164,16 +164,16 @@ class AWGLEngine
 
     _postAjax = (name, res) ->
 
-        # Save result as needed
-        if name == "load"
-          packageFiles.load = res
-        else
-          packageFiles.scenes[name] = res
+      # Save result as needed
+      if name == "load"
+        packageFiles.load = res
+      else
+        packageFiles.scenes[name] = res
 
-        # Call the cb if done
-        toDownload--
-        if toDownload == 0
-          cb packageFiles
+      # Call the cb if done
+      toDownload--
+      if toDownload == 0
+        cb packageFiles
 
     _fetchScene = (name, path) ->
 

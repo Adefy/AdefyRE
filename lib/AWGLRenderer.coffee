@@ -112,13 +112,14 @@ class AWGLRenderer
       log.info "Using canvas ##{canvasId}"
 
     # Initialize GL context
-    try
-      gl = @_canvas.getContext("webgl") || @_canvas.getContext("experimental-webgl")
-    catch e
-      console.error e
-      @initSuccess = e
-      return
+    gl = @_canvas.getContext("webgl")
 
+    # If null, use experimental-webgl
+    if gl is null
+      log.warn "Continuing with experimental webgl support"
+      gl = @_canvas.getContext("experimental-webgl")
+
+    # If still null, FOL
     if gl is null
       alert "Your browser does not support WebGL!"
       @initError = "Your browser does not support WebGL!"
@@ -144,14 +145,14 @@ class AWGLRenderer
       "void main() {" +
       "  mat4 mvp = Projection * ModelView;" +
       "  gl_Position = mvp * vec4(Position.xy, 1, 1);" +
-      "}\n";
+      "}\n"
 
     fragSrc = "" +
       "precision mediump float;" +
       "uniform vec4 Color;" +
       "void main() {" +
       "  gl_FragColor = Color;" +
-      "}\n";
+      "}\n"
 
     @_defaultShader = new AWGLShader vertSrc, fragSrc, gl, true
     @_defaultShader.generateHandles()
@@ -236,9 +237,14 @@ class AWGLRenderer
       @_clearColor.setG g
       @_clearColor.setB b
 
+    # Serves to apply bounds checks automatically
+    colOrR = @_clearColor.getR true
+    g = @_clearColor.getG true
+    b = @_clearColor.getB true
+
     # Actually set the color if possible
     if @_gl != null and @_gl != undefined
-      @_gl.clearColor @_clearColor.getR(true), @_clearColor.getG(true), @_clearColor.getB(true), 1.0
+      @_gl.clearColor colOrR, g, b, 1.0
 
   # Draws a frame
   render: ->

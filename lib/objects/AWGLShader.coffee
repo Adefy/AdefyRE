@@ -83,7 +83,7 @@ class AWGLShader
   generateHandles: ->
 
     if @_prog == null
-      AWGLEngine.getLog().error "Program has to be built before generating handles"
+      AWGLEngine.getLog().error "Build program before generating handles"
       return false
 
     if @_handles != null
