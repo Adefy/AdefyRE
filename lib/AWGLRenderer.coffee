@@ -89,7 +89,7 @@ class AWGLRenderer
     @_height = AWGLUtil.param @_height, 600, false, "Using height of 600"
 
     if @_width <= 1 or @_height <= 1
-      throw "Canvas must be at least 2x2 in size"
+      throw new Error "Canvas must be at least 2x2 in size"
 
     # Start out with black
     @_clearColor = new AWGLColor3 0, 0, 0

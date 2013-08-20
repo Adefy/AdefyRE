@@ -55,12 +55,13 @@ class AWGLActor
     @_gl = AWGLRenderer._gl
 
     if @_gl == undefined or @_gl == null
-      throw "GL context is required for actor initialization!"
+      throw new Error "GL context is required for actor initialization!"
 
     if @_vertices == undefined or @_vertices == null
-      throw "Actor needs vertices!"
+      throw new Error "Actor needs vertices!"
 
-    if @_vertices.length < 6 then throw "At least 3 vertices make up an actor"
+    if @_vertices.length < 6
+      throw new Error "At least 3 vertices make up an actor"
 
     @_id = AWGLRenderer._nextID++
 
@@ -180,7 +181,7 @@ class AWGLActor
     if AWGLPhysics.bodyCount == 0
       AWGLPhysics.stopStepping()
     else if AWGLPhysics.bodyCount < 0
-      throw "Body count is negative!"
+      throw new Error "Body count is negative!"
 
     AWGLPhysics.getWorld().removeShape @_shape
     AWGLPhysics.getWorld().removeBody @_body

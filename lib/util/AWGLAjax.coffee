@@ -32,7 +32,7 @@ class AWGLAjax
 
     # Reaching this point means the queue is not empty, but we are not busy
     # either. This should never happen, but just in case...
-    throw "[AWGLAjax] Queue length non-zero and busy flag not set!"
+    throw new Error "[AWGLAjax] Queue length non-zero and busy flag not set!"
 
   # Internal function that actually calls microAjax
   # Passes the url, and calls the cb() inside an own callback, after

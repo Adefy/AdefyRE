@@ -21,13 +21,13 @@ class AWGLShader
   constructor: (@_vertSrc, @_fragSrc, @_gl, build) ->
 
     if @_vertSrc == null or @_vertSrc == undefined
-      throw "You need to supply a vertex shader!"
+      throw new Error "You need to supply a vertex shader!"
 
     if @_fragSrc == null or @_fragSrc == undefined
-      throw "You need to supply a fragment shader!"
+      throw new Error "You need to supply a fragment shader!"
 
     if @_gl == null or @_gl == undefined
-      throw "You need to supply a gl context!"
+      throw new Error "You need to supply a gl context!"
 
     if build == true then return @build @_gl
 
@@ -42,7 +42,7 @@ class AWGLShader
 
     # Sanity
     if gl == undefined or gl == null
-      throw "You need to pass a valid gl object when building a shader!"
+      throw new Error "Need a valid gl object to build a shader!"
 
     # Create the shaders
     @_vertShader = gl.createShader gl.VERTEX_SHADER
@@ -108,7 +108,7 @@ class AWGLShader
           h: me._gl.getAttribLocation me._prog, name
         return ret
 
-      throw "Type not 1 or 2, WTF, internal error"
+      throw new Error "Type not 1 or 2, WTF, internal error"
 
     # Go through the source, and pull out uniforms and attributes
     # Note that if a duplicate is found, it is simply skipped!

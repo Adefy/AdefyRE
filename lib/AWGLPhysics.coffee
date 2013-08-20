@@ -20,7 +20,7 @@ class AWGLPhysics
 
   # Constructor, should never be called
   # AWGLPhysics should only ever be accessed as static
-  constructor: -> throw "Physics constructor called"
+  constructor: -> throw new Error "Physics constructor called"
 
   # Starts the world step loop if not already running
   @startStepping: ->
@@ -70,7 +70,7 @@ class AWGLPhysics
   @setGravity: (v) ->
 
     if v !instanceof cp.v
-      throw "You need to set space gravity using cp.v!"
+      throw new Error "You need to set space gravity using cp.v!"
 
     @_gravity = v
     @_world.gravity = v
