@@ -56,6 +56,9 @@ module.exports = (grunt) ->
           bare: true
         files: __testFiles
 
+    coffeelint:
+      app: __coffeeFiles
+
     concat_in_order:
       lib:
         files: __awglOut
@@ -82,7 +85,7 @@ module.exports = (grunt) ->
           "#{testDir}/**/*.coffee"
           "#{testDir}/*.coffee"
         ]
-        tasks: ["concat_in_order", "coffee", "mocha", "codo"]
+        tasks: ["concat_in_order", "coffeelint", "coffee", "mocha", "codo"]
 
     connect:
       server:
@@ -113,6 +116,7 @@ module.exports = (grunt) ->
       docDir
     ]
 
+  grunt.loadNpmTasks "grunt-coffeelint"
   grunt.loadNpmTasks "grunt-contrib-coffee"
   grunt.loadNpmTasks "grunt-contrib-watch"
   grunt.loadNpmTasks "grunt-contrib-connect"
