@@ -128,6 +128,6 @@ module.exports = (grunt) ->
       done err
 
   # Perform a full build
-  grunt.registerTask "default", ["concat_in_order", "coffee"]
+  grunt.registerTask "default", ["concat_in_order", "coffee", "mocha"]
   grunt.registerTask "full", ["clean", "codo", "copy:test_page", "concat_in_order", "coffee", "mocha"]
   grunt.registerTask "dev", ["connect", "copy:test_page", "watch"]
