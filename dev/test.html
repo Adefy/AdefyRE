@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AdefyWebGL Test</title>
+
+  <script type="text/javascript" src="./mjax.min.js"></script>
+  <script type="text/javascript" src="./underscore.min.js"></script>
+  <script type="text/javascript" src="./cp.min.js"></script>
+  <script type="text/javascript" src="./sylvester.js"></script>
+  <script type="text/javascript" src="./glUtils.js"></script>
+  <script type="text/javascript" src="./awgl.js"></script>
+</head>
+
+<body>
+  <script>
+
+    window.ajax = microAjax
+    var testAd = new AWGLEngine("./adefy-test/", 4, function() {
+
+      var fallBox = [
+        -50, -50,
+        -50,  50,
+         50,  50,
+         50, -50,
+        -50, -50
+      ];
+
+      var groundBox = [
+        -200, -20,
+        -200,  20,
+         200,  20,
+         200, -20,
+        -200, -20
+      ];
+
+      var box = new AWGLActor(fallBox);
+      box.setPosition({ x: 200, y: 400 });
+      box.setRotation(60);
+      box.setColor(255, 0, 0);
+      box.createPhysicsBody(10, 0.3, 0.8);
+
+      var ground = new AWGLActor(groundBox);
+      ground.setPosition({ x: 300, y: 100 });
+      ground.setRotation(-5);
+      ground.createPhysicsBody(0, 0.2, 0.8);
+
+    });
+
+  </script>
+</body>
+</html>

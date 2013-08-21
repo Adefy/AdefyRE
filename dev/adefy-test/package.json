@@ -1,0 +1,23 @@
+{
+  "company": "Spectrum IT Solutions GmbH",
+  "apikey": "XdTPxXdTPxXqR4vrCmISaXqR4vrCmISa",
+
+  "load": "load.coffee",
+  "scenes": {
+    "1": "begin.coffee",
+    "2": "end.coffee"
+  },
+
+  "textures": {
+    "begin": [
+      "1.png",
+      "2.png"
+    ],
+
+    "end": [
+      "1.png",
+      "5.png",
+      "4.png"
+    ]
+  }
+}
