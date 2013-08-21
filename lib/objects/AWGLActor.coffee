@@ -205,13 +205,13 @@ class AWGLActor
     if @_body != null
       @_position = AWGLRenderer.worldToScreen @_body.getPos()
       @_rotation = @_body.a
-      modelView = modelView.x (Matrix.Translation(@_transV).ensure4x4())
-      modelView = modelView.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+      @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
+      @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
     else
-      modelView = modelView.x (Matrix.Translation(@_transV).ensure4x4())
-      modelView = modelView.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+      @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
+      @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
 
-    flatMV = new Float32Array(modelView.flatten())
+    flatMV = new Float32Array(@_modelM.flatten())
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_position, 2, gl.FLOAT, false, 0, 0
