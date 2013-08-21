@@ -18,25 +18,28 @@ class AWGLActorInterface
 
   # Set actor position using handle, fails with false
   #
-  # @param [Object] position
+  # @param [Number] x x coordinate
+  # @param [Number] y y coordinate
   # @param [Number] id
   # @return [Boolean] success
-  setActorPosition: (vec, id) ->
+  setActorPosition: (x, y, id) ->
 
     if (a = @_findActor(id)) != null
-      a.setPosition vec
+      a.setPosition new cp.v x, y
       return true
 
     false
 
   # Get actor position using handle, fails with null
+  # Returns position as a JSON representation of a primitive {x, y} object!
   #
   # @param [Number] id
   # @return [Object] position
   getActorPosition: (id) ->
 
     if (a = @_findActor(id)) != null
-      return a.getPosition()
+      pos = a.getPosition()
+      return "{ x: #{pos.x}, y: #{pos.y} }"
 
     null
 
@@ -55,7 +58,7 @@ class AWGLActorInterface
 
     false
 
-  # Get actor rotation using handle, fails with null
+  # Get actor rotation using handle, fails with -1
   #
   # @param [Number] id
   # @param [Boolean] radians defaults to false
@@ -66,7 +69,7 @@ class AWGLActorInterface
       if radians != true then radians = false
       return a.getRotation radians
 
-    null
+    -1
 
   # Set actor color using handle, fails with false
   #
@@ -83,13 +86,17 @@ class AWGLActorInterface
 
     false
 
-  # Returns actor color as a triple, in 0-255 range
+  # Returns actor color as a JSON triple, in 0-255 range
   # Uses id, fails with null
   #
   # @param [Number] id
   # @return [AWGLColor3] col
   getActorColor: (id) ->
-    if (a = @_findActor(id)) != null then return a.getColor()
+    if (a = @_findActor(id)) != null
+      r = a.getColor().getR()
+      g = a.getColor().getB()
+      b = a.getColor().getG()
+      return "{ r: #{r}, g: #{g}, b: #{b} }"
     null
 
   # Creates the internal physics body, if one does not already exist
@@ -98,6 +105,7 @@ class AWGLActorInterface
   # @param [Number] mass 0.0 - unbound
   # @param [Number] friction 0.0 - 1.0
   # @param [Number] elasticity 0.0 - 1.0
+  # @param [Number] id
   # @return [Boolean] success
   enableActorPhysics: (mass, friction, elasticity, id) ->
     if (a = @_findActor(id)) != null
@@ -108,8 +116,9 @@ class AWGLActorInterface
 
   # Destroys the physics body if one exists, fails with false
   #
+  # @param [Number] id
   # @return [Boolean] success
-  destroyPhysicsBody: ->
+  destroyPhysicsBody: (id) ->
     if (a = @_findActor(id)) != null
       a.destroyPhysicsBody()
       true
