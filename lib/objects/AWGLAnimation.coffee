@@ -16,13 +16,18 @@ class AWGLAnimation
   #@param [Number] endX X coordinated when animation finished
   #@param [Number] endY Y coordinated when animation finished
   #@param [Number] updateFreq update once every updateFreq frames
-  @Animate: (actor, endX, endY, updateFreq) ->
+
+  animate: (actor, endX, endY, updateFreq) ->
 
     @_endPostion = new cp.v endX, endY
     @_updateFreq = updateFreq * (1.0/60.0) * 1000
 
-    setInterval ->
-      if actor.getPosition != @_endPostion
+    _updateCoord: ->
+      if actor.getPosition == @_endPostion
+        if @_intervalID != null
+          clearInterval @_intervalID
+          @_intervalID = null
+      else
         actor.setPosition actor.getPosition + 1
-      else  return actor.getPosition
-    , @_updateFreq
+
+    @_intervalID = setInterval _updateCoord(actor), @_updateFreq
