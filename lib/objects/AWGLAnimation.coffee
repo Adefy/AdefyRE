@@ -54,8 +54,8 @@ class AWGLAnimation
           clearInterval @_intervalID
           @_intervalID = null
       else
-        if mode == "diagonal" then _diagonal
-        if mode == "horizontal" then _horizontal
-        if mode == "vertical" then _vertical
+        if mode == "diagonal" then _diagonal()
+        if mode == "horizontal" then _horizontal()
+        if mode == "vertical" then _vertical()
 
     @_intervalID = setInterval _updateCoord(actor), @_updateFreq
