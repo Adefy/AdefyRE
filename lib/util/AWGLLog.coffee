@@ -11,7 +11,7 @@
 class AWGLLog
 
   # @property [Array<String>] tags, editable by the user
-  tags: [
+  @tags: [
     "",
     "[Error]> ",
     "[Warning]> ",
@@ -26,7 +26,7 @@ class AWGLLog
   #
   # @param [Number] level logging level to log on
   # @param [String] str log message
-  w: (level, str) ->
+  @w: (level, str) ->
 
     # Return early if not at a suiteable level, or level is 0
     if level > @level or level == 0 or @level == 0 then return
@@ -54,19 +54,19 @@ class AWGLLog
   # Specialized, sets level to error directly
   #
   # @param [String] str log message
-  error: (str) -> @w 1, str
+  @error: (str) -> @w 1, str
 
   # Specialized, sets level to warning directly
   #
   # @param [String] str log message
-  warn: (str) -> @w 2, str
+  @warn: (str) -> @w 2, str
 
   # Specialized, sets level to debug directly
   #
   # @param [String] str log message
-  debug: (str) -> @w 3, str
+  @debug: (str) -> @w 3, str
 
   # Specialized, sets level to info directly
   #
   # @param [String] str log message
-  info: (str) -> @w 4, str
+  @info: (str) -> @w 4, str

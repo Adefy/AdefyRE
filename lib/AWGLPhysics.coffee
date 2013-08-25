@@ -35,7 +35,7 @@ class AWGLPhysics
     @_world.sleepTimeThreshold = 0.5
 
     me = @
-    AWGLEngine.getLog().info "Starting world update loop"
+    AWGLLog.info "Starting world update loop"
 
     @_stepIntervalId = setInterval ->
       me._world.step me.frameTime
@@ -44,7 +44,7 @@ class AWGLPhysics
   # Halt the world step loop if running
   @stopStepping: ->
     if @_stepIntervalId == null then return
-    AWGLEngine.getLog().info "Halting world update loop"
+    AWGLLog.info "Halting world update loop"
     clearInterval @_stepIntervalId
     @_stepIntervalId = null
     @_world = null

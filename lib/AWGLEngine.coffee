@@ -24,8 +24,6 @@
 # AWGLLog is used for all logging throughout the application
 class AWGLEngine
 
-  @_log: new AWGLLog
-
   # @property [Object] Holds fetched package.json
   package: null
 
@@ -58,23 +56,21 @@ class AWGLEngine
   # @return [Boolean] success
   constructor: (@url, logLevel, cb) ->
 
-    log = AWGLEngine.getLog()
-
     # Ensure https://code.google.com/p/microajax/ is loaded
     if window.ajax is null or window.ajax is undefined
-      log.error "Ajax library is not present!"
+      AWGLLog.error "Ajax library is not present!"
       @initSuccess = "Ajax library is not present!"
       return
 
     # Ensure Underscore.js is loaded
     if window._ is null or window._ is undefined
-      log.error "Underscore.js is not present!"
+      AWGLLog.error "Underscore.js is not present!"
       @initSuccess = "Underscore.js is not present!"
       return
 
     # Ensure Chipmunk-js is loaded
     if window.cp is undefined or window.cp is null
-      log.error "Chipmunk-js is not present!"
+      AWGLLog.error "Chipmunk-js is not present!"
       @initSuccess = "Chipmunk-js is not present!"
       return
 
@@ -84,17 +80,17 @@ class AWGLEngine
     # Store instance for callbacks
     me = @
 
-    if logLevel != undefined then log.level = logLevel
+    if logLevel != undefined then AWGLLog.level = logLevel
 
     # [ASYNC] Grab the package.json
     @ajax.r "#{@url}/package.json", (res) ->
-      log.info "...fetched package.json"
+      AWGLLog.info "...fetched package.json"
       me.package = JSON.parse res
 
       # [ASYNC] Package.json is valid, continue
       validStructure = me.verifyPackage me.package, (sourcesObj) ->
 
-        log.info "...downloaded. Creating Renderer"
+        AWGLLog.info "...downloaded. Creating Renderer"
         me._renderer = new AWGLRenderer()
 
         ##
@@ -116,13 +112,13 @@ class AWGLEngine
         if cb != null and cb != undefined then cb()
 
       if validStructure
-        log.info "package.json valid, downloading assets..."
+        AWGLLog.info "package.json valid, downloading assets..."
       else
-        log.error "Invalid package.json"
+        AWGLLog.error "Invalid package.json"
         @initSuccess = "Invalid package.json"
         return
 
-    log.info "Engine initialized, awaiting package.json..."
+    AWGLLog.info "Engine initialized, awaiting package.json..."
 
   # Verifies the validity of the package.json file, ensuring we can actually
   # use it. Checks for existence of required fields, and if all is well
@@ -134,7 +130,6 @@ class AWGLEngine
   # @return [Boolean] validity
   verifyPackage: (obj, cb) ->
 
-    log = AWGLEngine.getLog()
 
     # Build definition of valid package.json
     validPackage =
@@ -146,12 +141,12 @@ class AWGLEngine
     # Ensure required fields are present
     for k of validPackage
       if obj[k] == undefined
-        log.error "package.json invalid, missing key #{k}"
+        AWGLLog.error "package.json invalid, missing key #{k}"
         return false
 
     # Ensure at least one scene is provided
     if obj.scenes.length == 0
-      log.warning "package.json does not specify any scenes, can't continue"
+      AWGLLog.warning ".json does not specify any scenes, can't continue"
       return false
 
     # Container for downloaded files
@@ -196,17 +191,12 @@ class AWGLEngine
   # @param [Number] fps
   setFPS: (fps) -> @_framerate = 1.0 / fps
 
-  # Returns the static private AWGLLog instance
-  #
-  # @return [AWGLLog] log
-  @getLog: -> @_log
-
   # Start render loop if it isn't already running
   startRendering: ->
     if @_renderIntervalId != null then return
 
     me = @
-    AWGLEngine.getLog().info "Starting render loop"
+    AWGLLog.info "Starting render loop"
 
     @_renderIntervalId = setInterval ->
       me._renderer.render()
@@ -215,6 +205,6 @@ class AWGLEngine
   # Halt render loop if it's running
   stopRendering: ->
     if @_renderIntervalId == null then return
-    AWGLEngine.getLog().info "Halting render loop"
+    AWGLLog.info "Halting render loop"
     clearInterval @_renderIntervalId
     @_renderIntervalId = null
