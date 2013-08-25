@@ -7,10 +7,6 @@
 # necessary functionality from the AdefyLib renderer
 class AWGLRenderer
 
-  _defaultShader: null  # Default shader used for drawing actors
-  _canvas: null         # HTML <canvas> element
-  _ctx: null            # Drawing context
-  _clearColor: null     # blanking color
   @_nextID: 0
 
   @_gl: null        # GL context
@@ -47,9 +43,6 @@ class AWGLRenderer
   # @property [Array<Object>] actors for rendering
   @actors: []
 
-  # @property [String] defined if there was an error during initialization
-  initError: undefined
-
   # This is a tad ugly, but it works well. We need to be able to create
   # instance objects in the constructor, and provide one resulting object
   # to any class that asks for it, without an instance avaliable. @me is set
@@ -70,6 +63,14 @@ class AWGLRenderer
   # @param [Number] height canvas height
   # @return [Boolean] success
   constructor: (canvasId, @_width, @_height) ->
+
+    @_defaultShader = null  # Default shader used for drawing actors
+    @_canvas = null         # HTML <canvas> element
+    @_ctx = null            # Drawing context
+    @_clearColor = null     # blanking color
+
+    # defined if there was an error during initialization
+    @initError = undefined
 
     # Two renderers cannot exist at the same time, or else we lose track of
     # the default shaders actor-side. Specifically, we grab the default shader

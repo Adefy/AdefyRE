@@ -9,48 +9,45 @@ class AWGLActor
   # Null offset, used when creating dynamic bodies
   @_nullV: new cp.v 0, 0
 
-  # Color used for drawing, colArray is pre-computed for the render routine
-  _color: null
-  _colArray: null
-
-  # @property [Boolean] lit
-  lit: false
-
-  # @property [Boolean] visible
-  visible: true
-
-  _id: -1
-  _position: new cp.v 0, 0
-  _rotation: 0 # Radians, but set in degrees by default
-
-  # Vectors and matrices used for drawing
-  _rotV: null
-  _transV: null
-  _modelM: null
-
-  # Chipmunk-js values
-  _shape: null
-  _body: null
-  _friction: null
-  _mass: null
-  _elasticity: null
-
-  # Vertice containers
-  _vertices: []
-  _vertBuffer: null
-  _vertBufferFloats: null # Float32Array
-
-  # Shader handles, for now there are only three
-  # TODO: Make this dynamic
-  _sh_modelview: null
-  _sh_position: null
-  _sh_color: null
-
   # Adds the actor to the renderer actor list, gets a unique id from the
   # renderer, and builds our vert buffer
   #
   # @param [Array<Object>] vertices <x, y>
   constructor: (@_vertices) ->
+
+    # Color used for drawing, colArray is pre-computed for the render routine
+    @_color = null
+    @_colArray = null
+
+    @lit = false
+    @visible = true
+
+    @_id = -1
+    @_position = new cp.v 0, 0
+    @_rotation = 0 # Radians, but set in degrees by default
+
+    # Vectors and matrices used for drawing
+    @_rotV = null
+    @_transV = null
+    @_modelM = null
+
+    # Chipmunk-js values
+    @_shape = null
+    @_body = null
+    @_friction = null
+    @_mass = null
+    @_elasticity = null
+
+    # Vertice containers
+    @_vertices = []
+    @_vertBuffer = null
+    @_vertBufferFloats = null # Float32Array
+
+    # Shader handles, for now there are only three
+    # TODO: Make this dynamic
+    @_sh_modelview = null
+    @_sh_position = null
+    @_sh_color = null
 
     @_gl = AWGLRenderer._gl
 

@@ -1,11 +1,13 @@
 # AJAX utility class, wrapper around microAjax that adds queueing
 class AWGLAjax
 
-  # @property queue array, holds objects containing urls and cbs
-  queue: []
+  constructor: ->
 
-  # @property true if currently processing a request
-  busy: false
+    # true if currently processing a request
+    @busy = false
+
+    # queue array, holds objects containing urls and cbs
+    @queue = []
 
   # Request method, either passes through directly to microAjax or
   # queues the request
