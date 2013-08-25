@@ -15,7 +15,7 @@ class AWGLUtil
         throw new Error msg
       else
         # Log warning, set value to default
-        AWGLEngine.getLog().warn msg
+        AWGLLog.warn msg
         value = def
 
     value

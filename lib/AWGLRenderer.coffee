@@ -82,7 +82,6 @@ class AWGLRenderer
     else
       AWGLRenderer.me = @
 
-    log = AWGLEngine._log
     gl = null
 
     @_width = AWGLUtil.param @_width, 800, false, "Using width of 800"
@@ -106,17 +105,17 @@ class AWGLRenderer
       # Attach to the body
       document.getElementsByTagName("body")[0].appendChild @_canvas
 
-      log.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
+      AWGLLog.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
     else
       @_canvas = document.getElementById canvasId
-      log.info "Using canvas ##{canvasId}"
+      AWGLLog.info "Using canvas ##{canvasId}"
 
     # Initialize GL context
     gl = @_canvas.getContext("webgl")
 
     # If null, use experimental-webgl
     if gl is null
-      log.warn "Continuing with experimental webgl support"
+      AWGLLog.warn "Continuing with experimental webgl support"
       gl = @_canvas.getContext("experimental-webgl")
 
     # If still null, FOL
@@ -128,14 +127,14 @@ class AWGLRenderer
     AWGLRenderer._gl = gl
     @_ctx = @_canvas.getContext "2d"
 
-    log.info "Created WebGL context"
+    AWGLLog.info "Created WebGL context"
 
     # Perform rendering setup
     gl.clearColor 0.0, 0.0, 0.0, 1.0 # Default to black
     gl.enable gl.DEPTH_TEST
     gl.depthFunc gl.LEQUAL
 
-    log.info "Renderer initialized"
+    AWGLLog.info "Renderer initialized"
 
     ## Shaders
     vertSrc = "" +
@@ -168,7 +167,7 @@ class AWGLRenderer
     ortho = makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
     gl.uniformMatrix4fv handles["Projection"], false, ortho
 
-    log.info "Initialized shaders"
+    AWGLLog.info "Initialized shaders"
 
   # Returns instance (only one may exist, enforced in constructor)
   #
