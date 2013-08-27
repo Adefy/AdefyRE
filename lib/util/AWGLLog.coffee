@@ -20,7 +20,7 @@ class AWGLLog
   ]
 
   # @property [Number] logging level
-  level: 4
+  @level: 4
 
   # Generic logging function
   #
@@ -28,25 +28,27 @@ class AWGLLog
   # @param [String] str log message
   @w: (level, str) ->
 
+    me = AWGLLog
+
     # Return early if not at a suiteable level, or level is 0
-    if level > @level or level == 0 or @level == 0 then return
+    if level > me.level or level == 0 or me.level == 0 then return
 
     # Specialized console output
     if level == 1 and console.error != undefined
-      console.error "#{@tags[level]}#{str}"
+      console.error "#{me.tags[level]}#{str}"
       return
     else if level == 2 and console.warn != undefined
-      console.warn "#{@tags[level]}#{str}"
+      console.warn "#{me.tags[level]}#{str}"
       return
     else if level == 3 and console.debug != undefined
-      console.debug "#{@tags[level]}#{str}"
+      console.debug "#{me.tags[level]}#{str}"
       return
     else if level == 4 and console.info != undefined
-      console.info "#{@tags[level]}#{str}"
+      console.info "#{me.tags[level]}#{str}"
       return
 
-    if level > 4 and @tags[level] != undefined
-      console.log "#{@tags[level]}#{str}"
+    if level > 4 and me.tags[level] != undefined
+      console.log "#{me.tags[level]}#{str}"
     else
       console.log str
     return
