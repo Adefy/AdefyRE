@@ -3,12 +3,7 @@
 # @depend AWGLActorInterface.coffee
 class AWGLInterface
 
-  # @property [AWGLActorInterface] actor interface
-  _Actors: null
-
-  constructor: ->
-
-    @_Actors = new AWGLActorInterface()
+  constructor: -> @_Actors = new AWGLActorInterface()
 
   # Sub-interfaces are broken out through accessors to prevent modification
 

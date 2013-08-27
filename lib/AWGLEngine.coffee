@@ -24,24 +24,6 @@
 # AWGLLog is used for all logging throughout the application
 class AWGLEngine
 
-  # @property [Object] Holds fetched package.json
-  package: null
-
-  # @property [Object] Initialized to a new instance of AWGLAjax
-  ajax: null
-
-  # Initialized after Ad package is downloaded and verified
-  _renderer: null
-
-  # Holds a handle on the render loop interval
-  _renderIntervalId: null
-
-  # Framerate for renderer, defaults to 60FPS
-  _framerate: 1.0 / 60.0
-
-  # @property [String] Defined if there was an error during initialization
-  initError: undefined
-
   # Constructor, takes a path to the root of the ad intended to be displayed
   # An attempt is made to load and parse a package.json
   #
@@ -55,6 +37,24 @@ class AWGLEngine
   # @param [Method] cb callback to execute when finished initializing
   # @return [Boolean] success
   constructor: (@url, logLevel, cb) ->
+
+    # Holds fetched package.json
+    @package = null
+
+    # Initialized to a new instance of AWGLAjax
+    @ajax = null
+
+    # Initialized after Ad package is downloaded and verified
+    @_renderer = null
+
+    # Holds a handle on the render loop interval
+    @_renderIntervalId = null
+
+    # Framerate for renderer, defaults to 60FPS
+    @_framerate = 1.0 / 60.0
+
+    # Defined if there was an error during initialization
+    @initError = undefined
 
     # Ensure https://code.google.com/p/microajax/ is loaded
     if window.ajax is null or window.ajax is undefined

@@ -1,4 +1,4 @@
-# Tiny logging class for AWGL, created to be able to selectively
+# Tiny logging class created to be able to selectively
 # silence all logging in production, or by level. Also supports tags
 # similar to the 'spew' npm module
 #

@@ -1,17 +1,6 @@
 # Shader class
 class AWGLShader
 
-  # @property [Array<String>] errors generated errors are pushed into this
-  errors: []
-
-  _prog: null
-  _vertShader: null
-  _fragShader: null
-  _vertSrc: null
-  _fragSrc: null
-  _handles: null
-  _gl: null
-
   # Doesn't do much except auto-build the shader if requested
   #
   # @param [String] vertSrc vertex shader source
@@ -19,6 +8,17 @@ class AWGLShader
   # @param [Object] gl gl object if building
   # @param [Boolean] build if true, builds the shader now
   constructor: (@_vertSrc, @_fragSrc, @_gl, build) ->
+
+    # errors generated errors are pushed into this
+    @errors = []
+
+    @_prog = null
+    @_vertShader = null
+    @_fragShader = null
+    @_vertSrc = null
+    @_fragSrc = null
+    @_handles = null
+    @_gl = null
 
     if @_vertSrc == null or @_vertSrc == undefined
       throw new Error "You need to supply a vertex shader!"

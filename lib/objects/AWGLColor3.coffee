@@ -4,10 +4,6 @@
 # useful float to int (0.0-1.0 to 0-255) conversion functions
 class AWGLColor3
 
-  _r: 0
-  _g: 0
-  _b: 0
-
   # Sets component values
   #
   # @param [Number] r red component
