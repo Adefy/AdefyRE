@@ -12,9 +12,9 @@ class AWGLColor3
   constructor: (r, g, b) ->
 
     # @todo Check to see if this is necessary
-    if r == undefined then r = 0
-    if g == undefined then g = 0
-    if b == undefined then b = 0
+    param.optional r, 0
+    param.optional g, 0
+    param.optional b, 0
 
     @_r = r
     @_g = g

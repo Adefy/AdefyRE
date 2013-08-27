@@ -18,6 +18,11 @@ class AWGLAnimation
   #@param [Number] updateFreq update once every updateFreq frames
   #@param [String] mode string for predefined animation pattern
   animate: (actor, endX, endY, updateFreq, mode) ->
+    param.required actor
+    param.required endX
+    param.required endY
+    param.required updateFreq
+    param.required mode
 
     @_endPostion = new cp.v endX, endY
     @_updateFreq = updateFreq * (1.0/60.0) * 1000
