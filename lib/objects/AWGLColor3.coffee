@@ -12,13 +12,9 @@ class AWGLColor3
   constructor: (r, g, b) ->
 
     # @todo Check to see if this is necessary
-    param.optional r, 0
-    param.optional g, 0
-    param.optional b, 0
-
-    @_r = r
-    @_g = g
-    @_b = b
+    @_r = param.optional r, 0
+    @_g = param.optional g, 0
+    @_b = param.optional b, 0
 
   # Returns the red component as either an int or float
   #
