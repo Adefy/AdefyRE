@@ -66,7 +66,6 @@ class AWGLRenderer
     @_defaultShader = null  # Default shader used for drawing actors
     @_canvas = null         # HTML <canvas> element
     @_ctx = null            # Drawing context
-    @_clearColor = null     # blanking color
 
     # defined if there was an error during initialization
     @initError = undefined
@@ -92,9 +91,6 @@ class AWGLRenderer
 
     if @_width <= 1 or @_height <= 1
       throw new Error "Canvas must be at least 2x2 in size"
-
-    # Start out with black
-    @_clearColor = new AWGLColor3 0, 0, 0
 
     # Helper method
     _createCanvas = (parent, id, w, h) ->
@@ -191,6 +187,9 @@ class AWGLRenderer
 
     AWGLLog.info "Initialized shaders"
 
+    # Start out with black
+    @setClearColor 255, 50, 0
+
   # Returns instance (only one may exist, enforced in constructor)
   #
   # @return [AWGLRenderer] me
@@ -244,9 +243,10 @@ class AWGLRenderer
   #   @param [Number] b blue component
   setClearColor: (colOrR, g, b) ->
 
+    if @_clearColor == undefined then @_clearColor = new AWGLColor3
+
     if colOrR instanceof AWGLColor3
       @_clearColor = colOrR
-      return
     else
 
       # Sanity checks
@@ -264,8 +264,10 @@ class AWGLRenderer
     b = @_clearColor.getB true
 
     # Actually set the color if possible
-    if @_gl != null and @_gl != undefined
-      @_gl.clearColor colOrR, g, b, 1.0
+    if AWGLRenderer._gl != null and AWGLRenderer._gl != undefined
+      AWGLRenderer._gl.clearColor colOrR, g, b, 1.0
+    else
+      AWGLLog.error "Can't set clear color, AWGLRenderer._gl not valid!"
 
   # Draws a frame
   render: ->
