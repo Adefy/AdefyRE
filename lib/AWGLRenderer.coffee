@@ -52,13 +52,12 @@ class AWGLRenderer
   @me: null
 
   # Sets up the renderer, using either an existing canvas or creating a new one
+  # If a canvasId is provided but the element is not a canvas, it is treated
+  # as a parent. If it is a canvas, it is adopted as our canvas.
   #
-  # Passing multiple parameters implies the creation of the canvas with the
-  # specified id.
+  # Bails early if the GL context could not be created
   #
-  # Returns false if the GL context could not be created
-  #
-  # @param [String] id canvas id
+  # @param [String] id canvas id or parent selector
   # @param [Number] width canvas width
   # @param [Number] height canvas height
   # @return [Boolean] success
@@ -97,25 +96,41 @@ class AWGLRenderer
     # Start out with black
     @_clearColor = new AWGLColor3 0, 0, 0
 
-    # Create a new canvas, or pull it in if provided
+    # Helper method
+    _createCanvas = (parent, id, w, h) ->
+      _c = AWGLRenderer.me._canvas = document.createElement "canvas"
+      _c.width = w
+      _c.height = h
+      _c.id = "awgl_canvas"
+
+      document.getElementsByTagName(parent)[0].appendChild _c
+
+    # Create a new canvas if no id is supplied
     if canvasId == undefined or canvasId == null
 
-      # Create canvas
-      @_canvas = document.createElement "canvas"
-      @_canvas.width = @_width
-      @_canvas.height = @_height
-      @_canvas.id = "awgl_canvas"
-
-      # Attach to the body
-      document.getElementsByTagName("body")[0].appendChild @_canvas
-
+      _createCanvas "body", "awgl_canvas", @_width, @_height
       AWGLLog.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
+
     else
-      AWGLLog.warn "Canvas exists, ignoring supplied dimensions"
       @_canvas = document.getElementById canvasId
-      @_width = @_canvas.width
-      @_height = @_canvas.height
-      AWGLLog.info "Using canvas ##{canvasId} [#{@_width}x#{@_height}]"
+
+      # Create canvas on the body with id canvasId
+      if @_canvas == null
+        _createCanvas "body", canvasId, @_width, @_height
+        AWGLLog.info "Creating canvas ##{canvasId} [#{@_width}x#{@_height}]"
+      else
+
+        # Element exists, see if it is a canvas
+        if @_canvas.nodeName.toLowerCase() == "canvas"
+          AWGLLog.warn "Canvas exists, ignoring supplied dimensions"
+          @_width = @_canvas.width
+          @_height = @_canvas.height
+          AWGLLog.info "Using canvas ##{canvasId} [#{@_width}x#{@_height}]"
+        else
+
+          # Create canvas using element as a parent
+          _createCanvas canvasId, "awgl_canvas", @_width, @_height
+          AWGLLog.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
 
     # Initialize GL context
     gl = @_canvas.getContext("webgl")
