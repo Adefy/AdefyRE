@@ -39,7 +39,6 @@ class AWGLActor
     @_elasticity = null
 
     # Vertice containers
-    @_vertices = []
     @_vertBuffer = null
     @_vertBufferFloats = null # Float32Array
 
