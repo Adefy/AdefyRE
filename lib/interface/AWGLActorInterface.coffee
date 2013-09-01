@@ -7,12 +7,14 @@ class AWGLActorInterface
       if a.getId() == id then return a
     return null
 
-  # Create actor using the supplied vertices, passed in as objects width x,y
-  # properties
+  # Create actor using the supplied vertices, passed in as a JSON
+  # representation of a flat array
   #
-  # @param [Array<Object>] verts
+  # @param [String] verts
   # @return [Number] id created actor handle
   createActor: (verts) ->
+
+    verts = JSON.parse verts
 
     a = new AWGLActor verts
     return a.getId()
