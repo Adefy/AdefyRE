@@ -95,9 +95,9 @@ class AWGLActor
 
     handles = shader.getHandles()
 
-    _sh_modelview = handles["ModelView"]
-    _sh_position = handles["Position"]
-    _sh_color = handles["Color"]
+    @_sh_modelview = handles["ModelView"]
+    @_sh_position = handles["Position"]
+    @_sh_color = handles["Color"]
 
   # Creates the internal physics body, if one does not already exist
   #
@@ -106,7 +106,7 @@ class AWGLActor
   # @param [Number] elasticity 0.0 - 1.0
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
-    if @_shape is not null then return
+    if @_shape == not null then return
 
     if AWGLPhysics.bodyCount == 0 then AWGLPhysics.startStepping()
 
@@ -170,7 +170,7 @@ class AWGLActor
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
 
-    if @_shape is null then return
+    if @_shape == null then return
 
     AWGLPhysics.bodyCount--
 
@@ -199,8 +199,8 @@ class AWGLActor
 
     # Prep our vectors and matrices
     @_modelM = Matrix.I 4
-    @_transV.x = @_position.x
-    @_transV.y = @_position.y
+    @_transV.elements[0] = @_position.x
+    @_transV.elements[1] = @_position.y
 
     @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
     @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
@@ -220,7 +220,7 @@ class AWGLActor
   #
   # @param [Object] position x, y
   setPosition: (position) ->
-    if @_shape is null
+    if @_shape == null
       if position instanceof cp.v
         @_position = position
       else
@@ -238,7 +238,7 @@ class AWGLActor
     if radians != true
       rotation = rotation * 0.0174532925
 
-    if @_shape is null
+    if @_shape == null
       @_rotation = rotation
     else if @_body != null
       @_body.SetAngle @_rotation
@@ -285,6 +285,8 @@ class AWGLActor
   #   @param [Integer] g green component
   #   @param [Integer] b blue component
   setColor: (colOrR, g, b) ->
+
+    if @_color == undefined or @_color == null then @_color = new AWGLColor3
 
     if colOrR instanceof AWGLColor3
       @_color = colOrR

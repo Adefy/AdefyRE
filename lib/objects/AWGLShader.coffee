@@ -26,7 +26,11 @@ class AWGLShader
     if @_gl == null or @_gl == undefined
       throw new Error "You need to supply a gl context!"
 
-    if build == true then return @build @_gl
+    if build == true
+      _success = @build @_gl
+
+      if _success == false
+        throw new Error "Failed to build shader! #{JSON.stringify(@errors)}"
 
   # Builds the shader using the vert/frag sources supplied
   #
@@ -55,10 +59,10 @@ class AWGLShader
 
     # Check for errors
     if !gl.getShaderParameter((@_vertShader), gl.COMPILE_STATUS)
-      @errors.push gl.getShaderInfo(@_vertShader)
+      @errors.push gl.getShaderInfoLog(@_vertShader)
 
     if !gl.getShaderParameter((@_fragShader), gl.COMPILE_STATUS)
-      @errors.push gl.getShaderInfo(@_fragShader)
+      @errors.push gl.getShaderInfoLog(@_fragShader)
 
     # Link
     @_prog = gl.createProgram()
@@ -98,11 +102,19 @@ class AWGLShader
         ret =
           n: name
           h: me._gl.getUniformLocation me._prog, name
+
+        if typeof ret.h != "object"
+          throw new Error "Failed to get handle for uniform #{name} [#{ret.h}]"
+
         return ret
       else if type == 2
         ret =
           n: name
           h: me._gl.getAttribLocation me._prog, name
+
+        #if typeof ret.h != "object"
+        #  throw new Error "Failed to get handle for attrib #{name} [#{ret.h}]"
+
         return ret
 
       throw new Error "Type not 1 or 2, WTF, internal error"

@@ -152,7 +152,6 @@ class AWGLRenderer
     AWGLLog.info "Created WebGL context"
 
     # Perform rendering setup
-    gl.clearColor 0.0, 0.0, 0.0, 1.0 # Default to black
     gl.enable gl.DEPTH_TEST
     gl.depthFunc gl.LEQUAL
 
@@ -160,12 +159,12 @@ class AWGLRenderer
 
     ## Shaders
     vertSrc = "" +
-      "attribute vec3 Position;" +
+      "attribute vec2 Position;" +
       "uniform mat4 Projection;" +
       "uniform mat4 ModelView;" +
       "void main() {" +
       "  mat4 mvp = Projection * ModelView;" +
-      "  gl_Position = mvp * vec4(Position.xy, 1, 1);" +
+      "  gl_Position = mvp * vec4(Position, 1, 1);" +
       "}\n"
 
     fragSrc = "" +
@@ -192,7 +191,7 @@ class AWGLRenderer
     AWGLLog.info "Initialized shaders"
 
     # Start out with black
-    @setClearColor 255, 50, 0
+    @setClearColor 0, 0, 0
 
   # Returns instance (only one may exist, enforced in constructor)
   #
