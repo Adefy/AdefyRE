@@ -7,7 +7,8 @@ class AWGLActorInterface
       if a.getId() == id then return a
     return null
 
-  # Create actor using the supplied vertices, passed in as { x: , y: } objects
+  # Create actor using the supplied vertices, passed in as objects width x,y
+  # properties
   #
   # @param [Array<Object>] verts
   # @return [Number] id created actor handle
@@ -31,7 +32,7 @@ class AWGLActorInterface
     false
 
   # Get actor position using handle, fails with null
-  # Returns position as a JSON representation of a primitive {x, y} object!
+  # Returns position as a JSON representation of a primitive (x, y) object!
   #
   # @param [Number] id
   # @return [Object] position

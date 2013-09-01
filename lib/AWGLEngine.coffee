@@ -25,9 +25,10 @@
 class AWGLEngine
 
   # Constructor, takes a path to the root of the ad intended to be displayed
-  # An attempt is made to load and parse a package.json
+  # An attempt is made to load and parse a package.json. If a url is not
+  # provided, the engine is initialized and cb is called.
   #
-  # Returns false if the ajax library is not loaded
+  # Checks for dependencies and bails early if all are not found.
   #
   # @Example Load from Adefy servers
   #   new AWGLEngine "https://static.adefy.eu/Y7eqYy6rTNDwBjwD/"
@@ -37,6 +38,8 @@ class AWGLEngine
   # @param [Method] cb callback to execute when finished initializing
   # @return [Boolean] success
   constructor: (@url, logLevel, cb) ->
+    @url = param.optional @url, ""
+    logLevel = param.optional logLevel, 4
 
     # Holds fetched package.json
     @package = null
@@ -56,6 +59,8 @@ class AWGLEngine
     # Defined if there was an error during initialization
     @initError = undefined
 
+    AWGLLog.level = logLevel
+
     # Ensure https://code.google.com/p/microajax/ is loaded
     if window.ajax is null or window.ajax is undefined
       AWGLLog.error "Ajax library is not present!"
@@ -74,51 +79,65 @@ class AWGLEngine
       @initSuccess = "Chipmunk-js is not present!"
       return
 
-    # Create an instance of AWGLAjax
-    @ajax = new AWGLAjax
+    # If a url was passed in, load things up
+    if @url.length > 0
 
-    # Store instance for callbacks
-    me = @
+      # Create an instance of AWGLAjax
+      @ajax = new AWGLAjax
 
-    if logLevel != undefined then AWGLLog.level = logLevel
+      # Store instance for callbacks
+      me = @
 
-    # [ASYNC] Grab the package.json
-    @ajax.r "#{@url}/package.json", (res) ->
-      AWGLLog.info "...fetched package.json"
-      me.package = JSON.parse res
+      # [ASYNC] Grab the package.json
+      @ajax.r "#{@url}/package.json", (res) ->
+        AWGLLog.info "...fetched package.json"
+        me.package = JSON.parse res
 
-      # [ASYNC] Package.json is valid, continue
-      validStructure = me.verifyPackage me.package, (sourcesObj) ->
+        # [ASYNC] Package.json is valid, continue
+        validStructure = me.verifyPackage me.package, (sourcesObj) ->
 
-        AWGLLog.info "...downloaded. Creating Renderer"
-        me._renderer = new AWGLRenderer()
+          AWGLLog.info "...downloaded. Creating Renderer"
+          me._renderer = new AWGLRenderer()
 
-        ##
-        # At this point, we have a renderer instance ready to go, and we can
-        # load up the scenes one at a time and execute them. We create
-        # an instance of AWGLInterface on the window, so our middleware
-        # can interface with AWGL.
-        #
-        # Scenes create a window.currentScene object, which we run with
-        # window.currentScene();
-        ##
+          ##
+          # At this point, we have a renderer instance ready to go, and we can
+          # load up the scenes one at a time and execute them. We create
+          # an instance of AWGLInterface on the window, so our middleware
+          # can interface with AWGL.
+          #
+          # Scenes create a window.currentScene object, which we run with
+          # window.currentScene();
+          ##
 
-        me.startRendering()
-        AWGLPhysics.startStepping()
+          me.startRendering()
+          AWGLPhysics.startStepping()
 
-        # Break out interface
-        window.AdefyGLI = new AWGLInterface
+          # Break out interface
+          window.AdefyGLI = new AWGLInterface
 
-        if cb != null and cb != undefined then cb()
+          if cb != null and cb != undefined then cb()
 
-      if validStructure
-        AWGLLog.info "package.json valid, downloading assets..."
-      else
-        AWGLLog.error "Invalid package.json"
-        @initSuccess = "Invalid package.json"
-        return
+        if validStructure
+          AWGLLog.info "package.json valid, downloading assets..."
+        else
+          AWGLLog.error "Invalid package.json"
+          @initSuccess = "Invalid package.json"
+          return
 
-    AWGLLog.info "Engine initialized, awaiting package.json..."
+      AWGLLog.info "Engine initialized, awaiting package.json..."
+
+    else if cb != undefined
+
+      # No url, just start things up and call the cb
+      # Note that we do NOT start the renderer
+      @_renderer = new AWGLRenderer()
+      window.AdefyGLI = new AWGLInterface
+
+      AWGLLog.info "Engine initialized, executing cb"
+      cb()
+
+    else
+      AWGLLog.error "Engine can't initialize, no url or cb was passed in!"
 
   # Verifies the validity of the package.json file, ensuring we can actually
   # use it. Checks for existence of required fields, and if all is well
