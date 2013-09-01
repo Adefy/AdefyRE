@@ -3,4 +3,4 @@ doc/*
 node_modules
 dev/awgl.js
 dev/awgl.js.map
-dev/build-concat.coffee
+dev/awgl-concat.coffee

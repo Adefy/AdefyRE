@@ -12,16 +12,16 @@ module.exports = (grunt) ->
 
   # Intermediate vars
   __awglOut = {}
-  __awglOut["#{buildDir}/build-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
-  __awglOut["#{devDir}/build-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
+  __awglOut["#{buildDir}/awgl-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
+  __awglOut["#{devDir}/awgl-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
 
   __coffeeConcatFiles = {}
 
   # Build concat output
-  __coffeeConcatFiles["#{buildDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
+  __coffeeConcatFiles["#{buildDir}/#{libName}"] = "#{buildDir}/awgl-concat.coffee";
 
   # Dev concat output, used for browser testing
-  __coffeeConcatFiles["#{devDir}/#{libName}"] = "#{buildDir}/build-concat.coffee";
+  __coffeeConcatFiles["#{devDir}/#{libName}"] = "#{buildDir}/awgl-concat.coffee";
 
   # 1 to 1 compiled files, for unit tests
   __coffeeFiles = [
