@@ -26,7 +26,8 @@ class AWGLEngine
 
   # Constructor, takes a path to the root of the ad intended to be displayed
   # An attempt is made to load and parse a package.json. If a url is not
-  # provided, the engine is initialized and cb is called.
+  # provided, the engine is initialized and cb is called with ourselves as an
+  # argument.
   #
   # Checks for dependencies and bails early if all are not found.
   #
@@ -117,7 +118,7 @@ class AWGLEngine
           # Break out interface
           window.AdefyGLI = new AWGLInterface
 
-          if cb != null and cb != undefined then cb()
+          if cb != null and cb != undefined then cb @
 
         if validStructure
           AWGLLog.info "package.json valid, downloading assets..."
@@ -136,7 +137,7 @@ class AWGLEngine
       window.AdefyGLI = new AWGLInterface
 
       AWGLLog.info "Engine initialized, executing cb"
-      cb()
+      cb @
 
     else
       AWGLLog.error "Engine can't initialize, no url or cb was passed in!"
