@@ -15,10 +15,7 @@ class AWGLShader
     @_prog = null
     @_vertShader = null
     @_fragShader = null
-    @_vertSrc = null
-    @_fragSrc = null
     @_handles = null
-    @_gl = null
 
     if @_vertSrc == null or @_vertSrc == undefined
       throw new Error "You need to supply a vertex shader!"

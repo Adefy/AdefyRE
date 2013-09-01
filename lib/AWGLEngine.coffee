@@ -40,6 +40,10 @@ class AWGLEngine
   # @param [String] canvas optional canvas selector to initalize the renderer
   # @return [Boolean] success
   constructor: (@url, logLevel, cb, canvas) ->
+
+    # Treat null url as undefined
+    if @url == null then @url = undefined
+
     @url = param.optional @url, ""
     logLevel = param.optional logLevel, 4
     canvas = param.optional canvas, ""

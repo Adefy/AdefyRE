@@ -103,7 +103,7 @@ class AWGLRenderer
       _c.height = h
       _c.id = "awgl_canvas"
 
-      document.getElementsByTagName(parent)[0].appendChild _c
+      document.getElementById(parent).appendChild _c
 
     # Create a new canvas if no id is supplied
     if canvasId == undefined or canvasId == null
