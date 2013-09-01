@@ -47,4 +47,4 @@ class AWGLUtilParam
 
     p
 
-  window.param = AWGLUtilParam
+window.param = AWGLUtilParam

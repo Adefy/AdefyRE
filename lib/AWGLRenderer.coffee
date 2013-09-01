@@ -72,6 +72,9 @@ class AWGLRenderer
     # defined if there was an error during initialization
     @initError = undefined
 
+    # Treat empty canvasId as undefined
+    if canvasId.length == 0 then canvasId = undefined
+
     # Two renderers cannot exist at the same time, or else we lose track of
     # the default shaders actor-side. Specifically, we grab the default shader
     # from the @me object, and if it ever changes, future actors will switch
@@ -108,8 +111,11 @@ class AWGLRenderer
 
       AWGLLog.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
     else
+      AWGLLog.warn "Canvas exists, ignoring supplied dimensions"
       @_canvas = document.getElementById canvasId
-      AWGLLog.info "Using canvas ##{canvasId}"
+      @_width = @_canvas.width
+      @_height = @_canvas.height
+      AWGLLog.info "Using canvas ##{canvasId} [#{@_width}x#{@_height}]"
 
     # Initialize GL context
     gl = @_canvas.getContext("webgl")
