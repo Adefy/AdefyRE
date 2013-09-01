@@ -234,3 +234,21 @@ class AWGLEngine
     AWGLLog.info "Halting render loop"
     clearInterval @_renderIntervalId
     @_renderIntervalId = null
+
+  # Return our internal renderer width, returns -1 if we don't have a renderer
+  #
+  # @return [Number] width
+  getWidth: ->
+    if @_renderer == null or @_renderer == undefined
+      return -1
+    else
+      return @_renderer.getWidth()
+
+  # Return our internal renderer height
+  #
+  # @return [Number] height
+  getHeight: ->
+    if @_renderer == null or @_renderer == undefined
+      return -1
+    else
+      return @_renderer.getHeight()
