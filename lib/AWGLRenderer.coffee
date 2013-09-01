@@ -99,7 +99,11 @@ class AWGLRenderer
       _c.height = h
       _c.id = "awgl_canvas"
 
-      document.getElementById(parent).appendChild _c
+      # TODO: Refactor this, it's terrible
+      if parent == "body"
+        document.getElementsByTagName(parent)[0].appendChild _c
+      else
+        document.getElementById(parent).appendChild _c
 
     # Create a new canvas if no id is supplied
     if canvasId == undefined or canvasId == null

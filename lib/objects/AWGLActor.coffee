@@ -192,20 +192,18 @@ class AWGLActor
 
     if not @visible then return
 
+    # @_body is null for static bodies!
+    if @_body != null
+      @_position = AWGLRenderer.worldToScreen @_body.getPos()
+      @_rotation = @_body.a
+
     # Prep our vectors and matrices
     @_modelM = Matrix.I 4
     @_transV.x = @_position.x
     @_transV.y = @_position.y
 
-    # @_body is null for static bodies!
-    if @_body != null
-      @_position = AWGLRenderer.worldToScreen @_body.getPos()
-      @_rotation = @_body.a
-      @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
-      @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
-    else
-      @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
-      @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+    @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
+    @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
 
     flatMV = new Float32Array(@_modelM.flatten())
 
