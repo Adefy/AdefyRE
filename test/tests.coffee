@@ -4,13 +4,13 @@
 #
 # @depend spec/util/TAWGLAjax.coffee
 # @depend spec/util/TAWGLLog.coffee
-# @depend spec/util/TUtilParam.coffee
+# @depend spec/util/TAWGLUtilParam.coffee
 #
-# @depend spec/TEngine.coffee
-# @depend spec/TRenderer.coffee
-# @depend spec/TPhysics.coffee
-# @depend spec/TInterface.coffee
+# @depend spec/TAWGLEngine.coffee
+# @depend spec/TAWGLRenderer.coffee
+# @depend spec/TAWGLPhysics.coffee
+# @depend spec/TAWGLInterface.coffee
 #
 # @depend spec/objects/TAWGLActor.coffee
 # @depend spec/objects/TAWGLShader.coffee
-# @depend spec/objects/TColor3.coffee
+# @depend spec/objects/TAWGLColor3.coffee
