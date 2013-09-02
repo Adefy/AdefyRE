@@ -86,8 +86,8 @@ class AWGLRenderer
 
     gl = null
 
-    @_width = AWGLUtil.param @_width, 800, false, "Using width of 800"
-    @_height = AWGLUtil.param @_height, 600, false, "Using height of 600"
+    @_width = param.optional @_width, 800
+    @_height = param.optional @_height, 600
 
     if @_width <= 1 or @_height <= 1
       throw new Error "Canvas must be at least 2x2 in size"

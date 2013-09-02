@@ -3,6 +3,8 @@ class AWGLActorInterface
 
   # Fails with null
   _findActor: (id) ->
+    param.required id
+
     for a in AWGLRenderer.actors
       if a.getId() == id then return a
     return null
@@ -13,7 +15,7 @@ class AWGLActorInterface
   # @param [String] verts
   # @return [Number] id created actor handle
   createActor: (verts) ->
-
+    param.required verts
     verts = JSON.parse verts
 
     a = new AWGLActor verts
@@ -26,6 +28,9 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [Boolean] success
   setActorPosition: (x, y, id) ->
+    param.required x
+    param.required y
+    param.required id
 
     if (a = @_findActor(id)) != null
       a.setPosition new cp.v x, y
@@ -39,6 +44,7 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [Object] position
   getActorPosition: (id) ->
+    param.required id
 
     if (a = @_findActor(id)) != null
       pos = a.getPosition()
@@ -53,9 +59,11 @@ class AWGLActorInterface
   # @param [Boolean] radians defaults to false
   # @return [Boolean] success
   setActorRotation: (angle, id, radians) ->
+    param.required angle
+    param.required id
+    radians = param.optional radians, false
 
     if (a = @_findActor(id)) != null
-      if radians != true then radians = false
       a.setRotation angle, radians
       return true
 
@@ -67,11 +75,10 @@ class AWGLActorInterface
   # @param [Boolean] radians defaults to false
   # @return [Number] angle in degrees or radians
   getActorRotation: (id, radians) ->
+    param.required id
+    radians = param.optional radians, false
 
-    if (a = @_findActor(id)) != null
-      if radians != true then radians = false
-      return a.getRotation radians
-
+    if (a = @_findActor(id)) != null then return a.getRotation radians
     -1
 
   # Set actor color using handle, fails with false
@@ -82,6 +89,10 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [Boolean] success
   setActorColor: (r, g, b, id) ->
+    param.required r
+    param.required g
+    param.required b
+    param.required id
 
     if (a = @_findActor(id)) != null
       a.setColor new AWGLColor3 r, g, b
@@ -95,11 +106,14 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [AWGLColor3] col
   getActorColor: (id) ->
+    param.required id
+
     if (a = @_findActor(id)) != null
       r = a.getColor().getR()
       g = a.getColor().getB()
       b = a.getColor().getG()
       return "{ r: #{r}, g: #{g}, b: #{b} }"
+
     null
 
   # Creates the internal physics body, if one does not already exist
@@ -111,6 +125,11 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [Boolean] success
   enableActorPhysics: (mass, friction, elasticity, id) ->
+    param.required id
+    param.required mass
+    param.required friction
+    param.required elasticity
+
     if (a = @_findActor(id)) != null
       a.createPhysicsBody mass, friction, elasticity
       return true
@@ -122,6 +141,8 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [Boolean] success
   destroyPhysicsBody: (id) ->
+    param.required id
+
     if (a = @_findActor(id)) != null
       a.destroyPhysicsBody()
       true

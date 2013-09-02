@@ -156,7 +156,6 @@ class AWGLEngine
   # @return [Boolean] validity
   verifyPackage: (obj, cb) ->
 
-
     # Build definition of valid package.json
     validPackage =
       company: ""     # Owner

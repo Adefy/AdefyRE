@@ -14,6 +14,15 @@ class AWGLActor
   #
   # @param [Array<Object>] vertices <x, y>
   constructor: (@_vertices) ->
+    param.required @_vertices
+
+    @_gl = AWGLRenderer._gl
+
+    if @_gl == undefined or @_gl == null
+      throw new Error "GL context is required for actor initialization!"
+
+    if @_vertices.length < 6
+      throw new Error "At least 3 vertices make up an actor"
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
@@ -48,17 +57,6 @@ class AWGLActor
     @_sh_position = null
     @_sh_color = null
 
-    @_gl = AWGLRenderer._gl
-
-    if @_gl == undefined or @_gl == null
-      throw new Error "GL context is required for actor initialization!"
-
-    if @_vertices == undefined or @_vertices == null
-      throw new Error "Actor needs vertices!"
-
-    if @_vertices.length < 6
-      throw new Error "At least 3 vertices make up an actor"
-
     @_id = AWGLRenderer._nextID++
 
     AWGLRenderer.actors.push @
@@ -85,6 +83,7 @@ class AWGLActor
   #
   # @param [AWGLShader] shader
   setShader: (shader) ->
+    param.required shader
 
     # Ensure shader is built, and generate handles if not already done
     if shader.getProgram() == null
@@ -189,6 +188,7 @@ class AWGLActor
   #
   # @param [Object] gl gl context
   draw: (gl) ->
+    param.required gl
 
     if not @visible then return
 
@@ -220,6 +220,8 @@ class AWGLActor
   #
   # @param [Object] position x, y
   setPosition: (position) ->
+    param.required position
+
     if @_shape == null
       if position instanceof cp.v
         @_position = position
@@ -231,12 +233,13 @@ class AWGLActor
   # Set actor rotation, affects either the actor or the body directly if one
   # exists
   #
+  # @param [Number] rotation angle
   # @param [Number] radians true if angle is in radians
-  # @param [Number] rotation degrees
   setRotation: (rotation, radians) ->
+    param.required rotation
+    radians = param.optional radians, false
 
-    if radians != true
-      rotation = rotation * 0.0174532925
+    if radians == false then rotation = rotation * 0.0174532925
 
     if @_shape == null
       @_rotation = rotation
@@ -253,7 +256,8 @@ class AWGLActor
   # @param [Boolean] radians true to return in radians
   # @return [Number] angle rotation in degrees on z axis
   getRotation: (radians) ->
-    if radians != true
+    radians = param.optional radians, false
+    if radians == false
       return @_rotation * 57.2957795
     else
       return @_rotation
@@ -285,6 +289,7 @@ class AWGLActor
   #   @param [Integer] g green component
   #   @param [Integer] b blue component
   setColor: (colOrR, g, b) ->
+    param.required colOrR
 
     if @_color == undefined or @_color == null then @_color = new AWGLColor3
 
@@ -298,6 +303,9 @@ class AWGLActor
       ]
 
     else
+      param.required g
+      param.required b
+
       @_color.setR colOrR
       @_color.setG g
       @_color.setB b

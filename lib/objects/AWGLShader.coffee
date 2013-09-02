@@ -9,6 +9,11 @@ class AWGLShader
   # @param [Boolean] build if true, builds the shader now
   constructor: (@_vertSrc, @_fragSrc, @_gl, build) ->
 
+    param.required @_vertSrc
+    param.required @_fragSrc
+    param.required @_gl
+    build = param.optional build, false
+
     # errors generated errors are pushed into this
     @errors = []
 
@@ -16,15 +21,6 @@ class AWGLShader
     @_vertShader = null
     @_fragShader = null
     @_handles = null
-
-    if @_vertSrc == null or @_vertSrc == undefined
-      throw new Error "You need to supply a vertex shader!"
-
-    if @_fragSrc == null or @_fragSrc == undefined
-      throw new Error "You need to supply a fragment shader!"
-
-    if @_gl == null or @_gl == undefined
-      throw new Error "You need to supply a gl context!"
 
     if build == true
       _success = @build @_gl
@@ -37,6 +33,7 @@ class AWGLShader
   # @param [Object] gl gl object to build shaders with/into
   # @return [Boolean] success false implies an error stored in @errors
   build: (@_gl) ->
+    param.required @_gl
 
     gl = @_gl
     @errors = [] # Clear errors
