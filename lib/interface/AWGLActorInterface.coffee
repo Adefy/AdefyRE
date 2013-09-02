@@ -48,7 +48,10 @@ class AWGLActorInterface
 
     if (a = @_findActor(id)) != null
       pos = a.getPosition()
-      return "{ x: #{pos.x}, y: #{pos.y} }"
+
+      return JSON.stringify
+        x: pos.x
+        y: pos.y
 
     null
 
@@ -112,7 +115,10 @@ class AWGLActorInterface
       r = a.getColor().getR()
       g = a.getColor().getB()
       b = a.getColor().getG()
-      return "{ r: #{r}, g: #{g}, b: #{b} }"
+      return JSON.stringify
+        r: r
+        g: g
+        b: b
 
     null
 

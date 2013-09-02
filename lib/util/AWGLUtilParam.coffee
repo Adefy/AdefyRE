@@ -14,7 +14,7 @@ class AWGLUtilParam
   # @return [Object] p
   @required: (p, valid, canBeNull) ->
 
-    if p == null and canBeNull == true then p = undefined
+    if p == null and canBeNull != true then p = undefined
     if p == undefined then throw new Error "Required argument missing!"
 
     # Check for validity if required
@@ -26,7 +26,7 @@ class AWGLUtilParam
             isValid = true
             break
         if not isValid
-          throw new error "Required argument is not of a valid value!"
+          throw new Error "Required argument is not of a valid value!"
 
     # Ship
     p
@@ -41,7 +41,7 @@ class AWGLUtilParam
   # @return [Object] p
   @optional: (p, def, valid, canBeNull) ->
 
-    if p == null and canBeNull == true then p = undefined
+    if p == null and canBeNull != true then p = undefined
     if p == undefined then p = def
 
     # Check for validity if required
@@ -53,7 +53,7 @@ class AWGLUtilParam
             isValid = true
             break
         if not isValid
-          throw new error "Required argument is not of a valid value!"
+          throw new Error "Required argument is not of a valid value!"
 
     p
 

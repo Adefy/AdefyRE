@@ -62,6 +62,7 @@ class AWGLRenderer
   # @param [Number] height canvas height
   # @return [Boolean] success
   constructor: (canvasId, @_width, @_height) ->
+    canvasId = param.optional canvasId, ""
 
     @_defaultShader = null  # Default shader used for drawing actors
     @_canvas = null         # HTML <canvas> element

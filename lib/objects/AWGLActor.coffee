@@ -105,6 +105,10 @@ class AWGLActor
   # @param [Number] elasticity 0.0 - 1.0
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
+    # Start the world stepping if not already doing so
+    if AWGLPhysics.getWorld() == null or AWGLPhysics.getWorld() == undefined
+      AWGLPhysics.startStepping()
+
     if @_shape == not null then return
 
     if AWGLPhysics.bodyCount == 0 then AWGLPhysics.startStepping()
@@ -112,10 +116,8 @@ class AWGLActor
     AWGLPhysics.bodyCount++
 
     # Sanity checks
-    if @_mass == undefined
-      @_mass = AWGLActor.defaultDensity * 100
-    else
-      if @_mass < 0 then @_mass = 0
+    if @_mass == undefined or @_mass == null then @_mass = 0
+    if @_mass < 0 then @_mass = 0
 
     if @_friction == undefined
       @_friction = AWGLActor.defaultFriction
@@ -154,6 +156,7 @@ class AWGLActor
 
     if @_mass == 0
       @_shape = space.addShape new cp.PolyShape space.staticBody, verts, pos
+      @_body = null
     else
 
       moment = cp.momentForPoly @_mass, verts, AWGLActor._nullV
@@ -173,16 +176,16 @@ class AWGLActor
 
     AWGLPhysics.bodyCount--
 
-    if AWGLPhysics.bodyCount == 0
-      AWGLPhysics.stopStepping()
-    else if AWGLPhysics.bodyCount < 0
-      throw new Error "Body count is negative!"
-
     AWGLPhysics.getWorld().removeShape @_shape
     AWGLPhysics.getWorld().removeBody @_body
 
     @_shape = null
     @_body = null
+
+    if AWGLPhysics.bodyCount == 0
+      AWGLPhysics.stopStepping()
+    else if AWGLPhysics.bodyCount < 0
+      throw new Error "Body count is negative!"
 
   # Renders the actor
   #

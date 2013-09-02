@@ -16,6 +16,7 @@ class AWGLAjax
   # @param [Method] cb
   # @return [Boolean] executed false if queued
   r: (url, cb) ->
+    param.required url
 
     me = @
 
@@ -58,4 +59,4 @@ class AWGLAjax
         me.busy = false
 
       # Pass result to intended callback
-      cb res
+      if typeof cb == "function" then cb res
