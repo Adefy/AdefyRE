@@ -35,24 +35,6 @@ describe "AWGLRenderer", ->
       expect(screenVec.x).to.equal (10 * AWGLRenderer._PPM)
       expect(screenVec.y).to.equal (10 * AWGLRenderer._PPM)
 
-  describe "clear color", ->
-
-    it "should default to black", ->
-      expect(instance._clearColor.getR false).to.equal 0
-      expect(instance._clearColor.getG false).to.equal 0
-      expect(instance._clearColor.getB false).to.equal 0
-
-    it "should perform sanity checks on modification", ->
-      instance.setClearColor 1244, 2354, 35892
-      expect(instance._clearColor.getR false).to.equal 255
-      expect(instance._clearColor.getG false).to.equal 255
-      expect(instance._clearColor.getB false).to.equal 255
-
-      instance.setClearColor 124, 124, 124
-      expect(instance._clearColor.getR false).to.equal 124
-      expect(instance._clearColor.getG false).to.equal 124
-      expect(instance._clearColor.getB false).to.equal 124
-
   #  This fails in phantomjs, and wgl dependent tests don't execute
   try
     _c = document.getElementById "awgl_canvas"
@@ -68,6 +50,24 @@ describe "AWGLRenderer", ->
 
       it "should initialize without error", ->
         expect(instance.initError).to.not.exist
+
+      describe "clear color", ->
+
+        it "should default to black", ->
+          expect(instance._clearColor.getR false).to.equal 0
+          expect(instance._clearColor.getG false).to.equal 0
+          expect(instance._clearColor.getB false).to.equal 0
+
+        it "should perform sanity checks on modification", ->
+          instance.setClearColor 1244, 2354, 35892
+          expect(instance._clearColor.getR false).to.equal 255
+          expect(instance._clearColor.getG false).to.equal 255
+          expect(instance._clearColor.getB false).to.equal 255
+
+          instance.setClearColor 124, 124, 124
+          expect(instance._clearColor.getR false).to.equal 124
+          expect(instance._clearColor.getG false).to.equal 124
+          expect(instance._clearColor.getB false).to.equal 124
 
       describe "gl context", ->
 

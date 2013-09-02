@@ -29,10 +29,10 @@ module.exports = (grunt) ->
     "#{libDir}/**/*.coffee"
   ]
   __testFiles = {}
-  __testFiles["#{buildDir}/test/spec.js"] = [
-    "#{testDir}/spec/*.coffee"
-    "#{testDir}/spec/**/*.coffee"
-  ]
+  __testFiles["#{buildDir}/test/spec.js"] = [ "#{buildDir}/test/spec.coffee" ]
+
+  __testOut = {}
+  __testOut["#{buildDir}/test/spec.coffee"] = ["#{testDir}/tests.coffee"]
 
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"
@@ -62,6 +62,22 @@ module.exports = (grunt) ->
     concat_in_order:
       lib:
         files: __awglOut
+        options:
+          extractRequired: (path, content) ->
+
+            workingDir = path.split "/"
+            workingDir.pop()
+            workingDir = workingDir.join().replace /,/g, "/"
+
+            deps = @getMatches /\#\s\@depend\s(.*\.coffee)/g, content
+            deps.forEach (dep, i) ->
+              deps[i] = "#{workingDir}/#{dep}"
+
+            return deps
+          extractDeclared: (path) -> [path]
+          onlyConcatRequiredFiles: true
+      tests:
+        files: __testOut
         options:
           extractRequired: (path, content) ->
 
