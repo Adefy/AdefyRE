@@ -10,7 +10,7 @@ class AWGLPhysics
   # @property [Number] time to step for
   @frameTime: 1.0 / 60.0
 
-  @_gravity: null
+  @_gravity: new cp.v 0, -10
   @_stepIntervalId: null
   @_world: null
 
@@ -26,7 +26,6 @@ class AWGLPhysics
   @startStepping: ->
 
     if @_stepIntervalId != null then return
-    @_gravity = new cp.v 0, -10
 
     @_world = new cp.Space
     @_world.gravity = @_gravity
@@ -69,8 +68,10 @@ class AWGLPhysics
   # @param [cp.v] gravity
   @setGravity: (v) ->
 
-    if v !instanceof cp.v
+    if v !instanceof cp.Vect
       throw new Error "You need to set space gravity using cp.v!"
 
     @_gravity = v
-    @_world.gravity = v
+
+    if @_world != null and @_world != undefined
+      @_world.gravity = v
