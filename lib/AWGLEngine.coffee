@@ -38,8 +38,10 @@ class AWGLEngine
   # @param [Number] logLevel level to start AWGLLog at, defaults to 4
   # @param [Method] cb callback to execute when finished initializing
   # @param [String] canvas optional canvas selector to initalize the renderer
+  # @param [Number] width optional width to pass to the canvas
+  # @param [Number] height optional height to pass to the canvas
   # @return [Boolean] success
-  constructor: (@url, logLevel, cb, canvas) ->
+  constructor: (@url, logLevel, cb, canvas, width, height) ->
 
     # Treat null url as undefined
     if @url == null then @url = undefined
@@ -104,7 +106,7 @@ class AWGLEngine
         validStructure = me.verifyPackage me.package, (sourcesObj) ->
 
           AWGLLog.info "...downloaded. Creating Renderer"
-          me._renderer = new AWGLRenderer canvas
+          me._renderer = new AWGLRenderer canvas, width, height
 
           ##
           # At this point, we have a renderer instance ready to go, and we can
@@ -137,7 +139,7 @@ class AWGLEngine
 
       # No url, just start things up and call the cb
       # Note that we do NOT start the renderer
-      @_renderer = new AWGLRenderer canvas
+      @_renderer = new AWGLRenderer canvas, width, height
       window.AdefyGLI = new AWGLInterface
 
       AWGLLog.info "Engine initialized, executing cb"
