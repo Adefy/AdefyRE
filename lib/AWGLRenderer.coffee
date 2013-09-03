@@ -317,7 +317,7 @@ class AWGLRenderer
     gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    for a, i in AWGLRenderer.actors
+    for a in AWGLRenderer.actors
 
       if @_pickRenderRequested
 
@@ -325,8 +325,8 @@ class AWGLRenderer
         # of the actor. Blue key is 248
         _savedColor = a.getColor()
 
-        _id = i - (Math.floor(i / 255) * 255)
-        _idSector = Math.floor(i / 255)
+        _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
+        _idSector = Math.floor(a.getId() / 255)
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
