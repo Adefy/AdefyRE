@@ -261,3 +261,13 @@ class AWGLEngine
       AWGLLog.warn "Can't request a pick render, renderer not instantiated!"
     else
       @_renderer.requestPickingRender buffer, cb
+
+  # Get our renderer's gl object
+  #
+  # @return [Object] gl
+  getGL: ->
+    if AWGLRenderer._gl == null
+      AWGLLog.warn "No gl object to get, render not instantiated!"
+      return null
+    else
+      return AWGLRenderer._gl
