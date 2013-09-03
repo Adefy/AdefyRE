@@ -9,12 +9,19 @@ class AWGLColor3
   # @param [Number] r red component
   # @param [Number] g green component
   # @param [Number] b blue component
-  constructor: (r, g, b) ->
+  constructor: (colOrR, g, b) ->
+    colOrR = param.optional colOrR, 0
+    g = param.optional g, 0
+    b = param.optional b, 0
 
-    # @todo Check to see if this is necessary
-    @_r = param.optional r, 0
-    @_g = param.optional g, 0
-    @_b = param.optional b, 0
+    if colOrR instanceof AWGLColor3
+      @_r = colOrR.getR()
+      @_g = colOrR.getG()
+      @_b = colOrR.getB()
+    else
+      @setR colOrR
+      @setG g
+      @setB b
 
   # Returns the red component as either an int or float
   #

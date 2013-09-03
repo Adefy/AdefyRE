@@ -251,3 +251,23 @@ class AWGLEngine
       return -1
     else
       return @_renderer.getHeight()
+
+  # Request a pick render, passed straight to the renderer
+  #
+  # @param [FrameBuffer] buffer
+  # @param [Method] cb cb to call post-render
+  requestPickingRender: (buffer, cb) ->
+    if @_renderer == null or @_renderer == undefined
+      AWGLLog.warn "Can't request a pick render, renderer not instantiated!"
+    else
+      @_renderer.requestPickingRender buffer, cb
+
+  # Get our renderer's gl object
+  #
+  # @return [Object] gl
+  getGL: ->
+    if AWGLRenderer._gl == null
+      AWGLLog.warn "No gl object to get, render not instantiated!"
+      return null
+    else
+      return AWGLRenderer._gl
