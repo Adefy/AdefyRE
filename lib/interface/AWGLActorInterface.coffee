@@ -36,6 +36,22 @@ class AWGLActorInterface
 
     false
 
+  # Clears stored information about the actor in question. This includes the
+  # rendered and physics bodies
+  #
+  # @param [Numer] id actor id
+  # @return [Boolean] success
+  destroyActor: (id) ->
+    param.required id
+
+    for a, i in AWGLRenderer.actors
+      if a.getId() == id
+        a.destroyPhysicsBody()
+        AWGLRenderer.splice i, 1
+        a = undefined
+
+    false
+
   # Supply an alternate set of vertices for the physics body of an actor. This
   # is necessary for triangle-fan shapes, since the center point must be
   # removed when building the physics body. If a physics body already exists,
