@@ -278,7 +278,7 @@ class AWGLActor
   # Get color
   #
   # @return [AWGLColor3] color
-  getColor: -> @_color
+  getColor: -> new AWGLColor3 @_color
 
   # Set color
   #
