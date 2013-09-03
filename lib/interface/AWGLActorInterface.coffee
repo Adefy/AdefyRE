@@ -21,6 +21,56 @@ class AWGLActorInterface
     a = new AWGLActor verts
     return a.getId()
 
+  # Refresh actor vertices, passed in as a JSON representation of a flat array
+  #
+  # @param [String] verts
+  # @param [Number] id actor id
+  # @return [Boolean] success
+  updateVertices: (verts, id) ->
+    param.required verts
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      a.updateVertices JSON.parse verts
+      return true
+
+    false
+
+  # Supply an alternate set of vertices for the physics body of an actor. This
+  # is necessary for triangle-fan shapes, since the center point must be
+  # removed when building the physics body. If a physics body already exists,
+  # this rebuilds it!
+  #
+  # @param [String] verts
+  # @param [Number] id actor id
+  # @return [Boolean] success
+  setPhysicsVertices: (verts, id) ->
+    param.required verts
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      a.setPhysicsVertices JSON.parse verts
+      return true
+
+    false
+
+  # Change actors' render mode, currently only options are avaliable
+  #   1 == TRIANGLE_STRIP
+  #   2 == TRIANGLE_FAN
+  #
+  # @param [Number] mode
+  # @param [Number] id actor id
+  # @return [Boolean] success
+  setRenderMode: (mode, id) ->
+    mode = param.required mode, [1, 2]
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      a.setRenderMode mode
+      return true
+
+    false
+
   # Set actor position using handle, fails with false
   #
   # @param [Number] x x coordinate

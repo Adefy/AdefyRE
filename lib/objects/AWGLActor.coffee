@@ -12,17 +12,13 @@ class AWGLActor
   # Adds the actor to the renderer actor list, gets a unique id from the
   # renderer, and builds our vert buffer
   #
-  # @param [Array<Object>] vertices <x, y>
-  constructor: (@_vertices) ->
-    param.required @_vertices
+  # @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
+  constructor: (verts) ->
+    param.required verts
 
     @_gl = AWGLRenderer._gl
-
     if @_gl == undefined or @_gl == null
       throw new Error "GL context is required for actor initialization!"
-
-    if @_vertices.length < 6
-      throw new Error "At least 3 vertices make up an actor"
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
@@ -47,6 +43,11 @@ class AWGLActor
     @_mass = null
     @_elasticity = null
 
+    # Our actual vertex lists. Note that we will optionally use a different
+    # set of vertices for the physical body!
+    @_vertices = []
+    @_psyxVertices = []
+
     # Vertice containers
     @_vertBuffer = null
     @_vertBufferFloats = null # Float32Array
@@ -57,16 +58,17 @@ class AWGLActor
     @_sh_position = null
     @_sh_color = null
 
+    # Render modes decide how the vertices are treated.
+    #   1 == TRIANGLE_STRIP
+    #   2 == TRIANGLE_FAN
+    @_renderMode = 1
+
     @_id = AWGLRenderer._nextID++
 
     AWGLRenderer.actors.push @
 
-    # Initialize our buffer
-    @_vertBuffer = @_gl.createBuffer()
-    @_vertBufferFloats = new Float32Array(@_vertices)
-
-    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
-    @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
+    # Sets up our vert buffer, also validates the vertex array (length)
+    @updateVertices verts
 
     @setColor new AWGLColor3 255, 255, 255
 
@@ -135,11 +137,16 @@ class AWGLActor
     verts = []
     vertIndex = 0
 
-    for i in [0...@_vertices.length - 1] by 2
+    # If we have alternate vertices, use those, otherwise go with the std ones
+    origVerts = null
+    if @_psyxVertices.length > 6 then origVerts = @_psyxVertices
+    else origVerts = @_vertices
+
+    for i in [0...origVerts.length - 1] by 2
 
       # Actual coord system conversion
-      verts.push @_vertices[i] / AWGLRenderer.getPPM()
-      verts.push @_vertices[i + 1] / AWGLRenderer.getPPM()
+      verts.push origVerts[i] / AWGLRenderer.getPPM()
+      verts.push origVerts[i + 1] / AWGLRenderer.getPPM()
 
       # Rotate vert if mass is 0, since we can't set static body angle
       if @_mass == 0
@@ -147,8 +154,8 @@ class AWGLActor
         y = verts[verts.length - 1]
         a = @_rotation
 
-        verts[verts.length - 2] = (x * Math.cos(a)) - (y * Math.sin(a))
-        verts[verts.length - 1] = (x * Math.sin(a)) + (y * Math.cos(a))
+        verts[verts.length - 2] = x * Math.cos(a) - (y * Math.sin(a))
+        verts[verts.length - 1] = x * Math.sin(a) + (y * Math.cos(a))
 
     # Grab world handle to shorten future calls
     space = AWGLPhysics.getWorld()
@@ -187,6 +194,34 @@ class AWGLActor
     else if AWGLPhysics.bodyCount < 0
       throw new Error "Body count is negative!"
 
+  # Update our vertices, causing a rebuild of the physics body, if it doesn't
+  # have its' own set of verts. Note that for large actors this is expensive.
+  #
+  # @param [Array<Number>] verts flat array of vertices
+  updateVertices: (verts) ->
+    @_vertices = param.required verts
+
+    if @_vertices.length < 6
+      throw new Error "At least 3 vertices make up an actor"
+
+    @_vertBuffer = @_gl.createBuffer()
+    @_vertBufferFloats = new Float32Array(@_vertices)
+
+    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
+    @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
+    @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+
+  # Set an alternate vertex array for our physics object. Note that this also
+  # triggers a rebuild! If less than 6 vertices are provided, the normal
+  # set of vertices is used
+  #
+  # @param [Array<Number>] verts flat array of vertices
+  setPhysicsVertices: (verts) ->
+    @_psyxVertices = param.required verts
+
+    @destroyPhysicsBody()
+    @createPhysicsBody @_mass, @_friction, @_elasticity
+
   # Renders the actor
   #
   # @param [Object] gl gl context
@@ -216,7 +251,18 @@ class AWGLActor
     gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
     gl.uniformMatrix4fv @_sh_modelview, false, flatMV
 
-    gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
+    if @_renderMode == 1
+      gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
+    else if @_renderMode == 2
+      gl.drawArrays gl.TRIANGLE_FAN, 0, @_vertices.length / 2
+    else throw new Error "Invalid render mode! #{@_renderMode}"
+
+  # Set actor render mode, decides how the vertices are perceived
+  #   1 == TRIANGLE_STRIP
+  #   2 == TRIANGLE_FAN
+  #
+  # @paran [Number] mode
+  setRenderMode: (mode) -> @_renderMode = param.required mode, [1, 2]
 
   # Set actor position, effects either the actor or the body directly if one
   # exists
