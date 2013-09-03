@@ -298,6 +298,11 @@ class AWGLRenderer
   # Draws a frame
   render: ->
 
+    gl = AWGLRenderer._gl # Code asthetics
+
+    # Probably unecessary, but better to be safe
+    if gl == undefined or gl == null then return
+
     # Render to an off-screen buffer for screen picking if requested to do so.
     # The resulting render is used to pick visible objects. We render in a
     # special manner, by overriding object colors. Every object is rendered
@@ -306,12 +311,7 @@ class AWGLRenderer
     #
     # Since picking relies upon predictable colors, we render without textures
     if @_pickRenderRequested
-      gl.bindFrameBuffer gl.FRAMEBUFFER, @_pickRenderBuff
-
-    gl = AWGLRenderer._gl # Code asthetics
-
-    # Probably unecessary, but better to be safe
-    if gl == undefined or gl == null then return
+      gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     # Clear the screen
     gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
@@ -330,9 +330,8 @@ class AWGLRenderer
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
-
         a.draw gl
-        a.setcolor _savedColor
+        a.setColor _savedColor
 
       else
         a.draw gl
@@ -341,13 +340,16 @@ class AWGLRenderer
     # actual screen
     if @_pickRenderRequested
 
+      # Call cb
+      @_pickRenderCB()
+
       # Unset vars
       @_pickRenderRequested = false
       @_pickRenderBuff = null
       @_pickRenderCB = null
 
       # Switch back to normal framebuffer, re-render
-      gl.bindFrameBuffer gl.FRAMEBUFFER, null
+      gl.bindFramebuffer gl.FRAMEBUFFER, null
       @render()
 
   # Returns a unique id, used by actors
