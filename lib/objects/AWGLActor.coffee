@@ -178,13 +178,13 @@ class AWGLActor
 
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
-
+    if AWGLPhysics.bodyCount == 0 then return
     if @_shape == null then return
 
     AWGLPhysics.bodyCount--
 
     AWGLPhysics.getWorld().removeShape @_shape
-    AWGLPhysics.getWorld().removeBody @_body
+    if @_body then AWGLPhysics.getWorld().removeBody @_body
 
     @_shape = null
     @_body = null
@@ -219,8 +219,9 @@ class AWGLActor
   setPhysicsVertices: (verts) ->
     @_psyxVertices = param.required verts
 
-    @destroyPhysicsBody()
-    @createPhysicsBody @_mass, @_friction, @_elasticity
+    if @_body != null
+      @destroyPhysicsBody()
+      @createPhysicsBody @_mass, @_friction, @_elasticity
 
   # Renders the actor
   #

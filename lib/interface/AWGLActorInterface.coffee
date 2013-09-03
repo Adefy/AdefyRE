@@ -47,8 +47,9 @@ class AWGLActorInterface
     for a, i in AWGLRenderer.actors
       if a.getId() == id
         a.destroyPhysicsBody()
-        AWGLRenderer.splice i, 1
+        AWGLRenderer.actors.splice i, 1
         a = undefined
+        return true
 
     false
 
