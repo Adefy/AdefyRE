@@ -68,6 +68,12 @@ class AWGLRenderer
     @_canvas = null         # HTML <canvas> element
     @_ctx = null            # Drawing context
 
+    @_pickRenderRequested = false   # When true, triggers a pick render
+
+    # Pick render parameters
+    @_pickRenderBuff = null
+    @_pickRenderCB = null
+
     # defined if there was an error during initialization
     @initError = undefined
 
@@ -273,8 +279,34 @@ class AWGLRenderer
     else
       AWGLLog.error "Can't set clear color, AWGLRenderer._gl not valid!"
 
+  # Request a frame to be rendered for scene picking.
+  #
+  # @param [FrameBuffer] buffer
+  # @param [Method] cb cb to call post-render
+  requestPickingRender: (buffer, cb) ->
+    param.required buffer
+    param.required cb
+
+    if @_pickRenderRequested
+      AWGLLog.warn "Pick render already requested! No request queue"
+      return
+
+    @_pickRenderBuff = buffer
+    @_pickRenderCB = cb
+    @_pickRenderRequested = true
+
   # Draws a frame
   render: ->
+
+    # Render to an off-screen buffer for screen picking if requested to do so.
+    # The resulting render is used to pick visible objects. We render in a
+    # special manner, by overriding object colors. Every object is rendered
+    # with a special blue component value, followed by red and green values
+    # denoting its position in our actor array. Not that this is NOT its' id!
+    #
+    # Since picking relies upon predictable colors, we render without textures
+    if @_pickRenderRequested
+      gl.bindFrameBuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     gl = AWGLRenderer._gl # Code asthetics
 
@@ -285,8 +317,38 @@ class AWGLRenderer
     gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    for a in AWGLRenderer.actors
-      a.draw gl
+    for a, i in AWGLRenderer.actors
+
+      if @_pickRenderRequested
+
+        # If rendering for picking, we need to temporarily change the color
+        # of the actor. Blue key is 248
+        _savedColor = a.getColor()
+
+        _id = i - (Math.floor(i / 255) * 255)
+        _idSector = Math.floor(i / 255)
+
+        # Recover id with (_idSector * 255) + _id
+        a.setColor _id, _idSector, 248
+
+        a.draw gl
+        a.setcolor _savedColor
+
+      else
+        a.draw gl
+
+    # Switch back to a normal rendering mode, and immediately re-render to the
+    # actual screen
+    if @_pickRenderRequested
+
+      # Unset vars
+      @_pickRenderRequested = false
+      @_pickRenderBuff = null
+      @_pickRenderCB = null
+
+      # Switch back to normal framebuffer, re-render
+      gl.bindFrameBuffer gl.FRAMEBUFFER, null
+      @render()
 
   # Returns a unique id, used by actors
   # @return [Number] id unique id
