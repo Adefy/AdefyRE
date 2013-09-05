@@ -179,13 +179,10 @@ class AWGLActorInterface
     param.required id
 
     if (a = @_findActor(id)) != null
-      r = a.getColor().getR()
-      g = a.getColor().getB()
-      b = a.getColor().getG()
       return JSON.stringify
-        r: r
-        g: g
-        b: b
+        r: a.getColor().getR()
+        g: a.getColor().getG()
+        b: a.getColor().getB()
 
     null
 
