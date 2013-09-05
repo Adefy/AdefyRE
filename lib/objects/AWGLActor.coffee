@@ -103,8 +103,8 @@ class AWGLActor
   # Creates the internal physics body, if one does not already exist
   #
   # @param [Number] mass 0.0 - unbound
-  # @param [Number] friction 0.0 - 1.0
-  # @param [Number] elasticity 0.0 - 1.0
+  # @param [Number] friction 0.0 - unbound
+  # @param [Number] elasticity 0.0 - unbound
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
     # Start the world stepping if not already doing so
@@ -123,15 +123,11 @@ class AWGLActor
 
     if @_friction == undefined
       @_friction = AWGLActor.defaultFriction
-    else
-      if @_friction < 0 then @_friction = 0
-      if @_friction > 1 then @_friction = 1
+    else if @_friction < 0 then @_friction = 0
 
     if @_elasticity == undefined
       @_elasticity = AWGLActor.defaultElasticity
-    else
-      if @_elasticity < 0 then @_elasticity = 0
-      if @_elasticity > 1 then @_elasticity = 1
+    else if @_elasticity < 0 then @_elasticity = 0
 
     # Convert vertices
     verts = []
@@ -175,6 +171,9 @@ class AWGLActor
 
     @_shape.setFriction @_friction
     @_shape.setElasticity @_elasticity
+
+    console.log "set shape friction to #{@_friction}"
+    console.log "set shape elasticity to #{@_elasticity}"
 
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
