@@ -172,9 +172,6 @@ class AWGLActor
     @_shape.setFriction @_friction
     @_shape.setElasticity @_elasticity
 
-    console.log "set shape friction to #{@_friction}"
-    console.log "set shape elasticity to #{@_elasticity}"
-
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
     if AWGLPhysics.bodyCount == 0 then return
