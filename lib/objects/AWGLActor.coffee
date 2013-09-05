@@ -276,7 +276,7 @@ class AWGLActor
       if position instanceof cp.v
         @_position = position
       else
-        @_position = new cp.v position.x, position.y
+        @_position = new cp.v Number(position.x), Number(position.y)
     else if @_body != null
       @_body.setPos AWGLRenderer.screenToWorld position
 
@@ -289,7 +289,7 @@ class AWGLActor
     param.required rotation
     radians = param.optional radians, false
 
-    if radians == false then rotation = rotation * 0.0174532925
+    if radians == false then rotation = Number(rotation) * 0.0174532925
 
     if @_shape == null
       @_rotation = rotation
@@ -356,9 +356,9 @@ class AWGLActor
       param.required g
       param.required b
 
-      @_color.setR colOrR
-      @_color.setG g
-      @_color.setB b
+      @_color.setR Number(colOrR)
+      @_color.setG Number(g)
+      @_color.setB Number(b)
 
       @_colArray = [
         @_color.getR true

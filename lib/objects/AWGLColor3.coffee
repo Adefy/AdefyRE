@@ -51,6 +51,7 @@ class AWGLColor3
   #
   # @param [Number] c
   setR: (c) ->
+    c = Number(c)
     if c < 0 then c = 0
     if c > 255 then c = 255
     @_r = c
@@ -59,6 +60,7 @@ class AWGLColor3
   #
   # @param [Number] c
   setG: (c) ->
+    c = Number(c)
     if c < 0 then c = 0
     if c > 255 then c = 255
     @_g = c
@@ -67,6 +69,7 @@ class AWGLColor3
   #
   # @param [Number] c
   setB: (c) ->
+    c = Number(c)
     if c < 0 then c = 0
     if c > 255 then c = 255
     @_b = c
