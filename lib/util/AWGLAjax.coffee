@@ -1,6 +1,7 @@
 # AJAX utility class, wrapper around microAjax that adds queueing
 class AWGLAjax
 
+  # Set up an empty queue
   constructor: ->
 
     # true if currently processing a request

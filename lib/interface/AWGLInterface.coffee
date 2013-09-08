@@ -3,6 +3,7 @@
 # @depend AWGLActorInterface.coffee
 class AWGLInterface
 
+  # Instantiates sub-interfaces
   constructor: -> @_Actors = new AWGLActorInterface()
 
   # Sub-interfaces are broken out through accessors to prevent modification

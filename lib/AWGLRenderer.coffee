@@ -9,8 +9,11 @@ class AWGLRenderer
 
   @_nextID: 0
 
-  @_gl: null        # GL context
-  @_PPM: 128        # Physics pixel-per-meter ratio
+  # GL Context
+  @_gl: null
+
+  # Physics pixel-per-meter ratio
+  @_PPM: 128
 
   # Returns PPM ratio
   # @return [Number] ppm pixels-per-meter
