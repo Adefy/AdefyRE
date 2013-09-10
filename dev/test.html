@@ -27,23 +27,30 @@
       ];
 
       var groundBox = [
-        -200, -20,
-        -200,  20,
-         200,  20,
-         200, -20,
-        -200, -20
+        -50, -50,
+        -50,  50,
+         50,  50,
+         50, -50,
+        -50, -50
       ];
 
       var box = new AWGLActor(fallBox);
-      box.setPosition({ x: 200, y: 400 });
-      box.setRotation(60);
+      box.setPosition({ x: 0, y: 0 });
+      box.setRotation(0);
       box.setColor(255, 0, 0);
-      box.createPhysicsBody(10, 0.3, 0.8);
+      //box.createPhysicsBody(10, 0.3, 0.8);
+      startPos = { x: 0, y: 0 };
+      endPos = { x: 400, y: 400 };
+      degree = 2;
+      control = [{ x: 0.55, y: 0.12}, { x: 0.8, y: 0.12}];
+      duration = 5;
+      var animation = new AWGLAnimation(box, startPos, endPos, degree, control, duration);
+      animation.animate();
 
       var ground = new AWGLActor(groundBox);
-      ground.setPosition({ x: 300, y: 100 });
-      ground.setRotation(-5);
-      ground.createPhysicsBody(0, 0.2, 0.8);
+      ground.setPosition({ x: 400, y: 400 });
+      ground.setRotation(0);
+      //ground.createPhysicsBody(0, 0.2, 0.8);
 
     });
 

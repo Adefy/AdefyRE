@@ -3,64 +3,117 @@
 # Class to handle animations
 class AWGLAnimation
 
-  _endPostion: null
-  _updateFreq: 0
+  constructor: (@actor, startPos, endPos, degree, ctrlPoints, duration) ->
+    param.required @actor
 
-  # Constructor should never be called, AWGLAnimation only used as static
-  constructor: -> throw new Error "AWGLAnimation constructor called"
+    @bezOpt = {}
+    @bezOpt.startPos = param.required startPos
+    @bezOpt.endPos = param.required endPos
+    @bezOpt.degree = param.required degree, [0, 1, 2]
+    param.required duration
 
-  # Pass the Actor instance, two X, Y end coordinates and
-  # the update frequency in frames and the mode
-  #
-  # @param [Actor] actor Actor instance to animate
-  # @param [Number] endX X coordinated when animation finished
-  # @param [Number] endY Y coordinated when animation finished
-  # @param [Number] updateFreq update once every updateFreq frames
-  # @param [String] mode string for predefined animation pattern
-  animate: (actor, endX, endY, updateFreq, mode) ->
-    param.required actor
-    param.required endX
-    param.required endY
-    param.required updateFreq
-    param.required mode
+    if degree > 0
+      param.required ctrlPoints
 
-    @_endPostion = new cp.v endX, endY
-    @_updateFreq = updateFreq * (1.0/60.0) * 1000
+      if degree == 1
+        param.required ctrlPoints[0].x
+        param.required ctrlPoints[0].y
 
-    # Check if we need to add or substract when we move the actor
-    if actor.getPosition().x > endX then _moveX = -1
-    else  _moveX = 1
+      if degree == 2
+        param.required ctrlPoints[1].x
+        param.required ctrlPoints[1].y
 
-    if actor.getPosition().y > endY then _moveY = -1
-    else  _moveY = 1
+    # calculate how much to increment t based on duration
+    # this could be me misunderstanding something-> to be checked
+    @incr = 1/(duration * 1000/16.667)
 
-    # Diagonal movement means we refresh X and Y at the same time
-    _diagonal: ->
-      actor.setPosition x, actor.getPosition().x + _moveX
-      actor.setPosition y, actor.getPosition().y + _moveY
+    @temp = 0
+    @_intervalID = null
 
-    # Horizontal movement means we refresh X until end point then Y
-    _horizontal: ->
-      if actor.getPosition().x != endX
-        actor.setPosition x, actor.getPosition().x + _moveX
-      else
-        actor.setPosition y, actor.getPosition().y + _moveY
+    @bezOpt.ctrl = ctrlPoints
 
-    # Vertical movement means we refresh Y until end point then X
-    _vertical: ->
-      if actor.getPosition().y != endY
-        actor.setPosition y, actor.getPosition().y + _moveY
-      else
-        actor.setPosition x, actor.getPosition().x + _moveX
+  update: (t) ->
+    param.required t
 
-    _updateCoord: ->
-      if actor.getPosition == @_endPostion
-        if @_intervalID != null
-          clearInterval @_intervalID
-          @_intervalID = null
-      else
-        if mode == "diagonal" then _diagonal()
-        if mode == "horizontal" then _horizontal()
-        if mode == "vertical" then _vertical()
+    if @temp + @incr <= 1.0
+      @temp += @incr
+    else
+      t = 1
+      clearInterval @_intervalID
 
-    @_intervalID = setInterval _updateCoord(actor), @_updateFreq
+    # If buffering is enabled, buffer!
+    # if @_buffer
+    #  if @_bufferData[String(t)] != undefined
+    #    return @_bufferData[String(t)]
+
+    # Throw an error if t is out of bounds. We could just cap it, but it should
+    # never be provided out of bounds. If it is, something is wrong with the
+    # code calling us
+    if t > 1 or t < 0
+      clearInterval @_intervalID
+      throw new Error "t out of bounds! #{t}"
+
+    # 0th degree, linear interpolation
+    if @bezOpt.degree == 0
+
+      val =
+        x: @bezOpt.startPos.x + ((@bezOpt.endPos.x \
+          - @bezOpt.startPos.x) * t)
+        y: @bezOpt.startPos.y + ((@bezOpt.endPos.y \
+          - @bezOpt.startPos.y) * t)
+
+      # Buffer if requested
+      #if @_buffer then @_bufferData[String(t)] = val
+
+    # 1st degree, quadratic
+    else if @bezOpt.degree == 1
+
+      # Speed things up by pre-calculating some elements
+      _Mt = 1 - t
+      _Mt2 = _Mt * _Mt
+      _t2 = t * t
+
+      # [x, y] = [(1 - t)^2]P0 + 2(1 - t)tP1 + (t^2)P2
+      val =
+        x: (_Mt2 * @bezOpt.startPos.x) + \
+        (2 * _Mt * t * @bezOpt.ctrl[0].x) \
+        + _t2 * @bezOpt.endPos.x
+        y: (_Mt2 * @bezOpt.startPos.y) + \
+        (2 * _Mt * t * @bezOpt.ctrl[0].y) \
+        + _t2 * @bezOpt.endPos.y
+
+      # Buffer if requested
+      # if @_buffer then @_bufferData[String(t)] = val
+
+    # 2nd degree, cubic
+    else if @bezOpt.degree == 2
+
+      # As above, minimal optimization
+      _Mt = 1 - t
+      _Mt2 = _Mt * _Mt
+      _Mt3 = _Mt2 * _Mt
+      _t2 = t * t
+      _t3 = _t2 * t
+
+      # [x, y] = [(1 - t)^3]P0 + 3[(1 - t)^2]P1 + 3(1 - t)(t^2)P2 + (t^3)P3
+      val =
+        x: (_Mt3 * @bezOpt.startPos.x) + (3 * _Mt2 * t * @bezOpt.ctrl[0].x) \
+           + (3 * _Mt * _t2 + @bezOpt.ctrl[1].x) + (_t3 * @bezOpt.endPos.x)
+        y: (_Mt3 * @bezOpt.startPos.y) + (3 * _Mt2 * t * @bezOpt.ctrl[0].y) \
+           + (3 * _Mt * _t2 + @bezOpt.ctrl[1].y) + (_t3 * @bezOpt.endPos.y)
+
+      # Buffer if requested
+      # if @_buffer then @_bufferData[String(t)] = val
+
+    else
+      clearInterval @_intervalID
+      throw new Error "Invalid degree, can't evaluate (#{@bezOpt.degree})"
+
+    @actor.setPosition val
+
+  animate: ->
+    me = @
+
+    @_intervalID = setInterval ->
+      me.update me.temp
+    , 16.667
