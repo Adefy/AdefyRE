@@ -3,21 +3,19 @@
 # Class to handle animations
 class AWGLAnimation
 
-  constructor: (@actor, startPos, endPos, degree, ctrlPoints, duration) ->
+  constructor: (@actor, startVal, endVal, degree, ctrlPoints, duration) ->
     param.required @actor
 
     @bezOpt = {}
-    @bezOpt.startPos = param.required startPos
-    @bezOpt.endPos = param.required endPos
+    @bezOpt.startPos = param.required startVal
+    @bezOpt.endPos = param.required endVal
     @bezOpt.degree = param.required degree, [0, 1, 2]
     param.required duration
 
     if degree > 0
       param.required ctrlPoints
-
-      if degree == 1
-        param.required ctrlPoints[0].x
-        param.required ctrlPoints[0].y
+      param.required ctrlPoints[0].x
+      param.required ctrlPoints[0].y
 
       if degree == 2
         param.required ctrlPoints[1].x
@@ -25,6 +23,7 @@ class AWGLAnimation
 
     # calculate how much to increment t based on duration
     # this could be me misunderstanding something-> to be checked
+    # seems to work well
     @incr = 1/(duration * 1000/16.667)
 
     @temp = 0
@@ -56,11 +55,8 @@ class AWGLAnimation
     # 0th degree, linear interpolation
     if @bezOpt.degree == 0
 
-      val =
-        x: @bezOpt.startPos.x + ((@bezOpt.endPos.x \
-          - @bezOpt.startPos.x) * t)
-        y: @bezOpt.startPos.y + ((@bezOpt.endPos.y \
-          - @bezOpt.startPos.y) * t)
+      val = @bezOpt.startPos + ((@bezOpt.endPos \
+          - @bezOpt.startPos) * t)
 
       # Buffer if requested
       #if @_buffer then @_bufferData[String(t)] = val
@@ -74,13 +70,9 @@ class AWGLAnimation
       _t2 = t * t
 
       # [x, y] = [(1 - t)^2]P0 + 2(1 - t)tP1 + (t^2)P2
-      val =
-        x: (_Mt2 * @bezOpt.startPos.x) + \
-        (2 * _Mt * t * @bezOpt.ctrl[0].x) \
-        + _t2 * @bezOpt.endPos.x
-        y: (_Mt2 * @bezOpt.startPos.y) + \
-        (2 * _Mt * t * @bezOpt.ctrl[0].y) \
-        + _t2 * @bezOpt.endPos.y
+      val = (_Mt2 * @bezOpt.startPos) + \
+            (2 * _Mt * t * @bezOpt.ctrl[0].y) \
+            + _t2 * @bezOpt.endPos
 
       # Buffer if requested
       # if @_buffer then @_bufferData[String(t)] = val
@@ -95,12 +87,9 @@ class AWGLAnimation
       _t2 = t * t
       _t3 = _t2 * t
 
-      # [x, y] = [(1 - t)^3]P0 + 3[(1 - t)^2]P1 + 3(1 - t)(t^2)P2 + (t^3)P3
-      val =
-        x: (_Mt3 * @bezOpt.startPos.x) + (3 * _Mt2 * t * @bezOpt.ctrl[0].x) \
-           + (3 * _Mt * _t2 + @bezOpt.ctrl[1].x) + (_t3 * @bezOpt.endPos.x)
-        y: (_Mt3 * @bezOpt.startPos.y) + (3 * _Mt2 * t * @bezOpt.ctrl[0].y) \
-           + (3 * _Mt * _t2 + @bezOpt.ctrl[1].y) + (_t3 * @bezOpt.endPos.y)
+      # [x, y] = [(1 - t)^3]P0 + 3[(1 - t)^2]t*P1 + 3(1 - t)(t^2)P2 + (t^3)P3
+      val = (_Mt3 * @bezOpt.startPos) + (3 * _Mt2 * t * @bezOpt.ctrl[0].y) \
+           + (3 * _Mt * _t2 * @bezOpt.ctrl[1].y) + (_t3 * @bezOpt.endPos)
 
       # Buffer if requested
       # if @_buffer then @_bufferData[String(t)] = val
@@ -109,7 +98,8 @@ class AWGLAnimation
       clearInterval @_intervalID
       throw new Error "Invalid degree, can't evaluate (#{@bezOpt.degree})"
 
-    @actor.setPosition val
+    variable = new cp.v Number(val), @actor.getPosition().y
+    @actor.setPosition variable
 
   animate: ->
     me = @
