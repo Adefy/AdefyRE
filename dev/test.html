@@ -35,29 +35,52 @@
       ];
 
       var box = new AWGLActor(fallBox);
-      box.setPosition({ x: 0, y: 100 });
+      box.setPosition({ x: 100, y: 100 });
       box.setRotation(0);
       box.setColor(255, 0, 0);
       //box.createPhysicsBody(10, 0.3, 0.8);
-      startVal = 0;
+      startVal = 100;
       endVal = 400;
       degree = 2;
-      control = [{ x: 0.93, y: 36}, { x: 0.41, y: 596}];
+      control = [{ x: 1, y: 0}, { x: 1, y: -516}];
       duration = 2;
-      var animation = new AWGLAnimation(box, startVal, endVal, degree, control, duration);
-      animation.animate();
+      //var animation = new AWGLAnimation(box, startVal, endVal, degree, control, duration);
+      //animation.animate();
 
       var ground = new AWGLActor(groundBox);
-      ground.setPosition({ x: 0, y: 400 });
+      ground.setPosition({ x: 400, y: 400 });
       ground.setRotation(0);
       startPos2 = 0
-      endPos2 = 400
-      degree2 = 0;
-      control2 = [{ x: 0, y: 0}, { x: 20, y: 20}];
+      endPos2 = 100
+      control2 = [];//[{ x: 0, y: 0}, { x: 1, y: 77}];
       duration2 = 2;
+      options = {
+        endVal: endPos2,
+        controlPoints: control2,
+        duration: duration2,
+        property: ["color", "r"]
+      }
       //ground.createPhysicsBody(0, 0.2, 0.8);
 
-      animation = new AWGLAnimation(ground, startPos2, endPos2, degree2, control2, duration2)
+      animation = new AWGLAnimation(ground, options);
+      animation.animate();
+
+      options = {
+        endVal: endPos2,
+        controlPoints: control2,
+        duration: duration2,
+        property: ["position", "x"]
+      }
+      animation = new AWGLAnimation(ground, options);
+      animation.animate();
+
+      options = {
+        endVal: endPos2,
+        controlPoints: control2,
+        duration: duration2,
+        property: "rotation"
+      }
+      animation = new AWGLAnimation(ground, options);
       animation.animate();
 
     });

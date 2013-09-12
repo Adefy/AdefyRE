@@ -3,33 +3,53 @@
 # Class to handle animations
 class AWGLAnimation
 
-  constructor: (@actor, startVal, endVal, degree, ctrlPoints, duration) ->
+  constructor: (@actor, options) ->
     param.required @actor
+    param.required options.duration
 
     @bezOpt = {}
-    @bezOpt.startPos = param.required startVal
-    @bezOpt.endPos = param.required endVal
-    @bezOpt.degree = param.required degree, [0, 1, 2]
-    param.required duration
 
-    if degree > 0
-      param.required ctrlPoints
-      param.required ctrlPoints[0].x
-      param.required ctrlPoints[0].y
+    if options.controlPoints.length > 0
+      @bezOpt.degree = options.controlPoints.length
+      if @bezOpt.degree > 0
+        @bezOpt.ctrl[0].x = param.required options.controlPoints[0].x
+        @bezOpt.ctrl[0].y = param.required options.controlPoints[0].y
+        if degree == 2
+          @bezOpt.ctrl[1].x = param.required options.controlPoints[1].x
+          @bezOpt.ctrl[1].y = param.required options.controlPoints[1].y
+    else
+      @bezOpt.degree = 0
 
-      if degree == 2
-        param.required ctrlPoints[1].x
-        param.required ctrlPoints[1].y
+    @bezOpt.property = param.required options.property
 
+    if @bezOpt.property == "rotation"
+      @bezOpt.startPos = @actor.getRotation()
+
+    if @bezOpt.property[0] == "position"
+      if @bezOpt.property[1] == "x"
+        @bezOpt.startPos = Number(@actor.getPosition().x)
+      else
+        if @bezOpt.property[1] == "y"
+          @bezOpt.startPos = @actor.getPosition().y
+
+    if @bezOpt.property[0] == "color"
+      if @bezOpt.property[1] == "r"
+        @bezOpt.startPos = @actor.getColor().getR()
+      else
+        if @bezOpt.property[1] == "g"
+          @bezOpt.startPos = @actor.getColor().getG()
+        else
+          if @bezOpt.property[1] == "b"
+            @bezOpt.startPos = @actor.getColor().getB()
+
+    @bezOpt.endPos = param.required options.endVal
     # calculate how much to increment t based on duration
     # this could be me misunderstanding something-> to be checked
     # seems to work well
-    @incr = 1/(duration * 1000/16.667)
+    @incr = 1/(options.duration * 1000/16.667)
 
     @temp = 0
     @_intervalID = null
-
-    @bezOpt.ctrl = ctrlPoints
 
   update: (t) ->
     param.required t
@@ -87,7 +107,7 @@ class AWGLAnimation
       _t2 = t * t
       _t3 = _t2 * t
 
-      # [x, y] = [(1 - t)^3]P0 + 3[(1 - t)^2]t*P1 + 3(1 - t)(t^2)P2 + (t^3)P3
+      # [x, y] = [(1 - t)^3]P0 + 3[(1 - t)^2]P1 + 3(1 - t)(t^2)P2 + (t^3)P3
       val = (_Mt3 * @bezOpt.startPos) + (3 * _Mt2 * t * @bezOpt.ctrl[0].y) \
            + (3 * _Mt * _t2 * @bezOpt.ctrl[1].y) + (_t3 * @bezOpt.endPos)
 
@@ -98,8 +118,36 @@ class AWGLAnimation
       clearInterval @_intervalID
       throw new Error "Invalid degree, can't evaluate (#{@bezOpt.degree})"
 
-    variable = new cp.v Number(val), @actor.getPosition().y
-    @actor.setPosition variable
+    if @bezOpt.property == "rotation"
+      @actor.setRotation val
+
+    if @bezOpt.property[0] == "position"
+      if @bezOpt.property[1] == "x"
+        pos = new cp.v val, @actor.getPosition().y
+        @actor.setPosition pos
+      else
+        if @bezOpt.property[1] == "y"
+          pos = new cp.v @actor.getPosition().x, val
+          @actor.setPosition pos
+
+    if @bezOpt.property[0] == "color"
+      if @bezOpt.property[1] == "r"
+        _r = val
+        _g = @actor.getColor().getG()
+        _b = @actor.getColor().getB()
+        @actor.setColor _r, _g, _b
+      else
+        if @bezOpt.property[1] == "g"
+          _r = @actor.getColor().getR()
+          _g = val
+          _b = @actor.getColor().getB()
+          @actor.setColor _r, _g, _b
+        else
+          if @bezOpt.property[1] == "b"
+            _r = @actor.getColor().getR()
+            _g = @actor.getColor().getG()
+            _b = val
+            @actor.setColor _r, _g, _b
 
   animate: ->
     me = @
