@@ -51,16 +51,35 @@
       ground.setPosition({ x: 400, y: 400 });
       ground.setRotation(0);
       startPos2 = 0
-      endPos2 = 100
+      endPos2 = 160
       control2 = [];//[{ x: 0, y: 0}, { x: 1, y: 77}];
       duration2 = 2;
       options = {
         endVal: endPos2,
         controlPoints: control2,
         duration: duration2,
-        property: ["color", "r"]
+        property: ["color", "g"]
       }
       //ground.createPhysicsBody(0, 0.2, 0.8);
+
+      animation = new AWGLBezAnimation(ground, options);
+      animation.animate();
+
+      options = {
+        endVal: endPos2,
+        controlPoints: control2,
+        duration: duration2,
+        property: ["color", "r"]
+      }
+      animation = new AWGLBezAnimation(ground, options);
+      animation.animate();
+      options = {
+        endVal: endPos2,
+        controlPoints: control2,
+        duration: duration2,
+        property: ["color", "b"]
+      }
+
 
       animation = new AWGLBezAnimation(ground, options);
       animation.animate();

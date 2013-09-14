@@ -1,6 +1,7 @@
 # Actor class, skeleton for now
 #
 # @depend AWGLBezAnimation.coffee
+# @depend AWGLVertAnimation.coffee
 class AWGLActor
 
   # Default physical properties
