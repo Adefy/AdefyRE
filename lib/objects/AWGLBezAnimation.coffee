@@ -1,8 +1,35 @@
-# AWGLAnimation
+# AWGLBezAnimation
 #
-# Class to handle animations
+# Class to handle bezier animations
+# It can animate the Color, Rotation and Position properties,
+# each component of those individually
 class AWGLBezAnimation
 
+  # For all animateable properties the options param passes in the end value,
+  # an array of [time, value] control points, the duration of the animation
+  # and the property to be affected by these options
+  # @param [Actor] actor represents the actor we animate
+  # @param [Object] options represents the options used to animate
+  #
+  # How the options object should look like:
+  #
+  # options = {
+  #
+  #  endVal:
+  #
+  #  controlPoints:
+  #
+  #  duration:
+  #
+  #  property:
+  #
+  # }
+  #
+  # For Rotation we pass in the property as a string "rotation"
+  #
+  # For Position we pass in an array of the format ["position", "x/y"]
+  #
+  # For Color we pass in an array of the format ["color", "r/g/b"]
   constructor: (@actor, options) ->
     param.required @actor
     param.required options.duration
@@ -22,12 +49,13 @@ class AWGLBezAnimation
 
     @bezOpt.property = param.required options.property
 
+    # Getting our starting value based on our animated property
     if @bezOpt.property == "rotation"
       @bezOpt.startPos = @actor.getRotation()
 
     if @bezOpt.property[0] == "position"
       if @bezOpt.property[1] == "x"
-        @bezOpt.startPos = Number(@actor.getPosition().x)
+        @bezOpt.startPos = @actor.getPosition().x
       else
         if @bezOpt.property[1] == "y"
           @bezOpt.startPos = @actor.getPosition().y
@@ -43,9 +71,7 @@ class AWGLBezAnimation
             @bezOpt.startPos = @actor.getColor().getB()
 
     @bezOpt.endPos = param.required options.endVal
-    # calculate how much to increment t based on duration
-    # this could be me misunderstanding something-> to be checked
-    # seems to work well
+    # How much we increment t by in our calls based on duration
     @incr = 1/(options.duration * 1000/16.667)
 
     @temp = 0
@@ -54,16 +80,12 @@ class AWGLBezAnimation
   update: (t) ->
     param.required t
 
+    # If our next step goes higher than 1.0, we set t to last step
     if @temp + @incr <= 1.0
       @temp += @incr
     else
       t = 1
       clearInterval @_intervalID
-
-    # If buffering is enabled, buffer!
-    # if @_buffer
-    #  if @_bufferData[String(t)] != undefined
-    #    return @_bufferData[String(t)]
 
     # Throw an error if t is out of bounds. We could just cap it, but it should
     # never be provided out of bounds. If it is, something is wrong with the
@@ -78,9 +100,6 @@ class AWGLBezAnimation
       val = @bezOpt.startPos + ((@bezOpt.endPos \
           - @bezOpt.startPos) * t)
 
-      # Buffer if requested
-      #if @_buffer then @_bufferData[String(t)] = val
-
     # 1st degree, quadratic
     else if @bezOpt.degree == 1
 
@@ -93,9 +112,6 @@ class AWGLBezAnimation
       val = (_Mt2 * @bezOpt.startPos) + \
             (2 * _Mt * t * @bezOpt.ctrl[0].y) \
             + _t2 * @bezOpt.endPos
-
-      # Buffer if requested
-      # if @_buffer then @_bufferData[String(t)] = val
 
     # 2nd degree, cubic
     else if @bezOpt.degree == 2
@@ -111,13 +127,11 @@ class AWGLBezAnimation
       val = (_Mt3 * @bezOpt.startPos) + (3 * _Mt2 * t * @bezOpt.ctrl[0].y) \
            + (3 * _Mt * _t2 * @bezOpt.ctrl[1].y) + (_t3 * @bezOpt.endPos)
 
-      # Buffer if requested
-      # if @_buffer then @_bufferData[String(t)] = val
-
     else
       clearInterval @_intervalID
       throw new Error "Invalid degree, can't evaluate (#{@bezOpt.degree})"
 
+    # Applying the calculated value for the chosen property
     if @bezOpt.property == "rotation"
       @actor.setRotation val
 
@@ -149,9 +163,12 @@ class AWGLBezAnimation
             _b = val
             @actor.setColor _r, _g, _b
 
+  # Called after construction of the animation object
+  # to actually begin the animation
   animate: ->
     me = @
 
+    # Call the bezier update function 60 times each second -> each 16.667 ms
     @_intervalID = setInterval ->
       me.update me.temp
     , 16.667
