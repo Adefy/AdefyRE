@@ -1,7 +1,7 @@
 # AWGLAnimation
 #
 # Class to handle animations
-class AWGLAnimation
+class AWGLBezAnimation
 
   constructor: (@actor, options) ->
     param.required @actor

@@ -62,7 +62,7 @@
       }
       //ground.createPhysicsBody(0, 0.2, 0.8);
 
-      animation = new AWGLAnimation(ground, options);
+      animation = new AWGLBezAnimation(ground, options);
       animation.animate();
 
       options = {
@@ -71,7 +71,7 @@
         duration: duration2,
         property: ["position", "x"]
       }
-      animation = new AWGLAnimation(ground, options);
+      animation = new AWGLBezAnimation(ground, options);
       animation.animate();
 
       options = {
@@ -80,7 +80,7 @@
         duration: duration2,
         property: "rotation"
       }
-      animation = new AWGLAnimation(ground, options);
+      animation = new AWGLBezAnimation(ground, options);
       animation.animate();
 
     });
