@@ -2,7 +2,7 @@
 #
 # Class to handle bezier animations
 # It can animate the Color, Rotation and Position properties,
-# each component of those individually
+# each component only individually for the composite properties!
 class AWGLBezAnimation
 
   # For all animateable properties the options param passes in the end value,
@@ -11,7 +11,6 @@ class AWGLBezAnimation
   # @param [Actor] actor represents the actor we animate
   # @param [Object] options represents the options used to animate
   #
-  # How the options object should look like:
   #
   # options = {
   #
@@ -25,15 +24,17 @@ class AWGLBezAnimation
   #
   # }
   #
-  # For Rotation we pass in the property as a string "rotation"
+  # For Rotation: options.property: "rotation"
   #
-  # For Position we pass in an array of the format ["position", "x/y"]
+  # For Position: options.property: ["positions", "x"] or ["positions", "y"]
   #
-  # For Color we pass in an array of the format ["color", "r/g/b"]
+  # For Color: options.property: ["color", "r"]  or ["color", "g"] or ["color", "b"]
   constructor: (@actor, options) ->
     param.required @actor
     param.required options.duration
 
+    # In bezOpt we will keep all the info we need for the Bezier function which means
+    # degree, starting value, final value and the position of the control points provided
     @bezOpt = {}
 
     if options.controlPoints.length > 0
