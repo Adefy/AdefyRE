@@ -28,23 +28,26 @@ class AWGLBezAnimation
   #
   # For Position: options.property: ["positions", "x"] or ["positions", "y"]
   #
-  # For Color: options.property: ["color", "r"]  or ["color", "g"] or ["color", "b"]
+  # For Color: options.property: ["color", "r"]  or ["color", "g"]
+  # or ["color", "b"]
   constructor: (@actor, options) ->
     param.required @actor
     param.required options.duration
 
-    # In bezOpt we will keep all the info we need for the Bezier function which means
-    # degree, starting value, final value and the position of the control points provided
+    # In bezOpt we will keep all the info we need for the Bezier function
+    # which means degree, starting value, final value and the position of
+    # the control points provided
     @bezOpt = {}
 
     if options.controlPoints.length > 0
       @bezOpt.degree = options.controlPoints.length
       if @bezOpt.degree > 0
-        @bezOpt.ctrl[0].x = param.required options.controlPoints[0].x
-        @bezOpt.ctrl[0].y = param.required options.controlPoints[0].y
+        param.required options.controlPoints[0].x
+        param.required options.controlPoints[0].y
         if degree == 2
-          @bezOpt.ctrl[1].x = param.required options.controlPoints[1].x
-          @bezOpt.ctrl[1].y = param.required options.controlPoints[1].y
+          param.required options.controlPoints[1].x
+          param.required options.controlPoints[1].y
+      @bezOpt.ctrl = options.controlPoints
     else
       @bezOpt.degree = 0
 

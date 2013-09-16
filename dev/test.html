@@ -40,9 +40,9 @@
       box.setColor(255, 0, 0);
       //box.createPhysicsBody(10, 0.3, 0.8);
       startVal = 100;
-      endVal = 400;
+      endVal2 = 400;
       degree = 2;
-      control = [{ x: 1, y: 0}, { x: 1, y: -516}];
+      control = [{ x: 0.5, y: 25}, { x: 0.7, y: 255}];
       duration = 2;
       //var animation = new AWGLAnimation(box, startVal, endVal, degree, control, duration);
       //animation.animate();
@@ -55,9 +55,9 @@
       control2 = [];//[{ x: 0, y: 0}, { x: 1, y: 77}];
       duration2 = 2;
       options = {
-        endVal: endPos2,
-        controlPoints: control2,
-        duration: duration2,
+        endVal: endVal2,
+        controlPoints: control,
+        duration: duration,
         property: ["color", "g"]
       }
       //ground.createPhysicsBody(0, 0.2, 0.8);
