@@ -23,6 +23,41 @@
         -50,  50,
          50,  50,
          50, -50,
+        -99, -50
+      ];
+      var fallBox1 = [
+        -50, -50,
+        -50,  50,
+         500,  50,
+         100, -50,
+        -50, -50
+      ];
+      var fallBox2 = [
+        -50, -50,
+        -77,  50,
+         50,  122,
+         50, -50,
+        -50, -50
+      ];
+      var fallBox3 = [
+        -50, -55,
+        -90,  50,
+         50,  50,
+         50, -50,
+        -50, -50
+      ];
+      var fallBox4 = [
+        -50, -50,
+        -50,  50,
+         50,  50,
+         50, -50,
+        -50, -50
+      ];
+      var fallBox5 = [
+        -50, -59,
+        -50,  50,
+         57,  50,
+         50, -50,
         -50, -50
       ];
 
@@ -31,27 +66,50 @@
         -50,  50,
          50,  50,
          50, -50,
-        -50, -50
+        -500, -50
       ];
 
       var box = new AWGLActor(fallBox);
-      box.setPosition({ x: 100, y: 100 });
+      box.setPosition({ x: 100, y: 400 });
       box.setRotation(0);
       box.setColor(255, 0, 0);
-      //box.createPhysicsBody(10, 0.3, 0.8);
-      startVal = 100;
-      endVal2 = 400;
-      degree = 2;
-      control = [{ x: 0.5, y: 25}, { x: 0.7, y: 255}];
-      duration = 2;
-      //var animation = new AWGLAnimation(box, startVal, endVal, degree, control, duration);
-      //animation.animate();
+
+      var box1 = new AWGLActor(fallBox1);
+      box1.setPosition({ x: -1550, y: 366 });
+      box1.setRotation(0);
+      box1.setColor(255, 0, 0);
+
+      var box2 = new AWGLActor(fallBox2);
+      box2.setPosition({ x: 0, y: 100 });
+      box2.setRotation(0);
+      box2.setColor(255, 0, 0);
+
+      var box3 = new AWGLActor(fallBox3);
+      box3.setPosition({ x: -300, y: 650 });
+      box3.setRotation(0);
+      box3.setColor(255, 0, 0);
+
+      var box4 = new AWGLActor(fallBox4);
+      box4.setPosition({ x: 600, y: 600 });
+      box4.setRotation(0);
+      box4.setColor(255, 0, 0);
+
+      var box5 = new AWGLActor(fallBox5);
+      box5.setPosition({ x: 600, y: 100 });
+      box5.setRotation(0);
+      box5.setColor(255, 0, 0);
 
       var ground = new AWGLActor(groundBox);
       ground.setPosition({ x: 400, y: 400 });
       ground.setRotation(0);
+
+      endVal2 = 255;
+      degree = 2;
+      control = [{ x: 0.1, y: -300}, { x: 0.9, y: 255}];
+      duration = 2;
+
       startPos2 = 0
-      endPos2 = 160
+      endPos2 = 55
       control2 = [];//[{ x: 0, y: 0}, { x: 1, y: 77}];
       duration2 = 2;
       options = {
@@ -64,6 +122,12 @@
 
       animation = new AWGLBezAnimation(ground, options);
       animation.animate();
+      animation = new AWGLBezAnimation(box, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box2, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box3, options);
+      animation.animate();
 
       options = {
         endVal: endPos2,
@@ -73,33 +137,107 @@
       }
       animation = new AWGLBezAnimation(ground, options);
       animation.animate();
+      animation = new AWGLBezAnimation(box, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box1, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box2, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box3, options);
+      animation.animate();
+
       options = {
         endVal: endPos2,
         controlPoints: control2,
         duration: duration2,
         property: ["color", "b"]
       }
-
-
+      animation = new AWGLBezAnimation(box4, options);
+      animation.animate();
       animation = new AWGLBezAnimation(ground, options);
       animation.animate();
 
       options = {
-        endVal: endPos2,
+        endVal: 255,
         controlPoints: control2,
+        duration: duration2,
+        property: ["color", "b"]
+      }
+
+      animation = new AWGLBezAnimation(box, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box1, options);
+      animation.animate();
+      options = {
+        endVal: 102,
+        controlPoints: control2,
+        duration: duration2,
+        property: ["color", "b"]
+      }
+      animation = new AWGLBezAnimation(box2, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box3, options);
+      animation.animate();
+
+      options = {
+        endVal: 709,
+        controlPoints: control,
         duration: duration2,
         property: ["position", "x"]
       }
       animation = new AWGLBezAnimation(ground, options);
       animation.animate();
+      animation = new AWGLBezAnimation(box4, options);
+      animation.animate();
 
       options = {
-        endVal: endPos2,
+        endVal: 255,
+        controlPoints: control,
+        duration: duration2,
+        property: ["position", "x"]
+      }
+      animation = new AWGLBezAnimation(box2, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box3, options);
+      animation.animate();
+
+      options = {
+        endVal: 355,
         controlPoints: control2,
+        duration: duration2,
+        property: ["position", "y"]
+      }
+
+      animation = new AWGLBezAnimation(box, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box5, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box1, options);
+      animation.animate();
+      options = {
+        endVal: 100,
+        controlPoints: control2,
+        duration: duration2,
+        property: ["position", "y"]
+      }
+      animation = new AWGLBezAnimation(box2, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box3, options);
+      animation.animate();
+
+      options = {
+        endVal: 188,
+        controlPoints: control,
         duration: duration2,
         property: "rotation"
       }
       animation = new AWGLBezAnimation(ground, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box1, options);
+      animation.animate();
+      animation = new AWGLBezAnimation(box3, options);
       animation.animate();
 
     });
