@@ -75,7 +75,7 @@
       box.setColor(255, 0, 0);
 
       var box1 = new AWGLActor(fallBox1);
-      box1.setPosition({ x: -1550, y: 366 });
+      box1.setPosition({ x: -66 , y: 366 });
       box1.setRotation(0);
       box1.setColor(255, 0, 0);
 
@@ -240,6 +240,30 @@
       animation = new AWGLBezAnimation(box3, options);
       animation.animate();
 
+      options = {
+        vertices: [fallBox1, fallBox4, fallBox5, groundBox, fallBox1, fallBox4, fallBox5, groundBox],
+        time: [100, 200, 300, 400, 800, 900, 1000, 1100]
+      };
+      animation = new AWGLVertAnimation(box5, options);
+      animation.animate();
+      animation = new AWGLVertAnimation(box1, options);
+      animation.animate();
+      options = {
+        vertices: [fallBox4, fallBox1, fallBox4, fallBox5, groundBox, fallBox5, groundBox, fallBox1],
+        time: [10, 200, 300, 400, 500, 600, 750, 1400]
+      };
+      animation = new AWGLVertAnimation(box2, options);
+      animation.animate();
+      animation = new AWGLVertAnimation(box3, options);
+      animation.animate();
+      options = {
+        vertices: [fallBox5, groundBox, fallBox4, fallBox5, groundBox, fallBox1, fallBox4, fallBox],
+        time: [500, 600, 700, 800, 900, 1000, 1100, 1200]
+      };
+      animation = new AWGLVertAnimation(box, options);
+      animation.animate();
+      animation = new AWGLVertAnimation(ground, options);
+      animation.animate();
     });
 
   </script>

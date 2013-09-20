@@ -13,10 +13,19 @@ class AWGLVertAnimation
     param.required @options
     param.optional @relOrabs
 
-  # param [Array] vert set of vertices to be set
-  update: (vert) -> @actor.updateVertices(vert)
+  # The actual vertices changing function
+  #
+  # @param [Object] vert set of vertices to apply to the actor
+  # @param [Number] time the delay in miliseconds to make the update
+  update: (vert, time) ->
+    me = @
+    setTimeout ->
+      me.actor.updateVertices vert
+    , time
 
-  # Starts the animation
+  # Looks through all the options provided and sends them to the update
+  # function so they are not lost when i updates
   animate: ->
-    for item in @options
-      setTimeout(update(item.vertices), item.time)
+    me = @
+    for vert, i in @options.vertices
+      me.update @options.vertices[i], @options.time[i]
