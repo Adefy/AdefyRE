@@ -162,9 +162,6 @@ class AWGLBezAnimation
   # Called after construction of the animation object
   # to actually begin the animation
   animate: ->
-    me = @
 
     # Call the bezier update function 60 times each second -> each 16.667 ms
-    @_intervalID = setInterval ->
-      me.update me.temp
-    , 16.667
+    @_intervalID = setInterval (=> @update @temp), 16.667

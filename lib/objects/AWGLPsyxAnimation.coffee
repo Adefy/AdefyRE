@@ -20,8 +20,7 @@ class AWGLPsyxAnimation
     param.optional @options.timeout
 
   animate: ->
-    me = @
-    setTimeout ->
-      me.actor.createPhysicsBody me.options.mass,
-        me.options.friction, me.options.elasticity
-    , me.options.timeout
+    setTimeout =>
+      @actor.createPhysicsBody @options.mass, \
+        @options.friction, @options.elasticity
+    , @options.timeout
