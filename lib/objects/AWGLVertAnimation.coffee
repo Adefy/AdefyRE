@@ -7,11 +7,9 @@ class AWGLVertAnimation
   # at certain times by calling the updateVertices method of an actor
   # @param [Actor] actor the actor we apply the modifications to
   # @param [Object] options the options [timeout, verticesSet] we apply
-  # @param [Bool] relOrabs relative or absolute time
-  constructor: (@actor, @options, @relOrabs) ->
+  constructor: (@actor, @options) ->
     param.required @actor
     param.required @options
-    param.optional @relOrabs
 
   # The actual vertices changing function
   #

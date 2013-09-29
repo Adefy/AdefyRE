@@ -2,6 +2,7 @@
 #
 # @depend AWGLBezAnimation.coffee
 # @depend AWGLVertAnimation.coffee
+# @depend AWGLPsyxAnimation.coffee
 class AWGLActor
 
   # Default physical properties
