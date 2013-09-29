@@ -3,10 +3,15 @@
 # Class to handle actor physics updates
 class AWGLPsyxAnimation
 
-  # Class to 'animate' physics properties which means changing them
+  # Class to "animate" physics properties which means changing them
   # at certain times by calling the createPhysicsBody method of an actor
+  #
   # @param [Actor] actor the actor we apply the modifications to
-  # @param [Object] options the options [mass, friction, elasticity, timeout]
+  # @param [Object] options
+  # @option options [Number] mass
+  # @option options [Number] friction
+  # @option options [Number] elasticity
+  # @option options [Number] timeout
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options.mass

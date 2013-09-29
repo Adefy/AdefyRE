@@ -3,13 +3,18 @@
 # Class to handle actor vertices updates
 class AWGLVertAnimation
 
-  # Class to 'animate' vertices which basically means changing them
+  # Class to "animate" vertices which basically means changing them
   # at certain times by calling the updateVertices method of an actor
+  #
   # @param [Actor] actor the actor we apply the modifications to
-  # @param [Object] options the options [timeout, verticesSet] we apply
+  # @param [Object] options the options we apply
+  # @option options [Array<Number>] timeoutSets
+  # @option options [Array<String>] vertexSets
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options
+    param.required @options.timeoutSets
+    param.requires @options.vertexSets
 
   # The actual vertices changing function
   #
@@ -25,5 +30,5 @@ class AWGLVertAnimation
   # function so they are not lost when i updates
   animate: ->
     me = @
-    for vert, i in @options.vertices
-      me.update @options.vertices[i], @options.time[i]
+    for vert, i in @options.vertexSets
+      me.update @options.vertexSets[i], @options.timeoutSets[i]

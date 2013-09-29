@@ -7,29 +7,18 @@ class AWGLBezAnimation
 
   # For all animateable properties the options param passes in the end value,
   # an array of [time, value] control points, the duration of the animation
-  # and the property to be affected by these options
+  # and the property to be affected by these options.
+  #
+  # Properties are named by keys (rotation, position, color), with composite
+  # values supplied as an array of the property name, and the composite name.
+  #
+  # i.e. ["position", "x"]
   # @param [Actor] actor represents the actor we animate
   # @param [Object] options represents the options used to animate
-  #
-  #
-  # options = {
-  #
-  #  endVal:
-  #
-  #  controlPoints:
-  #
-  #  duration:
-  #
-  #  property:
-  #
-  # }
-  #
-  # For Rotation: options.property: "rotation"
-  #
-  # For Position: options.property: ["positions", "x"] or ["positions", "y"]
-  #
-  # For Color: options.property: ["color", "r"]  or ["color", "g"]
-  # or ["color", "b"]
+  # @option options [Object] endVal
+  # @option options [Array<Object>] controlPoints
+  # @option options [Number] duration
+  # @option options [String, Object] property
   constructor: (@actor, options) ->
     param.required @actor
     param.required options.duration
@@ -81,6 +70,9 @@ class AWGLBezAnimation
     @temp = 0
     @_intervalID = null
 
+  # Updates the animation for a certain value t, between 0 and 1
+  #
+  # @param [Number] t animation state, 0.0-1.0
   update: (t) ->
     param.required t
 
