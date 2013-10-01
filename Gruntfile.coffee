@@ -2,6 +2,8 @@ module.exports = (grunt) ->
 
   # Output
   libName = "awgl.js"
+  productionName = "awgl-prod.min.js"
+  productionNameFull = "awgl-prod-full.min.js"
 
   # Directories
   buildDir = "build"
@@ -9,6 +11,20 @@ module.exports = (grunt) ->
   testDir = "test"
   devDir = "dev"
   docDir = "doc"
+  cdnDir = "../www/awgl"
+  production = "#{buildDir}/#{productionName}"
+  productionFull = "#{buildDir}/#{productionNameFull}"
+
+  productionConcatFull = [
+    "#{devDir}/underscore.min.js"
+    "#{devDir}/sylvester.js"
+    "#{devDir}/mjax.min.js"
+    "#{devDir}/glUtils.js"
+    "#{devDir}/gl-matrix-min.js"
+    "#{devDir}/cp.min.js"
+
+    "#{devDir}/awgl.js"
+  ]
 
   # Intermediate vars
   __awglOut = {}
@@ -33,6 +49,10 @@ module.exports = (grunt) ->
 
   __testOut = {}
   __testOut["#{buildDir}/test/spec.coffee"] = ["#{testDir}/tests.coffee"]
+
+  _uglify = {}
+  _uglify[production] = "#{buildDir}/#{libName}"
+  _uglify[productionFull] = productionFull
 
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"
@@ -126,11 +146,38 @@ module.exports = (grunt) ->
           src: [ "**" ]
           dest: "#{buildDir}/#{testDir}"
         ]
+      cdn:
+        files: [
+          expand: true
+          cwd: docDir
+          src: [ "**" ]
+          dest: "#{cdnDir}/doc"
+        ,
+          src: "#{buildDir}/awgl-prod.min.js"
+          dest: "#{cdnDir}/awgl.js"
+        ,
+          src: "#{buildDir}/awgl-prod-full.min.js"
+          dest: "#{cdnDir}/awgl-full.js"
+        ]
 
     clean: [
       buildDir
       docDir
     ]
+
+    # Production concat
+    concat:
+      options:
+        stripBanners: true
+      distFull:
+        src: productionConcatFull
+        dest: productionFull
+
+    uglify:
+      options:
+        preserveComments: false
+      production:
+        files: _uglify
 
   grunt.loadNpmTasks "grunt-coffeelint"
   grunt.loadNpmTasks "grunt-contrib-coffee"
@@ -139,6 +186,8 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks "grunt-contrib-clean"
   grunt.loadNpmTasks "grunt-concat-in-order"
   grunt.loadNpmTasks "grunt-contrib-copy"
+  grunt.loadNpmTasks "grunt-contrib-concat"
+  grunt.loadNpmTasks "grunt-contrib-uglify"
   grunt.loadNpmTasks "grunt-mocha"
 
   grunt.registerTask "codo", "build html documentation", ->
@@ -151,3 +200,5 @@ module.exports = (grunt) ->
   grunt.registerTask "default", ["concat_in_order", "coffee", "mocha"]
   grunt.registerTask "full", ["clean", "codo", "copy:test_page", "concat_in_order", "coffee", "mocha"]
   grunt.registerTask "dev", ["connect", "copy:test_page", "watch"]
+  grunt.registerTask "deploy", [ "concat", "uglify" ]
+  grunt.registerTask "cdn", [ "full", "deploy", "copy:cdn" ]
