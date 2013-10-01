@@ -1,3 +1,7 @@
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 # Same concept as AWGL.coffee, lets us concat the tests in order for compiling
 #
 # @depend spec/TAWGLEnv.coffee

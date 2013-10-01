@@ -176,6 +176,7 @@ module.exports = (grunt) ->
     uglify:
       options:
         preserveComments: false
+        banner: "/* Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved */\n"
       production:
         files: _uglify
 

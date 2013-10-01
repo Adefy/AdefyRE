@@ -1,3 +1,7 @@
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 # Top-level file, used by concat_in_order
 #
 # As part of the build process, grunt concats all of our coffee sources in a

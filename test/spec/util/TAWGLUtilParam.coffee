@@ -1,3 +1,7 @@
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 describe "AWGLUtilParam", ->
 
   it "should be avaliable globally", ->

@@ -1,3 +1,7 @@
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 # Engine interface, used by the ads themselves, serves as an API
 #
 # @depend AWGLActorInterface.coffee

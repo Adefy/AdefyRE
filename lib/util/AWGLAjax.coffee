@@ -1,3 +1,7 @@
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 # AJAX utility class, wrapper around microAjax that adds queueing
 class AWGLAjax
 

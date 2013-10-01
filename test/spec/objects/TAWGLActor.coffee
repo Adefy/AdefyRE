@@ -1,3 +1,7 @@
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 #  This fails in phantomjs, and wgl dependent tests don't execute
 try
   _c = document.getElementById "awgl_canvas"

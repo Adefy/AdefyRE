@@ -1,3 +1,7 @@
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 describe "AWGLEngine", ->
 
   # TODO: Structure tests so they follow each other, and create a proper
