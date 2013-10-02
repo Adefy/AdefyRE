@@ -6,12 +6,14 @@
 #
 # @depend AWGLActorInterface.coffee
 # @depend AWGLEngineInterface.coffee
+# @depend AWGLAnimationInterface.coffee
 class AWGLInterface
 
   # Instantiates sub-interfaces
   constructor: ->
     @_Actors = new AWGLActorInterface()
     @_Engine = new AWGLEngineInterface()
+    @_Animations = new AWGLAnimationInterface()
 
   # Sub-interfaces are broken out through accessors to prevent modification
 
@@ -22,3 +24,7 @@ class AWGLInterface
   # Get renderer sub-interface
   # @return [AWGLEngineInterface] renderer
   Engine: -> @_Engine
+
+  # Get animation sub-interface
+  # @return [AWGLAnimationInterface] animations
+  Animations: -> @_Animations
