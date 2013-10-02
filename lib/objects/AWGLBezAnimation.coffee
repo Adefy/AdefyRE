@@ -24,6 +24,7 @@ class AWGLBezAnimation
   # @option options [Number] duration
   # @option options [String, Array] property
   # @option options [Number] start optional, negative means start immediately
+  # @option options [Number] fps framerate, defaults to 30
   constructor: (@actor, options) ->
     param.required @actor
     param.required options
@@ -31,6 +32,7 @@ class AWGLBezAnimation
     param.required options.property
     param.required options.controlPoints
     param.required options.endVal
+    @_fps = param.optional options.fps, 30
     options.start = param.optional options.start, 0
 
     # In bezOpt we will keep all the info we need for the Bezier function
@@ -165,7 +167,4 @@ class AWGLBezAnimation
 
   # Called after construction of the animation object
   # to actually begin the animation
-  animate: ->
-
-    # Call the bezier update function 60 times each second -> each 16.667 ms
-    @_intervalID = setInterval (=> @_update @temp), 16.667
+  animate: -> @_intervalID = setInterval (=> @_update @temp), 1 / @_fps
