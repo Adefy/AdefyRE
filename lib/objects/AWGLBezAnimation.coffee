@@ -30,8 +30,8 @@ class AWGLBezAnimation
     param.required options
     param.required options.duration
     param.required options.property
-    param.required options.controlPoints
     param.required options.endVal
+    options.controlPoints = param.optional options.controlPoints, []
     @_fps = param.optional options.fps, 30
     options.start = param.optional options.start, 0
 
@@ -73,7 +73,7 @@ class AWGLBezAnimation
 
     @bezOpt.endPos = param.required options.endVal
     # How much we increment t by in our calls based on duration
-    @incr = 1/(options.duration * 1000/16.667)
+    @incr = 1 / (options.duration / @_fps)
 
     @temp = 0
     @_intervalID = null

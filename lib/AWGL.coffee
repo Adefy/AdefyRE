@@ -9,6 +9,5 @@
 # this essentially serving as the root node in the dep tree.
 #
 # @depend util/AWGLUtilParam.coffee
-# @depend AWGLEngine.coffee
 # @depend objects/AWGLActor.coffee
-
+# @depend AWGLEngine.coffee
