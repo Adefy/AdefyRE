@@ -126,7 +126,7 @@ class AWGLEngine
           AWGLPhysics.startStepping()
 
           # Break out interface
-          window.AdefyGLI = new AWGLInterface
+
 
           if cb != null and cb != undefined then cb @
 
@@ -144,7 +144,6 @@ class AWGLEngine
       # No url, just start things up and call the cb
       # Note that we do NOT start the renderer
       @_renderer = new AWGLRenderer canvas, width, height
-      window.AdefyGLI = new AWGLInterface
 
       AWGLLog.info "Engine initialized, executing cb"
       cb @
@@ -240,6 +239,27 @@ class AWGLEngine
     clearInterval @_renderIntervalId
     @_renderIntervalId = null
 
+  # Set renderer clear color in integer RGB form (passes through to renderer)
+  #
+  # @param [Number] r
+  # @param [Number] g
+  # @param [Number] b
+  setClearColor: (r, g, b) ->
+    r = param.optional r, 0
+    g = param.optional g, 0
+    b = param.optional b, 0
+
+    if @_renderer instanceof AWGLRenderer
+      @_renderer.setClearColor r, g, b
+
+  # Get clear color from renderer (if active, null otherwise)
+  #
+  # @return [AWGLColor3] color
+  getClearColor: ->
+    if @_renderer instanceof AWGLRenderer
+      return @_renderer.getClearColor()
+    null
+
   # Return our internal renderer width, returns -1 if we don't have a renderer
   #
   # @return [Number] width
@@ -277,3 +297,6 @@ class AWGLEngine
       return null
     else
       return AWGLRenderer._gl
+
+# Break out an interface. Use responsibly
+window.AdefyGLI = new AWGLInterface

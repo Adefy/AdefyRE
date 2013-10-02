@@ -61,4 +61,4 @@ class AWGLUtilParam
 
     p
 
-window.param = AWGLUtilParam
+if window.param == undefined then window.param = AWGLUtilParam
