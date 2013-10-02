@@ -43,11 +43,11 @@ class AWGLAnimationInterface
     if options.property == undefined then options.property = property
 
     # Build animation according to mapping
-    if @_animationMap[name] == AWGLBezAnimation
+    if AWGLAnimationInterface._animationMap[name] == AWGLBezAnimation
       anim = new AWGLBezAnimation actor, options
-    else if @_animationMap[name] == AWGLPsyxAnimation
+    else if AWGLAnimationInterface._animationMap[name] == AWGLPsyxAnimation
       anim = new AWGLPsyxAnimation actor, options
-    else if @_animationMap[name] == AWGLVertAnimation
+    else if AWGLAnimationInterface._animationMap[name] == AWGLVertAnimation
       anim = new AWGLVertAnimation actor, option
     else
       AWGLLog.warn "Unrecognized property: #{name}"
