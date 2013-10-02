@@ -5,7 +5,9 @@
 # Animation interface class
 class AWGLAnimationInterface
 
-  # A map of properties and their animations
+  # A map of properties and their animations. Note that the editor uses this
+  # same map to properly format animation exports!
+  #
   # @private
   @_animationMap:
 
@@ -27,15 +29,25 @@ class AWGLAnimationInterface
   # depending on the requirements of the input. Fails with null if the property
   # is not recognized.
   #
-  # @param [AWGLActor] actor actor to animate
+  # @param [Number] actorID id of actor to animate, as per AWGLActorInterface
   # @param [Array, String] property property, possibly composite (array)
   # @param [Object] options options to pass to animation, varies by property
   #
   # @return [Object] animation created animation
-  animate: (actor, property, options) ->
-    param.required actor
+  animate: (actorID, property, options) ->
+    param.required actorID
     param.required property
     param.required options
+
+    actor = null
+
+    for a in AWGLRenderer.actors
+      if a.getId() == actorID
+        actor = a
+        break
+
+    if actor == null
+      throw new Error "Actor not found, can't animate! #{actorId}"
 
     # Grab true property name
     if property instanceof Array then name = property[0] else name = property
