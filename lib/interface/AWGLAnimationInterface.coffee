@@ -29,15 +29,18 @@ class AWGLAnimationInterface
   # depending on the requirements of the input. Fails with null if the property
   # is not recognized.
   #
+  # An optional 'start' parameter can be passed in on the 'options' object,
+  # signifying when to initiate the animation. (< 0) means now, (> 0) after
+  # 'start' ms, and 0 as default no auto start
+  #
   # @param [Number] actorID id of actor to animate, as per AWGLActorInterface
   # @param [Array, String] property property, possibly composite (array)
   # @param [Object] options options to pass to animation, varies by property
-  #
-  # @return [Object] animation created animation
   animate: (actorID, property, options) ->
     param.required actorID
     param.required property
     param.required options
+    options.start = param.optional options.start, 0
 
     actor = null
 
@@ -55,14 +58,15 @@ class AWGLAnimationInterface
     if options.property == undefined then options.property = property
 
     # Build animation according to mapping
-    if AWGLAnimationInterface._animationMap[name] == AWGLBezAnimation
-      anim = new AWGLBezAnimation actor, options
-    else if AWGLAnimationInterface._animationMap[name] == AWGLPsyxAnimation
-      anim = new AWGLPsyxAnimation actor, options
-    else if AWGLAnimationInterface._animationMap[name] == AWGLVertAnimation
-      anim = new AWGLVertAnimation actor, option
-    else
-      AWGLLog.warn "Unrecognized property: #{name}"
-      anim = null
+    _spawnAnim = (_n, _a, _o) ->
+      if AWGLAnimationInterface._animationMap[_n] == AWGLBezAnimation
+        new AWGLBezAnimation(_a, _o).animate()
+      else if AWGLAnimationInterface._animationMap[_n] == AWGLPsyxAnimation
+        new AWGLPsyxAnimation(_a, _o).animate()
+      else if AWGLAnimationInterface._animationMap[_n] == AWGLVertAnimation
+        new AWGLVertAnimation(_a, _o).animate()
+      else AWGLLog.warn "Unrecognized property: #{_n}"
 
-    anim
+    if options.start > 0
+      setTimeout (-> _spawnAnim name, actor, options), options.start
+    else _spawnAnim name, actor, options

@@ -14,17 +14,11 @@ class AWGLVertAnimation
   # @param [Object] options the options we apply
   # @option options [Array<Number>] time
   # @option options [Array<String>] vertices
-  # @option options [Number] start optional, negative means start immediately
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options
     param.required @options.time
     param.required @options.vertices
-    options.start = param.optional options.start, 0
-
-    # Start animation now, or schedule start in the future if desired
-    if options.start < 0 then @animate()
-    else if options.start > 0 then setTimeout (=> @animate()), options.start
 
   # The actual vertices changing function
   #

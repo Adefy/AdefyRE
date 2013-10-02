@@ -6,6 +6,7 @@
 class AWGLActorInterface
 
   # Fails with null
+  # @private
   _findActor: (id) ->
     param.required id
 
