@@ -25,7 +25,10 @@ class AWGLEngineInterface
       return
 
     window.ajax = microAjax
-    @_engine = new AWGLEngine null, log, (awgl) ->
+    me = @
+    new AWGLEngine null, log, (awgl) ->
+      me._engine = awgl
+
       awgl.startRendering()
       ad awgl
     , id, width, height
