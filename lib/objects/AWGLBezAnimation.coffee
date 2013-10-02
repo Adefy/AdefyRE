@@ -17,15 +17,21 @@ class AWGLBezAnimation
   # values supplied as an array of the property name, and the composite name.
   #
   # i.e. ["position", "x"]
-  # @param [Actor] actor represents the actor we animate
+  # @param [AWGLActor] actor represents the actor we animate
   # @param [Object] options represents the options used to animate
   # @option options [Object] endVal
   # @option options [Array<Object>] controlPoints
   # @option options [Number] duration
-  # @option options [String, Object] property
+  # @option options [String, Array] property
+  # @option options [Number] start optional, negative means start immediately
   constructor: (@actor, options) ->
     param.required @actor
+    param.required options
     param.required options.duration
+    param.required options.property
+    param.required options.controlPoints
+    param.required options.endVal
+    options.start = param.optional options.start, 0
 
     # In bezOpt we will keep all the info we need for the Bezier function
     # which means degree, starting value, final value and the position of
@@ -41,8 +47,7 @@ class AWGLBezAnimation
           param.required options.controlPoints[1].x
           param.required options.controlPoints[1].y
       @bezOpt.ctrl = options.controlPoints
-    else
-      @bezOpt.degree = 0
+    else @bezOpt.degree = 0
 
     @bezOpt.property = param.required options.property
 
@@ -53,19 +58,16 @@ class AWGLBezAnimation
     if @bezOpt.property[0] == "position"
       if @bezOpt.property[1] == "x"
         @bezOpt.startPos = @actor.getPosition().x
-      else
-        if @bezOpt.property[1] == "y"
-          @bezOpt.startPos = @actor.getPosition().y
+      else if @bezOpt.property[1] == "y"
+        @bezOpt.startPos = @actor.getPosition().y
 
     if @bezOpt.property[0] == "color"
       if @bezOpt.property[1] == "r"
         @bezOpt.startPos = @actor.getColor().getR()
-      else
-        if @bezOpt.property[1] == "g"
-          @bezOpt.startPos = @actor.getColor().getG()
-        else
-          if @bezOpt.property[1] == "b"
-            @bezOpt.startPos = @actor.getColor().getB()
+      else if @bezOpt.property[1] == "g"
+        @bezOpt.startPos = @actor.getColor().getG()
+      else if @bezOpt.property[1] == "b"
+        @bezOpt.startPos = @actor.getColor().getB()
 
     @bezOpt.endPos = param.required options.endVal
     # How much we increment t by in our calls based on duration
@@ -74,15 +76,19 @@ class AWGLBezAnimation
     @temp = 0
     @_intervalID = null
 
+    # Start animation now, or schedule start in the future if desired
+    if options.start < 0 then @animate()
+    else if options.start > 0 then setTimeout (=> @animate()), options.start
+
   # Updates the animation for a certain value t, between 0 and 1
   #
   # @param [Number] t animation state, 0.0-1.0
-  update: (t) ->
+  # @private
+  _update: (t) ->
     param.required t
 
     # If our next step goes higher than 1.0, we set t to last step
-    if @temp + @incr <= 1.0
-      @temp += @incr
+    if @temp + @incr <= 1.0 then @temp += @incr
     else
       t = 1
       clearInterval @_intervalID
@@ -96,9 +102,7 @@ class AWGLBezAnimation
 
     # 0th degree, linear interpolation
     if @bezOpt.degree == 0
-
-      val = @bezOpt.startPos + ((@bezOpt.endPos \
-          - @bezOpt.startPos) * t)
+      val = @bezOpt.startPos + ((@bezOpt.endPos - @bezOpt.startPos) * t)
 
     # 1st degree, quadratic
     else if @bezOpt.degree == 1
@@ -132,17 +136,15 @@ class AWGLBezAnimation
       throw new Error "Invalid degree, can't evaluate (#{@bezOpt.degree})"
 
     # Applying the calculated value for the chosen property
-    if @bezOpt.property == "rotation"
-      @actor.setRotation val
+    if @bezOpt.property == "rotation" then @actor.setRotation val
 
     if @bezOpt.property[0] == "position"
       if @bezOpt.property[1] == "x"
         pos = new cp.v val, @actor.getPosition().y
         @actor.setPosition pos
-      else
-        if @bezOpt.property[1] == "y"
-          pos = new cp.v @actor.getPosition().x, val
-          @actor.setPosition pos
+      else if @bezOpt.property[1] == "y"
+        pos = new cp.v @actor.getPosition().x, val
+        @actor.setPosition pos
 
     if @bezOpt.property[0] == "color"
       if @bezOpt.property[1] == "r"
@@ -150,22 +152,20 @@ class AWGLBezAnimation
         _g = @actor.getColor().getG()
         _b = @actor.getColor().getB()
         @actor.setColor _r, _g, _b
-      else
-        if @bezOpt.property[1] == "g"
-          _r = @actor.getColor().getR()
-          _g = val
-          _b = @actor.getColor().getB()
-          @actor.setColor _r, _g, _b
-        else
-          if @bezOpt.property[1] == "b"
-            _r = @actor.getColor().getR()
-            _g = @actor.getColor().getG()
-            _b = val
-            @actor.setColor _r, _g, _b
+      else if @bezOpt.property[1] == "g"
+        _r = @actor.getColor().getR()
+        _g = val
+        _b = @actor.getColor().getB()
+        @actor.setColor _r, _g, _b
+      else if @bezOpt.property[1] == "b"
+        _r = @actor.getColor().getR()
+        _g = @actor.getColor().getG()
+        _b = val
+        @actor.setColor _r, _g, _b
 
   # Called after construction of the animation object
   # to actually begin the animation
   animate: ->
 
     # Call the bezier update function 60 times each second -> each 16.667 ms
-    @_intervalID = setInterval (=> @update @temp), 16.667
+    @_intervalID = setInterval (=> @_update @temp), 16.667
