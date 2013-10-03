@@ -318,7 +318,7 @@ class AWGLActor
 
   # Get array of vertices
   #
-  # @return [Array<Object>] vertices
+  # @return [Array<Number>] vertices
   getVertices: -> @_vertices
 
   # Get body id

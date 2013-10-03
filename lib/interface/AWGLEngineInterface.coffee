@@ -54,3 +54,11 @@ class AWGLEngineInterface
 
     col = AWGLRenderer.me.getClearColor()
     { r: col.getR(), g: col.getG(), b: col.getB() }
+
+  # Set log level
+  #
+  # @param [Number] level 0-4
+  setLogLevel: (level) ->
+    param.required level, [0, 1, 2, 3, 4]
+
+    AWGLLog.level = level
