@@ -23,7 +23,12 @@ class AWGLPsyxAnimation
     param.required @options.elasticity
     param.optional @options.timeout
 
+    # Guards against multiple exeuctions
+    @_animated = false
+
   animate: ->
+    if @_animated then return else @_animated = true
+
     setTimeout =>
       @actor.createPhysicsBody @options.mass, \
         @options.friction, @options.elasticity

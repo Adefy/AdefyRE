@@ -20,16 +20,20 @@ class AWGLVertAnimation
     param.required @options.time
     param.required @options.vertices
 
+    # Guards against multiple exeuctions
+    @_animated = false
+
   # The actual vertices changing function
   #
   # @param [Object] vert set of vertices to apply to the actor
   # @param [Number] time the delay in miliseconds to make the update
   # @private
-  _update: (vert, time) ->
-    setTimeout (=> @actor.updateVertices vert), time
+  _update: (vert, time) -> setTimeout (=> @actor.updateVertices vert), time
 
   # Looks through all the options provided and sends them to the update
   # function so they are not lost when i updates
   animate: ->
+    if @_animated then return else @_animated = true
+
     for vert, i in @options.vertices
       @_update @options.vertices[i], @options.time[i]

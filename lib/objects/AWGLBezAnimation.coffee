@@ -33,6 +33,9 @@ class AWGLBezAnimation
     options.controlPoints = param.optional options.controlPoints, []
     @_fps = param.optional options.fps, 30
 
+    # Guards against multiple exeuctions
+    @_animated = false
+
     # In bezOpt we will keep all the info we need for the Bezier function
     # which means degree, starting value, final value and the position of
     # the control points provided
@@ -161,4 +164,7 @@ class AWGLBezAnimation
 
   # Called after construction of the animation object
   # to actually begin the animation
-  animate: -> @_intervalID = setInterval (=> @_update @temp), 1000 / @_fps
+  animate: ->
+    if @_animated then return else @_animated = true
+
+    @_intervalID = setInterval (=> @_update @temp), 1000 / @_fps
