@@ -25,6 +25,14 @@ class AWGLAnimationInterface
     # AWGLVertAnimation
     "vertices": AWGLVertAnimation
 
+  # Check if we know how to directly animate the property provided
+  #
+  # @param [String] property property name, parent name if composite
+  canAnimate: (property) ->
+    if AWGLAnimationInterface._animationMap[property] == undefined
+      return false
+    true
+
   # Top-level animate method for AWGL, creates specific animations internally
   # depending on the requirements of the input. Fails with null if the property
   # is not recognized.

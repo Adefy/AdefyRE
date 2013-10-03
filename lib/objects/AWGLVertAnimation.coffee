@@ -22,18 +22,30 @@ class AWGLVertAnimation
   # be set directly, whereas numbers prefixed with "-" or "+" will be offset
   # accordingly.
   #
+  # Repeating series may also be passed in, signaling repetition with "...",
+  # and ending delta parsing. As such, no unique deltas may exist after an
+  # occurence of "..." is encountered! Repeating series also support partial
+  # application (existing vert set length does not have to be divisible by
+  # the repeat step)
+  #
   # @example Example vertex set specifications
-  #   ["+5", "-3", "3.53", ".", "."]
+  #   ["+5", "-3", 3.53, 5, ".", "."]
   #   applied to
   #   [20, 42, 23, 67, 34, 75, 96, 32, 76, 23]
   #   yields
-  #   [25, 39, 3.53, 67, 34]
+  #   [25, 39, 3.53, 5, 34, 75]
   #
   #   ["2", "|"]
   #   applied to
   #   [1, 1, 1, 1, 1, 1]
   #   yields
   #   [2, 1, 1, 1, 1, 1]
+  #
+  #   ["+1", ".", "..."]
+  #   applies to
+  #   [4, 4, 4, 4, 4, 4, 4, 4, 4]
+  #   yields
+  #   [5, 4, 5, 4, 5, 4, 5, 4, 5]
   #
   #   Values passed in as numbers (not strings) will be interpreted as absolute
   #   changes. If you need to set a negative value, use a number, not a string!
@@ -82,15 +94,29 @@ class AWGLVertAnimation
 
     finalVerts = @actor.getVertices()
 
+    # Check for repeat
+    if deltaSet.join("_").indexOf("...") != -1
+      repeat = true
+    else repeat = false
+
     # Apply deltas.
     #
-    #    N   - Absolute update
-    #   "-N" - Negative change
-    #   "+N" - Positive change
-    #   "."  - No change
-    #   "|"  - Finished, break
-    for d, i in deltaSet
-      if i >= finalVerts.length then val = undefined else val = finalVerts[i]
+    #    N    - Absolute update
+    #   "-N"  - Negative change
+    #   "+N"  - Positive change
+    #   "."   - No change
+    #   "|"   - Finished, break
+    #   "..." - Repeat preceeding
+    for i in [0...deltaSet.length]
+      d = deltaSet[i]
+
+      if i >= finalVerts.length
+
+        # Break if repeating and we have surpassed the last vert
+        if repeat then break
+
+        val = undefined
+      else val = finalVerts[i]
 
       if typeof d == "number" then val = d
       else if typeof d == "string"
@@ -101,6 +127,7 @@ class AWGLVertAnimation
         if d.charAt(0) == "|" then break
         else if d.charAt(0) == "-" then val -= Number(d.slice(1))
         else if d.charAt(0) == "+" then val += Number(d.slice(1))
+        else if d == "..." then i = 0
         else if d.charAt(0) != "."
           AWGLLog.warn "Unknown delta action, #{d}, can't apply deltas."
           return
