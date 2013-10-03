@@ -41,6 +41,17 @@ class AWGLActorInterface
 
     false
 
+  # Get actor vertices as a flat array
+  #
+  # @param [Number] id actor id
+  # @return [Array<Number>] vertices
+  getVertices: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null then return a.getVertices()
+
+    null
+
   # Clears stored information about the actor in question. This includes the
   # rendered and physics bodies
   #

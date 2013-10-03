@@ -28,10 +28,28 @@ class AWGLAnimationInterface
   # Check if we know how to directly animate the property provided
   #
   # @param [String] property property name, parent name if composite
+  # @return [Boolean] canAnimate
   canAnimate: (property) ->
+
+    if property instanceof Array then property = property[0]
+
     if AWGLAnimationInterface._animationMap[property] == undefined
       return false
     true
+
+  # Grab animation target for a property, if we support it. Null otherwise.
+  #
+  # @param [String] property property name, arent name if composite
+  # @return [String] name
+  getAnimationName: (property) ->
+    if AWGLAnimationInterface._animationMap[property] == undefined
+      return false
+    else
+      type = AWGLAnimationInterface._animationMap[property]
+
+      if type == AWGLBezAnimation then return "bezier"
+      else if type == AWGLPsyxAnimation then return "psyx"
+      else if type == AWGLVertAnimation then return "vert"
 
   # Top-level animate method for AWGL, creates specific animations internally
   # depending on the requirements of the input. Fails with null if the property
@@ -78,3 +96,24 @@ class AWGLAnimationInterface
     if options.start > 0
       setTimeout (-> _spawnAnim name, actor, options), options.start
     else _spawnAnim name, actor, options
+
+  # Return bezier output for a specific set of animation options. Requires
+  # a startVal on the options object!
+  #
+  # Result contains a "values" key, and a "stepTime" key
+  #
+  # @param [Object] options
+  # @option options [Number] startVal
+  # @option options [Number] endVal
+  # @option options [Array<Object>] controlPoints
+  # @option options [Number] duration
+  # @option options [Number] fps framerate, defaults to 30
+  # @return [Object] bezValues
+  preCalculateBez: (options) ->
+    param.required options.startVal
+    param.required options.endVal
+    param.required options.duration
+    options.controlPoints = param.required options.controlPoints, []
+    options.fps = param.required options.fps, 30
+
+    new AWGLBezAnimation(null, options, true).preCalculate()

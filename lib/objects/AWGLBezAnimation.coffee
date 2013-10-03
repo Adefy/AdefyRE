@@ -19,19 +19,25 @@ class AWGLBezAnimation
   # i.e. ["position", "x"]
   # @param [AWGLActor] actor represents the actor we animate
   # @param [Object] options represents the options used to animate
-  # @option options [Object] endVal
+  # @option options [Number] endVal
   # @option options [Array<Object>] controlPoints
   # @option options [Number] duration
   # @option options [String, Array] property
   # @option options [Number] fps framerate, defaults to 30
-  constructor: (@actor, options) ->
-    param.required @actor
+  # @param [Boolean] dryRun sets up for preCalculate only! Actor optional.
+  constructor: (@actor, options, dryRun) ->
+    dryRun = param.optional dryRun, false
     param.required options
-    param.required options.duration
-    @_property = param.required options.property
+    @_duration = param.required options.duration
     param.required options.endVal
+    @_property = param.required options.property
     options.controlPoints = param.optional options.controlPoints, []
     @_fps = param.optional options.fps, 30
+
+    if dryRun
+      param.optional @actor
+      param.required options.startVal
+    else param.required @actor
 
     # Guards against multiple exeuctions
     @_animated = false
@@ -52,29 +58,29 @@ class AWGLBezAnimation
       @bezOpt.ctrl = options.controlPoints
     else @bezOpt.degree = 0
 
-    # Getting our starting value based on our animated property
-    if @_property == "rotation"
-      @bezOpt.startPos = @actor.getRotation()
-
-    if @_property[0] == "position"
-      if @_property[1] == "x"
-        @bezOpt.startPos = @actor.getPosition().x
-      else if @_property[1] == "y"
-        @bezOpt.startPos = @actor.getPosition().y
-
-    if @_property[0] == "color"
-      if @_property[1] == "r"
-        @bezOpt.startPos = @actor.getColor().getR()
-      else if @_property[1] == "g"
-        @bezOpt.startPos = @actor.getColor().getG()
-      else if @_property[1] == "b"
-        @bezOpt.startPos = @actor.getColor().getB()
-
     @bezOpt.endPos = param.required options.endVal
-    @tIncr = 1 / (options.duration / (1000 / @_fps))
+    @tIncr = 1 / (@_duration * (@_fps / 1000))
 
-    @temp = 0
-    @_intervalID = null
+    if dryRun then @bezOpt.startPos = options.startVal
+    else
+
+      # Getting our starting value based on our animated property
+      if @_property == "rotation"
+        @bezOpt.startPos = @actor.getRotation()
+
+      if @_property[0] == "position"
+        if @_property[1] == "x"
+          @bezOpt.startPos = @actor.getPosition().x
+        else if @_property[1] == "y"
+          @bezOpt.startPos = @actor.getPosition().y
+
+      if @_property[0] == "color"
+        if @_property[1] == "r"
+          @bezOpt.startPos = @actor.getColor().getR()
+        else if @_property[1] == "g"
+          @bezOpt.startPos = @actor.getColor().getG()
+        else if @_property[1] == "b"
+          @bezOpt.startPos = @actor.getColor().getB()
 
   # Updates the animation for a certain value t, between 0 and 1
   #
@@ -131,14 +137,24 @@ class AWGLBezAnimation
 
     val
 
-  # Calculate value for each step, return results in an array
+  # Calculate value for each step, return an object with "values" and
+  # "stepTime" keys
   #
-  # @return [Array<Number>] values
+  # @return [Object] bezValues
   preCalculate: ->
     t = 0
-    ret = []
-    (ret.push @_update t, false; t += @tIncr) while t <= 1.0
-    ret
+    bezValues = { stepTime: @_duration * @tIncr }
+    bezValues.values = []
+
+    while t <= 1.0
+      t += @tIncr
+
+      # Round last t
+      if t > 1 and t < (1 + @tIncr) then t = 1 else if t > 1 then break
+
+      bezValues.values.push @_update t, false
+
+    bezValues
 
   # Apply value to our actor
   #
