@@ -28,7 +28,7 @@ class AWGLBezAnimation
     param.required @actor
     param.required options
     param.required options.duration
-    param.required options.property
+    @_property = param.required options.property
     param.required options.endVal
     options.controlPoints = param.optional options.controlPoints, []
     @_fps = param.optional options.fps, 30
@@ -52,29 +52,26 @@ class AWGLBezAnimation
       @bezOpt.ctrl = options.controlPoints
     else @bezOpt.degree = 0
 
-    @bezOpt.property = param.required options.property
-
     # Getting our starting value based on our animated property
-    if @bezOpt.property == "rotation"
+    if @_property == "rotation"
       @bezOpt.startPos = @actor.getRotation()
 
-    if @bezOpt.property[0] == "position"
-      if @bezOpt.property[1] == "x"
+    if @_property[0] == "position"
+      if @_property[1] == "x"
         @bezOpt.startPos = @actor.getPosition().x
-      else if @bezOpt.property[1] == "y"
+      else if @_property[1] == "y"
         @bezOpt.startPos = @actor.getPosition().y
 
-    if @bezOpt.property[0] == "color"
-      if @bezOpt.property[1] == "r"
+    if @_property[0] == "color"
+      if @_property[1] == "r"
         @bezOpt.startPos = @actor.getColor().getR()
-      else if @bezOpt.property[1] == "g"
+      else if @_property[1] == "g"
         @bezOpt.startPos = @actor.getColor().getG()
-      else if @bezOpt.property[1] == "b"
+      else if @_property[1] == "b"
         @bezOpt.startPos = @actor.getColor().getB()
 
     @bezOpt.endPos = param.required options.endVal
-    # How much we increment t by in our calls based on duration
-    @incr = 1 / (options.duration / (1000 / @_fps))
+    @tIncr = 1 / (options.duration / (1000 / @_fps))
 
     @temp = 0
     @_intervalID = null
@@ -82,22 +79,18 @@ class AWGLBezAnimation
   # Updates the animation for a certain value t, between 0 and 1
   #
   # @param [Number] t animation state, 0.0-1.0
+  # @param [Boolean] apply applies the updated value, defaults to true
+  #
+  # @return [Number] val new value
   # @private
-  _update: (t) ->
+  _update: (t, apply) ->
     param.required t
-
-    # If our next step goes higher than 1.0, we set t to last step
-    if @temp + @incr <= 1.0 then @temp += @incr
-    else
-      t = 1
-      clearInterval @_intervalID
+    apply = param.optional apply, true
 
     # Throw an error if t is out of bounds. We could just cap it, but it should
     # never be provided out of bounds. If it is, something is wrong with the
     # code calling us
-    if t > 1 or t < 0
-      clearInterval @_intervalID
-      throw new Error "t out of bounds! #{t}"
+    if t > 1 or t < 0 then throw new Error "t out of bounds! #{t}"
 
     # 0th degree, linear interpolation
     if @bezOpt.degree == 0
@@ -131,32 +124,49 @@ class AWGLBezAnimation
            + (3 * _Mt * _t2 * @bezOpt.ctrl[1].y) + (_t3 * @bezOpt.endPos)
 
     else
-      clearInterval @_intervalID
       throw new Error "Invalid degree, can't evaluate (#{@bezOpt.degree})"
 
     # Applying the calculated value for the chosen property
-    if @bezOpt.property == "rotation" then @actor.setRotation val
+    if apply then @_applyValue val
 
-    if @bezOpt.property[0] == "position"
-      if @bezOpt.property[1] == "x"
+    val
+
+  # Calculate value for each step, return results in an array
+  #
+  # @return [Array<Number>] values
+  preCalculate: ->
+    t = 0
+    ret = []
+    (ret.push @_update t, false; t += @tIncr) while t <= 1.0
+    ret
+
+  # Apply value to our actor
+  #
+  # @param [Number] val
+  # @private
+  _applyValue: (val) ->
+    if @_property == "rotation" then @actor.setRotation val
+
+    if @_property[0] == "position"
+      if @_property[1] == "x"
         pos = new cp.v val, @actor.getPosition().y
         @actor.setPosition pos
-      else if @bezOpt.property[1] == "y"
+      else if @_property[1] == "y"
         pos = new cp.v @actor.getPosition().x, val
         @actor.setPosition pos
 
-    if @bezOpt.property[0] == "color"
-      if @bezOpt.property[1] == "r"
+    if @_property[0] == "color"
+      if @_property[1] == "r"
         _r = val
         _g = @actor.getColor().getG()
         _b = @actor.getColor().getB()
         @actor.setColor _r, _g, _b
-      else if @bezOpt.property[1] == "g"
+      else if @_property[1] == "g"
         _r = @actor.getColor().getR()
         _g = val
         _b = @actor.getColor().getB()
         @actor.setColor _r, _g, _b
-      else if @bezOpt.property[1] == "b"
+      else if @_property[1] == "b"
         _r = @actor.getColor().getR()
         _g = @actor.getColor().getG()
         _b = val
@@ -167,4 +177,9 @@ class AWGLBezAnimation
   animate: ->
     if @_animated then return else @_animated = true
 
-    @_intervalID = setInterval (=> @_update @temp), 1000 / @_fps
+    t = -@tIncr
+
+    @_intervalID = setInterval =>
+      t += @tIncr
+      if t > 1 then clearInterval @_intervalID else @_update t
+    , 1000 / @_fps
