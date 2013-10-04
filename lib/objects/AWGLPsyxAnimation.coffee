@@ -16,20 +16,24 @@ class AWGLPsyxAnimation
   # @option options [Number] friction
   # @option options [Number] elasticity
   # @option options [Number] timeout
+  # @option options [Method] cbStart callback to call before animating
+  # @option options [Method] cbEnd callback to call after animating
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options.mass
     param.required @options.friction
     param.required @options.elasticity
-    param.optional @options.timeout
+    param.required @options.timeout
 
     # Guards against multiple exeuctions
     @_animated = false
 
   animate: ->
     if @_animated then return else @_animated = true
+    if @options.cbStart != undefined then @options.cbStart()
 
     setTimeout =>
       @actor.createPhysicsBody @options.mass, \
         @options.friction, @options.elasticity
+      if @options.cbEnd != undefined then @options.cbEnd()
     , @options.timeout

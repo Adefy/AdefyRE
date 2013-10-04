@@ -24,10 +24,13 @@ class AWGLBezAnimation
   # @option options [Number] duration
   # @option options [String, Array] property
   # @option options [Number] fps framerate, defaults to 30
+  # @option options [Method] cbStart callback to call before animating
+  # @option options [Method] cbEnd callback to call after animating
+  # @option options [Method] cbStep callback to call after each update
   # @param [Boolean] dryRun sets up for preCalculate only! Actor optional.
   constructor: (@actor, options, dryRun) ->
     dryRun = param.optional dryRun, false
-    param.required options
+    @options = param.required options
     @_duration = param.required options.duration
     param.required options.endVal
     @_property = param.required options.property
@@ -132,8 +135,11 @@ class AWGLBezAnimation
     else
       throw new Error "Invalid degree, can't evaluate (#{@bezOpt.degree})"
 
-    # Applying the calculated value for the chosen property
-    if apply then @_applyValue val
+    # Applying the calculated value for the chosen property, and call cbStep if
+    # provided
+    if apply
+      @_applyValue val
+      if @options.cbStep != undefined then @options.cbStep val
 
     val
 
@@ -192,10 +198,18 @@ class AWGLBezAnimation
   # to actually begin the animation
   animate: ->
     if @_animated then return else @_animated = true
+    if @options.cbStart != undefined then @options.cbStart()
 
     t = -@tIncr
 
     @_intervalID = setInterval =>
       t += @tIncr
-      if t > 1 then clearInterval @_intervalID else @_update t
+
+      if t > 1
+        clearInterval @_intervalID
+        if @options.cbEnd != undefined then @options.cbEnd()
+      else
+        @_update t
+        if @options.cbStep != undefined then @options.cbStep()
+
     , 1000 / @_fps

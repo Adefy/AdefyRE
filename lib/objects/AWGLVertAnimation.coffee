@@ -54,6 +54,9 @@ class AWGLVertAnimation
   # @param [Object] options the options we apply
   # @option options [Number, Array<Number>] delays
   # @option options [Array, Array<Array>] deltas
+  # @option options [Array<Object>] udata objects passed into step callback
+  # @option options [Method] cbStart callback to call before animating
+  # @option options [Method] cbEnd callback to call after animating
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options
@@ -79,18 +82,26 @@ class AWGLVertAnimation
   #
   # @param [Object] deltaSet set of deltas to apply to the actor
   # @param [Number] delay the delay in miliseconds to make the update
+  # @param [Object] udata optional userdata to send to callback
+  # @param [Boolean] last signals this is the last timeout
   # @private
-  _setTimeout: (deltaSet, delay) ->
+  _setTimeout: (deltaSet, delay, udata, last) ->
     param.required deltaSet
     param.required delay
+    udata = param.optional udata, null
 
-    setTimeout (=> @_applyDeltas deltaSet), delay
+    setTimeout (=>
+      @_applyDeltas deltaSet, udata
+      if last then if @options.cbEnd != undefined then @options.cbEnd()
+    ), delay
 
   # Applies the delta set to the actor
   #
   # @param [Array<String, Number>] deltaSet
-  _applyDeltas: (deltaSet) ->
+  # @param [Object] udata optional userdata to send to callback
+  _applyDeltas: (deltaSet, udata) ->
     param.required deltaSet
+    if @options.cbStep != undefined then @options.cbStep udata
 
     finalVerts = @actor.getVertices()
 
@@ -149,6 +160,16 @@ class AWGLVertAnimation
   # function so they are not lost when i updates
   animate: ->
     if @_animated then return else @_animated = true
+    if @options.cbStart != undefined then @options.cbStart()
 
     for i in [0...@options.deltas.length]
-      @_setTimeout @options.deltas[i], @options.delays[i]
+
+      # Send proper user data if provided
+      udata = null
+      if @options.udata != undefined
+        if @options.udata instanceof Array
+          if i < @options.udata.length then udata = @options.udata[i]
+        else udata = @options.udata
+
+      if i == (@options.deltas.length - 1) then last = true else last = false
+      @_setTimeout @options.deltas[i], @options.delays[i], udata, last
