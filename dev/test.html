@@ -18,255 +18,46 @@
     window.ajax = microAjax
     var testAd = new AWGLEngine("./adefy-test/", 4, function() {
 
-      var fallBox = [
+      var boxVerts = [
         -50, -50,
         -50,  50,
          50,  50,
-         50, -50,
-        -50, -50
-      ];
-      var fallBox1 = [
-        -50, -50,
-        -50,  50,
-         500,  50,
-         100, -50,
-        -50, -50
-      ];
-      var fallBox2 = [
-        -50, -50,
-        -77,  50,
-         50,  122,
-         50, -50,
-        -50, -50
-      ];
-      var fallBox3 = [
-        -50, -55,
-        -90,  50,
-         50,  50,
-         50, -50,
-        -50, -50
-      ];
-      var fallBox4 = [
-        -50, -50,
-        -50,  50,
-         50,  50,
-         50, -50,
-        -50, -50
-      ];
-      var fallBox5 = [
-        -50, -59,
-        -50,  50,
-         57,  50,
          50, -50,
         -50, -50
       ];
 
-      var groundBox = [
-        -50, -50,
-        -50,  50,
-         50,  50,
-         50, -50,
-        -500, -50,
-        -200, -200
+      var boxUV = [
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 1,
+        0, 0
       ];
 
-      var groundBox = [
-        -50, -50,
-        -50,  50,
-         50,  50,
-         50, -50,
-        -500, -500,
-        -200, -200
-      ];
-
-      var box = new AWGLActor(fallBox);
+      var box = new AWGLActor(boxVerts, boxUV);
       box.setPosition({ x: 100, y: 400 });
-      box.setRotation(0);
-      box.setColor(255, 0, 0);
+      box.setRotation(-90);
+      box.setColor(255, 255, 0);
 
-      var zehground = new AWGLActor(fallBox);
-      zehground.setPosition({ x: 100, y: 0 });
-      zehground.setRotation(0);
-      zehground.setColor(255, 255, 0);
-      zehground.createPhysicsBody(0, 10, 1.1);
+      // Create our texture
+      gl = AWGLRenderer._gl
 
-      var box1 = new AWGLActor(fallBox1);
-      box1.setPosition({ x: -66 , y: 366 });
-      box1.setRotation(0);
-      box1.setColor(255, 0, 0);
+      boxTex = gl.createTexture()
+      boxTexImage = new Image();
+      boxTexImage.onload = function() {
 
-      var box2 = new AWGLActor(fallBox2);
-      box2.setPosition({ x: 0, y: 100 });
-      box2.setRotation(0);
-      box2.setColor(255, 0, 0);
+        gl.bindTexture(gl.TEXTURE_2D, boxTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, boxTexImage);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
 
-      var box3 = new AWGLActor(fallBox3);
-      box3.setPosition({ x: -300, y: 650 });
-      box3.setRotation(0);
-      box3.setColor(255, 0, 0);
-
-      var box4 = new AWGLActor(fallBox4);
-      box4.setPosition({ x: 600, y: 600 });
-      box4.setRotation(0);
-      box4.setColor(255, 0, 0);
-
-      var box5 = new AWGLActor(fallBox5);
-      box5.setPosition({ x: 600, y: 100 });
-      box5.setRotation(0);
-      box5.setColor(255, 0, 0);
-
-      var ground = new AWGLActor(groundBox);
-      ground.setPosition({ x: 400, y: 400 });
-      ground.setRotation(0);
-
-      endVal2 = 255;
-      degree = 2;
-      control = [{ x: 0.1, y: -300}, { x: 0.9, y: 255}];
-      duration = 2000;
-
-      startPos2 = 0
-      endPos2 = 55
-      control2 = [];//[{ x: 0, y: 0}, { x: 1, y: 77}];
-      duration2 = 2000;
-      options = {
-        endVal: endVal2,
-        controlPoints: control,
-        duration: duration,
-        property: ["color", "g"]
-      }
-      //ground.createPhysicsBody(0, 0.2, 0.8);
-
-      animation = new AWGLBezAnimation(ground, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box2, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box3, options);
-      animation.animate();
-
-      options = {
-        endVal: endPos2,
-        controlPoints: control2,
-        duration: duration2,
-        property: ["color", "r"]
-      }
-      animation = new AWGLBezAnimation(ground, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box2, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box3, options);
-      animation.animate();
-
-      options = {
-        endVal: endPos2,
-        controlPoints: control2,
-        duration: duration2,
-        property: ["color", "b"]
-      }
-      animation = new AWGLBezAnimation(box4, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(ground, options);
-      animation.animate();
-
-      options = {
-        endVal: 255,
-        controlPoints: control2,
-        duration: duration2,
-        property: ["color", "b"]
-      }
-
-      animation = new AWGLBezAnimation(box1, options);
-      animation.animate();
-      options = {
-        endVal: 102,
-        controlPoints: control2,
-        duration: duration2,
-        property: ["color", "b"]
-      }
-      animation = new AWGLBezAnimation(box, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box3, options);
-      animation.animate();
-
-      options = {
-        endVal: 709,
-        controlPoints: control,
-        duration: duration2,
-        property: ["position", "x"]
-      }
-      animation = new AWGLBezAnimation(ground, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box4, options);
-      animation.animate();
-
-      options = {
-        endVal: 255,
-        controlPoints: control,
-        duration: duration2,
-        property: ["position", "x"]
-      }
-      animation = new AWGLBezAnimation(box2, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box3, options);
-      animation.animate();
-
-      options = {
-        endVal: 355,
-        controlPoints: control2,
-        duration: duration2,
-        property: ["position", "y"]
-      }
-
-      //animation = new AWGLBezAnimation(box, options);
-      //animation.animate();
-      animation = new AWGLBezAnimation(box5, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box1, options);
-      animation.animate();
-      options = {
-        endVal: 100,
-        controlPoints: control2,
-        duration: duration2,
-        property: ["position", "y"]
-      }
-      animation = new AWGLBezAnimation(box2, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box3, options);
-      animation.animate();
-
-      options = {
-        endVal: 188,
-        controlPoints: control,
-        duration: duration2,
-        property: "rotation"
-      }
-      animation = new AWGLBezAnimation(ground, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box1, options);
-      animation.animate();
-      animation = new AWGLBezAnimation(box3, options);
-      animation.animate();
-
-      options = {
-        mass: 10,
-        friction: 0.3,
-        elasticity: 1.1,
-        timeout: 1000
-      };
-      //box.createPhysicsBody(options.mass, options.friction, options.elasticity);
-      animation = new AWGLPsyxAnimation(box, options);
-      animation.animate();
-
-      options = {
-        mass: 0,
-        friction: 0.3,
-        elasticity: 1.1,
-        timeout: 2888
+        box.setTexture(boxTex);
       };
 
-      animation = new AWGLPsyxAnimation(box, options);
-      animation.animate();
+      boxTexImage.src = "test.png";
+
     });
 
   </script>

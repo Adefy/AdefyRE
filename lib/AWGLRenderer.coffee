@@ -58,6 +58,10 @@ class AWGLRenderer
   # @property [AWGLRenderer] instance reference, enforced const in constructor
   @me: null
 
+  # Signifies the current material; when this doesn't match, a material change
+  # is made (different shader program)
+  @_currentMaterial: "none"
+
   # Sets up the renderer, using either an existing canvas or creating a new one
   # If a canvasId is provided but the element is not a canvas, it is treated
   # as a parent. If it is a canvas, it is adopted as our canvas.
@@ -167,44 +171,76 @@ class AWGLRenderer
 
     # Perform rendering setup
     gl.enable gl.DEPTH_TEST
+    gl.enable gl.BLEND
+
     gl.depthFunc gl.LEQUAL
+    gl.blendFunc gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA
 
     AWGLLog.info "Renderer initialized"
 
-    ## Shaders
-    vertSrc = "" +
-      "attribute vec2 Position;" +
-      "uniform mat4 Projection;" +
-      "uniform mat4 ModelView;" +
-      "void main() {" +
-      "  mat4 mvp = Projection * ModelView;" +
-      "  gl_Position = mvp * vec4(Position, 1, 1);" +
-      "}\n"
+    ## Shaders for shapes with solid colors
+    vertSrc_Solid = """
+      attribute vec2 Position;
 
-    fragSrc = "" +
-      "precision mediump float;" +
-      "uniform vec4 Color;" +
-      "void main() {" +
-      "  gl_FragColor = Color;" +
-      "}\n"
+      uniform mat4 Projection;
+      uniform mat4 ModelView;
 
-    @_defaultShader = new AWGLShader vertSrc, fragSrc, gl, true
+      void main() {
+        mat4 mvp = Projection * ModelView;
+        gl_Position = mvp * vec4(Position, 1, 1);
+      }
+
+    """
+
+    fragSrc_Solid = """
+      precision mediump float;
+      uniform vec4 Color;
+
+      void main() {
+        gl_FragColor = Color;
+      }
+
+    """
+
+    ## Shaders for textured objects
+    vertSrc_Tex = """
+      attribute vec2 Position;
+      attribute vec2 aTexCoord;
+
+      uniform mat4 Projection;
+      uniform mat4 ModelView;
+
+      varying highp vec2 vTexCoord;
+
+      void main() {
+        gl_Position = Projection * ModelView * vec4(Position, 1, 1);
+        vTexCoord = aTexCoord;
+      }
+
+    """
+
+    fragSrc_Tex = """
+      precision highp float;
+
+      varying highp vec2 vTexCoord;
+      uniform sampler2D uSampler;
+
+      void main() {
+        gl_FragColor = texture2D(uSampler, vTexCoord);
+      }
+
+    """
+
+    @_defaultShader = new AWGLShader vertSrc_Solid, fragSrc_Solid, gl, true
     @_defaultShader.generateHandles()
-    handles = @_defaultShader.getHandles()
 
-    # Use program
-    gl.useProgram @_defaultShader.getProgram()
-
-    gl.enableVertexAttribArray AWGLRenderer.attrVertPosition
-    gl.enableVertexAttribArray AWGLRenderer.attrVertColor
-
-    # Set up projection
-    ortho = makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
-    gl.uniformMatrix4fv handles["Projection"], false, ortho
+    @_texShader = new AWGLShader vertSrc_Tex, fragSrc_Tex, gl, true
+    @_texShader.generateHandles()
 
     AWGLLog.info "Initialized shaders"
 
-    # Start out with black
+    @switchMaterial "flat"
+
     @setClearColor 0, 0, 0
 
   # Returns instance (only one may exist, enforced in constructor)
@@ -216,6 +252,11 @@ class AWGLRenderer
   #
   # @return [AWGLShader] shader default shader
   getDefaultShader: -> @_defaultShader
+
+  # Returns the shader used for textured objects
+  #
+  # @return [AWGLShader] shader texture shader
+  getTextureShader: -> @_texShader
 
   # Returns canvas element
   #
@@ -335,12 +376,18 @@ class AWGLRenderer
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
 
+        @switchMaterial "flat"
+
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
         a.draw gl
         a.setColor _savedColor
 
       else
+
+        if a.getMaterial() != AWGLRenderer._currentMaterial
+          @switchMaterial a.getMaterial()
+
         a.draw gl
 
     # Switch back to a normal rendering mode, and immediately re-render to the
@@ -362,3 +409,37 @@ class AWGLRenderer
   # Returns a unique id, used by actors
   # @return [Number] id unique id
   @getNextId: -> AWGLRenderer._nextID++
+
+  # Switch material (shader program)
+  #
+  # @param [String] material
+  switchMaterial: (material) ->
+    param.required material
+
+    ortho = makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+    gl = AWGLRenderer._gl
+
+    if material == AWGLRenderer._currentMaterial then return
+    else if material == "flat"
+      gl.useProgram @_defaultShader.getProgram()
+
+      handles = @_defaultShader.getHandles()
+      gl.uniformMatrix4fv handles["Projection"], false, ortho
+
+      gl.enableVertexAttribArray handles["Position"]
+      gl.enableVertexAttribArray handles["Color"]
+
+      AWGLRenderer._currentMaterial = "flat"
+
+    else if material == "texture"
+      gl.useProgram @_texShader.getProgram()
+
+      handles = @_texShader.getHandles()
+      gl.uniformMatrix4fv handles["Projection"], false, ortho
+
+      gl.enableVertexAttribArray handles["Position"]
+      gl.enableVertexAttribArray handles["aTexCoord"]
+
+      AWGLRenderer._currentMaterial = "texture"
+
+    else throw new Error "Unknown material #{material}"

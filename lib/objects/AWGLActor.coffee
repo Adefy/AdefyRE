@@ -11,14 +11,17 @@ class AWGLActor
   @defaultElasticity: 0.2
 
   # Null offset, used when creating dynamic bodies
+  # @private
   @_nullV: new cp.v 0, 0
 
   # Adds the actor to the renderer actor list, gets a unique id from the
   # renderer, and builds our vert buffer
   #
   # @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
-  constructor: (verts) ->
+  # @param [Array<Number>] texverts flat array of texture coords, optional
+  constructor: (verts, texverts) ->
     param.required verts
+    texverts = param.optional texverts, null
 
     @_gl = AWGLRenderer._gl
     if @_gl == undefined or @_gl == null
@@ -72,7 +75,7 @@ class AWGLActor
     AWGLRenderer.actors.push @
 
     # Sets up our vert buffer, also validates the vertex array (length)
-    @updateVertices verts
+    @updateVertices verts, texverts
 
     @setColor new AWGLColor3 255, 255, 255
 
@@ -81,8 +84,35 @@ class AWGLActor
     @_transV = $V([0, 0, 1])
     @_modelM = Matrix.I 4
 
-    # Grab default shader from the renderer
+    # Flat rendering by default
+    @clearTexture()
+
+  # Get material name
+  #
+  # @return [String] material
+  getMaterial: -> @_material
+
+  # We support a single texture per actor for the time being. UV coords are
+  # generated automatically internally, for a flat map.
+  #
+  # @param [WebGLTexture] texture texture to use, expected to be initialized
+  setTexture: (texture) ->
+    param.required texture
+
+    @_texture = texture
+    @setShader AWGLRenderer.getMe().getTextureShader()
+    @_material = "texture"
+
+  # Clear our internal texture, leaving us to render with a flat color
+  clearTexture: ->
+    @_texture = undefined
     @setShader AWGLRenderer.getMe().getDefaultShader()
+    @_material = "flat"
+
+  # Get our texture, if we have one
+  #
+  # @return [WebGLTexture] texture
+  getTexture: -> @_texture
 
   # Set shader used to draw actor. For the time being, the routine mearly
   # pulls out handles for the ModelView, Color, and Position structures
@@ -103,6 +133,8 @@ class AWGLActor
     @_sh_modelview = handles["ModelView"]
     @_sh_position = handles["Position"]
     @_sh_color = handles["Color"]
+    @_sh_texture = handles["aTexCoord"]
+    @_sh_sampler = handles["uSampler"]
 
   # Creates the internal physics body, if one does not already exist
   #
@@ -197,18 +229,33 @@ class AWGLActor
   # Update our vertices, causing a rebuild of the physics body, if it doesn't
   # have its' own set of verts. Note that for large actors this is expensive.
   #
+  # Texture coordinates are only required if the actor needs to be textured. If
+  # provided, the array must be the same length as that containing the vertices
+  #
   # @param [Array<Number>] verts flat array of vertices
-  updateVertices: (verts) ->
+  # @param [Array<Number>] texverts flat array of texture coords
+  updateVertices: (verts, texverts) ->
     @_vertices = param.required verts
+    @_texVerts = param.optional texverts, null
 
     if @_vertices.length < 6
       throw new Error "At least 3 vertices make up an actor"
 
+    if @_texVerts != null
+      if @_vertices.length != @_texVerts.length
+        throw new Error "Vert array and texture vert array lengths must match!"
+
     @_vertBuffer = @_gl.createBuffer()
     @_vertBufferFloats = new Float32Array(@_vertices)
-
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
     @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
+
+    if @_texVerts != null
+      @_texBuffer = @_gl.createBuffer()
+      @_texVBufferFloats = new Float32Array(@_texVerts)
+      @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
+      @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
+
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
 
   # Set an alternate vertex array for our physics object. Note that this also
@@ -249,8 +296,17 @@ class AWGLActor
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_position, 2, gl.FLOAT, false, 0, 0
 
+    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+    gl.vertexAttribPointer @_sh_texture, 2, gl.FLOAT, false, 0, 0
+
     gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
     gl.uniformMatrix4fv @_sh_modelview, false, flatMV
+
+    # Texture rendering, if needed
+    if @_material == "texture"
+      gl.activeTexture gl.TEXTURE0
+      gl.bindTexture gl.TEXTURE_2D, @_texture
+      gl.uniform1i @_sh_sampler, 0
 
     if @_renderMode == 1
       gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
