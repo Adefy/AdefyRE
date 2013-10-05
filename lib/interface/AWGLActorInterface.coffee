@@ -44,11 +44,12 @@ class AWGLActorInterface
   # Get actor vertices as a flat array
   #
   # @param [Number] id actor id
-  # @return [Array<Number>] vertices
+  # @return [String] vertices
   getVertices: (id) ->
     param.required id
 
-    if (a = @_findActor(id)) != null then return a.getVertices()
+    if (a = @_findActor(id)) != null
+      return JSON.stringify a.getVertices()
 
     null
 
@@ -125,7 +126,7 @@ class AWGLActorInterface
   # Returns position as a JSON representation of a primitive (x, y) object!
   #
   # @param [Number] id
-  # @return [Object] position
+  # @return [String] position
   getActorPosition: (id) ->
     param.required id
 
@@ -190,7 +191,7 @@ class AWGLActorInterface
   # Uses id, fails with null
   #
   # @param [Number] id
-  # @return [AWGLColor3] col
+  # @return [String] col
   getActorColor: (id) ->
     param.required id
 
