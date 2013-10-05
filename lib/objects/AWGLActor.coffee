@@ -2,11 +2,7 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# Actor class, skeleton for now
-#
-# @depend AWGLBezAnimation.coffee
-# @depend AWGLVertAnimation.coffee
-# @depend AWGLPsyxAnimation.coffee
+# Highly generic actor class
 class AWGLActor
 
   # Default physical properties
