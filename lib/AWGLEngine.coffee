@@ -8,10 +8,10 @@
 # @depend AWGLPhysics.coffee
 # @depend util/AWGLLog.coffee
 # @depend util/AWGLAjax.coffee
-# @depend interface/AWGLInterface.coffee
 # @depend animations/AWGLBezAnimation.coffee
 # @depend animations/AWGLVertAnimation.coffee
 # @depend animations/AWGLPsyxAnimation.coffee
+# @depend interface/AWGLInterface.coffee
 #
 # Takes a path to a directory containing an Adefy ad and runs it
 #

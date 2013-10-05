@@ -46,14 +46,14 @@ class AWGLEngineInterface
     if @_engine == undefined then return
     else AWGLRenderer.me.setClearColor r, g, b
 
-  # Get engine clear color as (r,g,b), fails with null
+  # Get engine clear color as (r,g,b) JSON, fails with null
   #
-  # @return [Object] clearcol
+  # @return [String] clearcol
   getClearColor: ->
     if @_engine == undefined then return null
 
     col = AWGLRenderer.me.getClearColor()
-    { r: col.getR(), g: col.getG(), b: col.getB() }
+    JSON.stringify { r: col.getR(), g: col.getG(), b: col.getB() }
 
   # Set log level
   #

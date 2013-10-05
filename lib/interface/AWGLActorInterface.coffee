@@ -156,7 +156,7 @@ class AWGLActorInterface
 
     false
 
-  # Get actor rotation using handle, fails with -1
+  # Get actor rotation using handle, fails with 0.000001
   #
   # @param [Number] id
   # @param [Boolean] radians defaults to false
@@ -166,7 +166,7 @@ class AWGLActorInterface
     radians = param.optional radians, false
 
     if (a = @_findActor(id)) != null then return a.getRotation radians
-    -1
+    0.000001
 
   # Set actor color using handle, fails with false
   #

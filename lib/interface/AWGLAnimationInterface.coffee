@@ -31,8 +31,6 @@ class AWGLAnimationInterface
   # @return [Boolean] canAnimate
   canAnimate: (property) ->
 
-    if property instanceof Array then property = property[0]
-
     if AWGLAnimationInterface._animationMap[property] == undefined
       return false
     true
@@ -59,13 +57,15 @@ class AWGLAnimationInterface
   # signifying when to initiate the animation. (< 0) means now, (> 0) after
   # 'start' ms, and 0 as default no auto start
   #
+  # Options and property are passed in as JSON strings
+  #
   # @param [Number] actorID id of actor to animate, as per AWGLActorInterface
-  # @param [Array, String] property property, possibly composite (array)
-  # @param [Object] options options to pass to animation, varies by property
+  # @param [String] property property array, second element is component
+  # @param [String] options options to pass to animation, varies by property
   animate: (actorID, property, options) ->
     param.required actorID
-    param.required property
-    param.required options
+    property = JSON.parse param.required property
+    options = JSON.parse param.required options
     options.start = param.optional options.start, 0
 
     actor = null
@@ -79,7 +79,7 @@ class AWGLAnimationInterface
       throw new Error "Actor not found, can't animate! #{actorId}"
 
     # Grab true property name
-    if property instanceof Array then name = property[0] else name = property
+    name = property[0]
 
     if options.property == undefined then options.property = property
 
@@ -102,18 +102,23 @@ class AWGLAnimationInterface
   #
   # Result contains a "values" key, and a "stepTime" key
   #
-  # @param [Object] options
+  # Note that both the options object and the returned object are JSON strings
+  #
+  # @param [String] options
   # @option options [Number] startVal
   # @option options [Number] endVal
   # @option options [Array<Object>] controlPoints
   # @option options [Number] duration
   # @option options [Number] fps framerate, defaults to 30
-  # @return [Object] bezValues
+  # @return [String] bezValues
   preCalculateBez: (options) ->
+    options = JSON.parse param.required options
+
     param.required options.startVal
     param.required options.endVal
     param.required options.duration
     options.controlPoints = param.required options.controlPoints, []
     options.fps = param.required options.fps, 30
 
-    new AWGLBezAnimation(null, options, true).preCalculate()
+    ret = new AWGLBezAnimation(null, options, true).preCalculate()
+    JSON.stringify ret

@@ -296,14 +296,14 @@ class AWGLActor
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_position, 2, gl.FLOAT, false, 0, 0
 
-    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
-    gl.vertexAttribPointer @_sh_texture, 2, gl.FLOAT, false, 0, 0
-
     gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
     gl.uniformMatrix4fv @_sh_modelview, false, flatMV
 
     # Texture rendering, if needed
     if @_material == "texture"
+      gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+      gl.vertexAttribPointer @_sh_texture, 2, gl.FLOAT, false, 0, 0
+
       gl.activeTexture gl.TEXTURE0
       gl.bindTexture gl.TEXTURE_2D, @_texture
       gl.uniform1i @_sh_sampler, 0
