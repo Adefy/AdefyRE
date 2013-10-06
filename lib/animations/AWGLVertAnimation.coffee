@@ -54,21 +54,15 @@ class AWGLVertAnimation
   # @param [Object] options the options we apply
   # @option options [Number, Array<Number>] delays
   # @option options [Array, Array<Array>] deltas
-  # @option options [Array<Object>] udata objects passed into step callback
+  # @option options [Array<Number>] udata objects passed into step callback
   # @option options [Method] cbStart callback to call before animating
+  # @option options [Method] cbStep callback to call on each delta application
   # @option options [Method] cbEnd callback to call after animating
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options
     param.required @options.delays
     param.required @options.deltas
-
-    # Force array, length match
-    if @options.delays not instanceof Array
-      @options.delays = [ @options.delays ]
-
-    if @options.deltas not instanceof Array
-      @options.deltas = [ @options.deltas ]
 
     if @options.delays.length != @options.deltas.length
       AWGLLog.warn "Vert animation delay count != delta set count! Bailing."
@@ -112,7 +106,7 @@ class AWGLVertAnimation
 
     # Apply deltas.
     #
-    #    N    - Absolute update
+    #   "`N"  - Absolute update
     #   "-N"  - Negative change
     #   "+N"  - Positive change
     #   "."   - No change
