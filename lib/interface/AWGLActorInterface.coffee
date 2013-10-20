@@ -187,6 +187,12 @@ class AWGLActorInterface
 
     false
 
+  setTexture: (texture, id) ->
+    param.required texture
+    if (a = @_findActor(id)) != null
+      a.setTexture texture
+      return true
+
   # Returns actor color as a JSON triple, in 0-255 range
   # Uses id, fails with null
   #
