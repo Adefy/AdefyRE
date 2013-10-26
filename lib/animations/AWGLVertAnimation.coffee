@@ -89,6 +89,7 @@ class AWGLVertAnimation
       if last then if @options.cbEnd != undefined then @options.cbEnd()
     ), delay
 
+  # @private
   # Applies the delta set to the actor
   #
   # @param [Array<String, Number>] deltaSet
