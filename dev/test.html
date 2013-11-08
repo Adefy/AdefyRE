@@ -42,21 +42,11 @@
       // Create our texture
       gl = AWGLRenderer._gl
 
-      boxTex = gl.createTexture()
-      boxTexImage = new Image();
-      boxTexImage.onload = function() {
+      manifest = {"ad": "scene.js","lib": "adefy.js","textures": [{"path": "test.png","compression": "none","type": "image","name": "test"}]}
 
-        gl.bindTexture(gl.TEXTURE_2D, boxTex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, boxTexImage);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        box.setTexture(boxTex);
-      };
-
-      boxTexImage.src = "test.png";
+      window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function(){
+        box.setTexture("test");
+      });
 
     });
 

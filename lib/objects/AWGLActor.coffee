@@ -95,11 +95,15 @@ class AWGLActor
   # We support a single texture per actor for the time being. UV coords are
   # generated automatically internally, for a flat map.
   #
-  # @param [WebGLTexture] texture texture to use, expected to be initialized
-  setTexture: (texture) ->
-    param.required texture
+  # @param [String] name name of texture to use from renderer
+  setTexture: (name) ->
+    param.required name
 
-    @_texture = texture
+    if not AWGLRenderer.hasTexture name
+      throw new Error "No such texture loaded: #{name}"
+      return
+
+    @_texture = AWGLRenderer.getTexture name
     @setShader AWGLRenderer.getMe().getTextureShader()
     @_material = "texture"
 

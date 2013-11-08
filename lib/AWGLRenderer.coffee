@@ -50,6 +50,9 @@ class AWGLRenderer
   # @property [Array<Object>] actors for rendering
   @actors: []
 
+  # @property [Array<Object>] texture objects, with names and gl textures
+  @textures: []
+
   # This is a tad ugly, but it works well. We need to be able to create
   # instance objects in the constructor, and provide one resulting object
   # to any class that asks for it, without an instance avaliable. @me is set
@@ -443,3 +446,28 @@ class AWGLRenderer
       AWGLRenderer._currentMaterial = "texture"
 
     else throw new Error "Unknown material #{material}"
+
+  # Checks if we have a texture loaded
+  #
+  # @param [String] name texture name to check for
+  @hasTexture: (name) ->
+    for t in AWGLRenderer.textures
+      if t.name == name then return true
+    return false
+
+  # Fetches a texture by name
+  #
+  # @param [String] name name of texture to fetch
+  @getTexture: (name) ->
+    for t in AWGLRenderer.textures
+      if t.name == name then return t.texture
+    return null
+
+  # Adds a texture to our internal collection
+  #
+  # @param [Object] texture texture object with name and gl texture
+  @addTexture: (tex) ->
+    param.required tex.name
+    param.required tex.texture
+
+    AWGLRenderer.textures.push tex
