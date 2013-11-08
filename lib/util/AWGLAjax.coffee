@@ -42,6 +42,7 @@ class AWGLAjax
     # either. This should never happen, but just in case...
     throw new Error "[AWGLAjax] Queue length non-zero and busy flag not set!"
 
+  # @private
   # Internal function that actually calls microAjax
   # Passes the url, and calls the cb() inside an own callback, after
   # recursing if necessary
