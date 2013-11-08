@@ -241,3 +241,18 @@ class AWGLActorInterface
       true
 
     false
+
+  # Assigns a texture to an actor by name
+  #
+  # @param [String] name
+  # @param [Number] id
+  # @return [Boolean] success
+  setActorTexture: (name, id) ->
+    param.required name
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      a.setTexture name
+      true
+
+    false
