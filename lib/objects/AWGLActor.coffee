@@ -15,13 +15,22 @@ class AWGLActor
   @_nullV: new cp.v 0, 0
 
   # Adds the actor to the renderer actor list, gets a unique id from the
-  # renderer, and builds our vert buffer
+  # renderer, and builds our vert buffer.
+  #
+  # If no texture verts are provided, a default array is provided for square
+  # actors.
   #
   # @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
   # @param [Array<Number>] texverts flat array of texture coords, optional
   constructor: (verts, texverts) ->
     param.required verts
-    texverts = param.optional texverts, null
+    texverts = param.optional texverts, [
+      0, 0,
+      1, 0,
+      1, 1,
+      0, 1,
+      0, 0
+    ]
 
     @_gl = AWGLRenderer._gl
     if @_gl == undefined or @_gl == null
