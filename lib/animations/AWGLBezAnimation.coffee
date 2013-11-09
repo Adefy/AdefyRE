@@ -55,7 +55,7 @@ class AWGLBezAnimation
       if @bezOpt.degree > 0
         param.required options.controlPoints[0].x
         param.required options.controlPoints[0].y
-        if degree == 2
+        if @bezOpt.degree == 2
           param.required options.controlPoints[1].x
           param.required options.controlPoints[1].y
       @bezOpt.ctrl = options.controlPoints
