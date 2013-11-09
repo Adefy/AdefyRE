@@ -18,12 +18,15 @@ class AWGLActorInterface
   # representation of a flat array
   #
   # @param [String] verts
+  # @param [String] texverts optional
   # @return [Number] id created actor handle
-  createActor: (verts) ->
+  createActor: (verts, texverts) ->
     param.required verts
+    if texverts != undefined then texverts = JSON.parse texverts
+
     verts = JSON.parse verts
 
-    a = new AWGLActor verts
+    a = new AWGLActor verts, texverts
     return a.getId()
 
   # Refresh actor vertices, passed in as a JSON representation of a flat array

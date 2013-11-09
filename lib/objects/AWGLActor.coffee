@@ -24,13 +24,7 @@ class AWGLActor
   # @param [Array<Number>] texverts flat array of texture coords, optional
   constructor: (verts, texverts) ->
     param.required verts
-    texverts = param.optional texverts, [
-      0, 0,
-      1, 0,
-      1, 1,
-      0, 1,
-      0, 0
-    ]
+    texverts = param.optional texverts, null
 
     @_gl = AWGLRenderer._gl
     if @_gl == undefined or @_gl == null
