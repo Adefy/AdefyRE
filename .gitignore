@@ -4,3 +4,4 @@ node_modules
 dev/awgl.js
 dev/awgl.js.map
 dev/awgl-concat.coffee
+.DS_Store

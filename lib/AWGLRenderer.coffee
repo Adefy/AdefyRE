@@ -388,6 +388,27 @@ class AWGLRenderer
 
       else
 
+        # Check if we have a visible attached texture. If so, set properties and draw
+        if a.hasAttachment() and a.getAttachment().visible
+
+          # Get physics updates
+          a.updatePosition()
+
+          # Setup anchor point
+          pos = a.getPosition()
+          rot = a.getRotation()
+
+          pos.x += a.attachedTextureAnchor.x
+          pos.y += a.attachedTextureAnchor.y
+          rot += a.attachedTextureAnchor.angle
+
+          # Switch to attached texture
+          a = a.getAttachment()
+
+          # Apply state update
+          a.setPosition pos
+          a.setRotation rot
+
         if a.getMaterial() != AWGLRenderer._currentMaterial
           @switchMaterial a.getMaterial()
 

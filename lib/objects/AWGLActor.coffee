@@ -90,6 +90,14 @@ class AWGLActor
     # Flat rendering by default
     @clearTexture()
 
+    # No attached texture; when one exists, we render that texture (actor)
+    # instead of ourselves!
+    @_attachedTexture = null
+    @attachedTextureAnchor =
+      x: 0
+      y: 0
+      angle: 0
+
   # Get material name
   #
   # @return [String] material
@@ -277,18 +285,120 @@ class AWGLActor
       @destroyPhysicsBody()
       @createPhysicsBody @_mass, @_friction, @_elasticity
 
+  # Attach texture to render instead of ourselves. This is very useful when
+  # texturing strange physics shapes. We create a square actor of the desired
+  # dimensions, set the texture, and render it instead of ourselves when it is
+  # visible.
+  #
+  # If we are not visible, the attached texture does not render! If it is
+  # invisible, we render ourselves instead.
+  #
+  # We perform a check for the existence of the texture, and throw an error if
+  # it isn't found.
+  #
+  # @param [String] texture texture name
+  # @param [Number] width attached actor width
+  # @param [Number] height attached actor height
+  # @param [Number] offx anchor point offset
+  # @param [Number] offy anchor point offset
+  # @param [Angle] angle anchor point rotation
+  # @return [AWGLActor] actor attached actor
+  attachTexture: (texture, width, height, offx, offy, angle) ->
+    param.required texture
+    param.required width
+    param.required height
+    @attachedTextureAnchor.x = param.optional offx, 0
+    @attachedTextureAnchor.y = param.optional offy, 0
+    @attachedTextureAnchor.angle = param.optional angle, 0
+
+    # Sanity check
+    if not AWGLRenderer.hasTexture texture
+      throw new Error "No such texture loaded: #{texture}"
+      return
+
+    # If we already have an attachment, discard it
+    if @_attachedTexture != null then @removeAttachment()
+
+    # Create actor
+    hW = width / 2.0
+    hH = height / 2.0
+
+    @_attachedTexture = new AWGLActor [
+      -hW, -hH
+      -hW,  hH
+       hW,  hH
+       hW, -hH
+      -hW, -hH
+    ], [
+      0, 0,
+      1, 0,
+      1, 1,
+      0, 1,
+      0, 0
+    ]
+
+    # Set texture
+    @_attachedTexture.setTexture texture
+
+    # Ship eeet
+    @_attachedTexture
+
+  # Remove attached texture, if we have one
+  #
+  # @return [Boolean] success fails if we have no attached texture
+  removeAttachment: ->
+    if @_attachedTexture == null then return false
+
+    for a, i in AWGLRenderer.actors
+      if a.getId() == @_attachedTexture.getId()
+        a.destroyPhysicsBody()
+        AWGLRenderer.actors.splice i, 1
+        @_attachedTexture = null
+        return true
+
+    false
+
+  # Set attachment visiblity. Fails if we don't have an attached texture
+  #
+  # @param [Boolean] visible
+  # @return [Boolean] success
+  setAttachmentVisibility: (visible) ->
+    param.required visible
+
+    if @_attachedTexture == null then return false
+
+    @_attachedTexture.visible = visible
+    true
+
+  # Checks to see if we have an attached texture
+  #
+  # @return [Boolean] hasAttachment
+  hasAttachment: -> @_attachedTexture != null
+
+  # Returns attached texture if we have one, null otherwise
+  #
+  # @return [AWGLActor] attachment
+  getAttachment: -> @_attachedTexture
+
+  # Update position from physics body if we have one
+  updatePosition: ->
+
+    # @_body is null for static bodies!
+    if @_body != null
+      @_position = AWGLRenderer.worldToScreen @_body.getPos()
+      @_rotation = @_body.a
+
   # Renders the actor
   #
   # @param [Object] gl gl context
   draw: (gl) ->
     param.required gl
 
+    # We only respect our own visibility flag! Any invisible attached textures
+    # cause us to render!
     if not @visible then return
 
-    # @_body is null for static bodies!
-    if @_body != null
-      @_position = AWGLRenderer.worldToScreen @_body.getPos()
-      @_rotation = @_body.a
+    @updatePosition()
 
     # Prep our vectors and matrices
     @_modelM = Matrix.I 4

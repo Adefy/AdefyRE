@@ -29,6 +29,58 @@ class AWGLActorInterface
     a = new AWGLActor verts, texverts
     return a.getId()
 
+  # Attach texture to actor. Fails if actor isn't found
+  #
+  # @param [String] texture texture name
+  # @param [Number] width attached actor width
+  # @param [Number] height attached actor height
+  # @param [Number] offx anchor point offset
+  # @param [Number] offy anchor point offset
+  # @param [Angle] angle anchor point rotation
+  # @param [Number] id id of actor to attach texture to
+  # @return [Boolean] success
+  attachTexture: (texture, w, h, x, y, angle, id) ->
+    param.required id
+    param.required texture
+    param.required w
+    param.required h
+    x = param.optional x, 0
+    y = param.optional y, 0
+    angle = param.optional angle, 0
+
+    if (a = @_findActor(id)) != null
+      a.attachTexture texture, w, h, x, y, angle
+      return true
+
+    false
+
+  # Remove attachment from an actor. Fails if actor isn't found
+  #
+  # @param [Number] id id of actor to remove texture from
+  # @return [Boolean] success
+  removeAttachment: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      a.removeAttachment()
+      return true
+
+    false
+
+  # Set attachment visiblity. Fails if actor isn't found, or actor has no
+  # attachment.
+  #
+  # @param [Boolean] visible
+  # @param [Number] id id of actor to modify
+  # @return [Boolean] success
+  setAttachmentVisiblity: (visible, id) ->
+    param.required visible
+
+    if (a = @_findActor(id)) != null
+      return a.setAttachmentVisibility visible
+
+    false
+
   # Refresh actor vertices, passed in as a JSON representation of a flat array
   #
   # @param [String] verts
