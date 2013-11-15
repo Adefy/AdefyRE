@@ -104,7 +104,6 @@ class AWGLEngineInterface
 
       # Load!
       img.src = path
-      console.log "attempting load of #{path}"
 
     if manifest.textures == undefined or manifest.textures.length == 0
       cb()
