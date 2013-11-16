@@ -65,6 +65,11 @@ class AWGLRenderer
   # is made (different shader program)
   @_currentMaterial: "none"
 
+  # @property [Object] camPos Camera position, with x and y keys
+  @camPos:
+    x: 0
+    y: 0
+
   # Sets up the renderer, using either an existing canvas or creating a new one
   # If a canvasId is provided but the element is not a canvas, it is treated
   # as a parent. If it is a canvas, it is adopted as our canvas.

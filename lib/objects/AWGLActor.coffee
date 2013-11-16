@@ -427,8 +427,8 @@ class AWGLActor
 
     # Prep our vectors and matrices
     @_modelM = Matrix.I 4
-    @_transV.elements[0] = @_position.x
-    @_transV.elements[1] = @_position.y
+    @_transV.elements[0] = @_position.x - AWGLRenderer.camPos.x
+    @_transV.elements[1] = @_position.y - AWGLRenderer.camPos.y
 
     @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
     @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())

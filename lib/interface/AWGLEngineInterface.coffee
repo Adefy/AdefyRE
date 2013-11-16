@@ -63,6 +63,19 @@ class AWGLEngineInterface
 
     AWGLLog.level = level
 
+  # Set camera center position. Leaving out a component leaves it unchanged
+  #
+  # @param [Number] x
+  # @param [Number] y
+  setCameraPosition: (x, y) ->
+    AWGLRenderer.camPos.x = param.optional x, AWGLRenderer.camPos.x
+    AWGLRenderer.camPos.y = param.optional y, AWGLRenderer.camPos.y
+
+  # Fetch camera position. Returns a JSON object with x,y keys
+  #
+  # @return [Object]
+  getCameraPosition: -> JSON.stringify AWGLRenderer.camPos
+
   # Load a package.json manifest, assume texture paths are relative to our
   # own
   #
