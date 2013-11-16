@@ -34,19 +34,15 @@
         0, 0
       ];
 
-      var box = new AWGLActor(boxVerts, boxUV);
-      box.setPosition({ x: 400, y: 200 });
-      box.setRotation(-90);
-      box.setColor(255, 255, 0);
+      window.box1 = new AWGLActor(boxVerts, boxUV);
+      box1.setPosition({ x: 400, y: 200 });
+      box1.setRotation(-90);
+      box1.setColor(255, 255, 0);
 
-      // Create our texture
-      gl = AWGLRenderer._gl
-
-      manifest = {"ad": "scene.js","lib": "adefy.js","textures": [{"path": "test.png","compression": "none","type": "image","name": "test"}]}
-
-      window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function(){
-        box.setTexture("test");
-      });
+      window.box2 = new AWGLActor(boxVerts, boxUV);
+      box2.setPosition({ x: 350, y: 150 });
+      box2.setRotation(-90);
+      box2.setColor(255, 0, 0);
 
     });
 

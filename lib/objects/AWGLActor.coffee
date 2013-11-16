@@ -36,6 +36,7 @@ class AWGLActor
 
     @lit = false
     @visible = true
+    @layer = 0
 
     @_id = -1
     @_position = new cp.v 0, 0
@@ -75,7 +76,8 @@ class AWGLActor
 
     @_id = AWGLRenderer._nextID++
 
-    AWGLRenderer.actors.push @
+    # Add us to the render actor list (in layer order)
+    AWGLRenderer.addActor @
 
     # Sets up our vert buffer, also validates the vertex array (length)
     @updateVertices verts, texverts
@@ -102,6 +104,16 @@ class AWGLActor
   #
   # @return [String] material
   getMaterial: -> @_material
+
+  # Set our render layer. Higher layers render on top of lower ones
+  #
+  # @param [Number] layer
+  setLayer: (layer) ->
+    @layer = param.required layer
+
+    # Re-insert ourselves with new layer
+    AWGLRenderer.removeActor @
+    AWGLRenderer.addActor @
 
   # We support a single texture per actor for the time being. UV coords are
   # generated automatically internally, for a flat map.

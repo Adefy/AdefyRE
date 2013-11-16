@@ -388,7 +388,8 @@ class AWGLRenderer
 
       else
 
-        # Check if we have a visible attached texture. If so, set properties and draw
+        # Check if we have a visible attached texture.
+        # If so, set properties and draw
         if a.hasAttachment() and a.getAttachment().visible
 
           # Get physics updates
@@ -433,6 +434,46 @@ class AWGLRenderer
   # Returns a unique id, used by actors
   # @return [Number] id unique id
   @getNextId: -> AWGLRenderer._nextID++
+
+  # Add an actor to our render list. A layer can be optionally specified, at
+  # which point it will also be applied to the actor.
+  #
+  # If no layer is specified, we use the current actor layer (default 0)
+  #
+  # @param [AWGLActor] actor
+  # @param [Number] layer
+  # @return [AWGLActor] actor added actor
+  @addActor: (actor, layer) ->
+    param.required actor
+    layer = param.optional layer, actor.layer
+
+    if actor.layer != layer then actor.layer = layer
+
+    # Find index to insert at to maintain layer order
+    layerIndex = _.sortedIndex AWGLRenderer.actors, actor, "layer"
+
+    # Insert!
+    AWGLRenderer.actors.splice layerIndex, 0, actor
+
+    actor
+
+  # Remove an actor from our render list by either actor, or id
+  #
+  # @param [AWGLActor,Number] actor actor, or id of actor to remove
+  # @return [Boolean] success
+  @removeActor: (actor) ->
+    param.required actor
+
+    # Extract id
+    if actor instanceof AWGLActor then actor = actor.getId()
+
+    # Attempt to find and remove actor
+    for a, i in AWGLRenderer.actors
+      if a.getId() == actor
+        AWGLRenderer.actors.splice i, 1
+        return true
+
+    false
 
   # Switch material (shader program)
   #
