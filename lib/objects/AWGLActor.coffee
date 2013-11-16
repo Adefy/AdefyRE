@@ -37,6 +37,7 @@ class AWGLActor
     @lit = false
     @visible = true
     @layer = 0
+    @_physicsLayer = ~0
 
     @_id = -1
     @_position = new cp.v 0, 0
@@ -222,15 +223,16 @@ class AWGLActor
 
     if @_mass == 0
       @_shape = space.addShape new cp.PolyShape space.staticBody, verts, pos
+      @_shape.setLayers @_physicsLayer
       @_body = null
     else
-
       moment = cp.momentForPoly @_mass, verts, AWGLActor._nullV
       @_body = space.addBody new cp.Body @_mass, moment
       @_body.setPos pos
       @_body.setAngle @_rotation
 
       @_shape = space.addShape new cp.PolyShape @_body, verts, AWGLActor._nullV
+      @_shape.setLayers @_physicsLayer
 
     @_shape.setFriction @_friction
     @_shape.setElasticity @_elasticity
@@ -252,6 +254,17 @@ class AWGLActor
       AWGLPhysics.stopStepping()
     else if AWGLPhysics.bodyCount < 0
       throw new Error "Body count is negative!"
+
+  # Set physics layer. If we have a physics body, applies immediately. Value
+  # persists between physics bodies!
+  #
+  # There are only 16 physics layers (17 with default layer 0)!
+  #
+  # @param [Number] layer
+  setPhysicsLayer: (layer) ->
+    @_physicsLayer = 1 << param.required(layer, [0..16])
+
+    if @_shape != null then @_shape.setLayers @_physicsLayer
 
   # Update our vertices, causing a rebuild of the physics body, if it doesn't
   # have its' own set of verts. Note that for large actors this is expensive.

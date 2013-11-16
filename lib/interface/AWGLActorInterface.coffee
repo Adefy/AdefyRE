@@ -70,6 +70,24 @@ class AWGLActorInterface
 
     false
 
+  # Set actor physics layer. Fails if actor isn't found.
+  # Physics layers persist within an actor between body creations. Only bodies
+  # in the same layer will collide! There are only 16 physics layers!
+  #
+  # @param [Number] layer
+  # @param [Number] id id of actor to set layer of
+  # @return [Boolean] success
+  setActorPhysicsLayer: (layer, id) ->
+    param.required id
+    param.required layer
+
+    if (a = @_findActor(id)) != null
+      a.setPhysicsLayer layer
+      return true
+
+    false
+
+
   # Remove attachment from an actor. Fails if actor isn't found
   #
   # @param [Number] id id of actor to remove texture from
