@@ -54,6 +54,22 @@ class AWGLActorInterface
 
     false
 
+  # Set actor layer. Fails if actor isn't found.
+  # Actors render from largest layer to smallest
+  #
+  # @param [Number] layer
+  # @param [Number] id id of actor to set layer of
+  # @return [Boolean] success
+  setActorLayer: (layer, id) ->
+    param.required id
+    param.required layer
+
+    if (a = @_findActor(id)) != null
+      a.setLayer layer
+      return true
+
+    false
+
   # Remove attachment from an actor. Fails if actor isn't found
   #
   # @param [Number] id id of actor to remove texture from
