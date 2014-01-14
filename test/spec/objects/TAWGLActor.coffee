@@ -10,13 +10,13 @@ catch e
   console.log e
 
 if webGL == null or webGL == undefined
-  console.warn "WebGL not available, not executing AWGLActor tests"
+  console.warn "WebGL not available, not executing AWGLRawActor tests"
 else
 
   if AWGLRenderer._gl == undefined or AWGLRenderer._gl == null
-    throw new Error "AWGLRenderer tests have to run before AWGLActor tests!"
+    throw new Error "AWGLRenderer tests have to run before AWGLRawActor tests!"
 
-  describe "AWGLActor", ->
+  describe "AWGLRawActor", ->
 
     _actor = null
     _verts = [
@@ -30,14 +30,14 @@ else
     describe "instantiation", ->
 
       it "should require vertices to be created", ->
-        expect(-> new AWGLActor).to.throw Error
+        expect(-> new AWGLRawActor).to.throw Error
 
       it "should require at least 6 vertices to be created", ->
-        expect(-> new AWGLActor [0, 0, 0, 0, 0]).to.throw Error
-        expect(-> _actor = new AWGLActor _verts).to.not.throw Error
+        expect(-> new AWGLRawActor [0, 0, 0, 0, 0]).to.throw Error
+        expect(-> _actor = new AWGLRawActor _verts).to.not.throw Error
 
       it "should instantiate with a unique id", ->
-        _t = new AWGLActor _verts
+        _t = new AWGLRawActor _verts
         expect(_t.getId()).to.not.equal _actor.getId()
 
     describe "accessors", ->
@@ -67,9 +67,9 @@ else
       AWGLPhysics.stopStepping()
 
       it "should provide default physics body values", ->
-        expect(AWGLActor.defaultFriction).to.exist
-        expect(AWGLActor.defaultMass).to.exist
-        expect(AWGLActor.defaultElasticity).to.exist
+        expect(AWGLRawActor.defaultFriction).to.exist
+        expect(AWGLRawActor.defaultMass).to.exist
+        expect(AWGLRawActor.defaultElasticity).to.exist
 
       it "should not instantiate with a physics body", ->
         expect(_actor._body).to.not.exist

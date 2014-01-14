@@ -10,7 +10,7 @@ class AWGLPsyxAnimation
   # Class to "animate" physics properties which means changing them
   # at certain times by calling the createPhysicsBody method of an actor
   #
-  # @param [AWGLActor] actor the actor we apply the modifications to
+  # @param [AWGLRawActor] actor the actor we apply the modifications to
   # @param [Object] options
   # @option options [Number] mass
   # @option options [Number] friction

@@ -17,7 +17,7 @@ class AWGLBezAnimation
   # values supplied as an array of the property name, and the composite name.
   #
   # i.e. ["position", "x"]
-  # @param [AWGLActor] actor represents the actor we animate
+  # @param [AWGLRawActor] actor represents the actor we animate
   # @param [Object] options represents the options used to animate
   # @option options [Number] endVal
   # @option options [Array<Object>] controlPoints

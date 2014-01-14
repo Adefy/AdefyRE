@@ -50,7 +50,7 @@ class AWGLVertAnimation
   #   Values passed in as numbers (not strings) will be interpreted as absolute
   #   changes. If you need to set a negative value, use a number, not a string!
   #
-  # @param [AWGLActor] actor the actor we apply the modifications to
+  # @param [AWGLRawActor] actor the actor we apply the modifications to
   # @param [Object] options the options we apply
   # @option options [Number, Array<Number>] delays
   # @option options [Array, Array<Array>] deltas

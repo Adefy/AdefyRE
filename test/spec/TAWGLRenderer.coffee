@@ -94,4 +94,4 @@ describe "AWGLRenderer", ->
             -50, -50
           ]
 
-          newActor = new AWGLActor verts
+          newActor = new AWGLRawActor verts

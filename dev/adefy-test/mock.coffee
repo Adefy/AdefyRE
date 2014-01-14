@@ -41,8 +41,8 @@ groundBox = [
   -200, -20
 ]
 
-box = new AWGLActor fallBox
-ground = new AWGLActor groundBox
+box = new AWGLRawActor fallBox
+ground = new AWGLRawActor groundBox
 
 box.setRotation 60
 box.setColor 255, 0, 0

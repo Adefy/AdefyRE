@@ -445,9 +445,9 @@ class AWGLRenderer
   #
   # If no layer is specified, we use the current actor layer (default 0)
   #
-  # @param [AWGLActor] actor
+  # @param [AWGLRawActor] actor
   # @param [Number] layer
-  # @return [AWGLActor] actor added actor
+  # @return [AWGLRawActor] actor added actor
   @addActor: (actor, layer) ->
     param.required actor
     layer = param.optional layer, actor.layer
@@ -464,13 +464,13 @@ class AWGLRenderer
 
   # Remove an actor from our render list by either actor, or id
   #
-  # @param [AWGLActor,Number] actor actor, or id of actor to remove
+  # @param [AWGLRawActor,Number] actor actor, or id of actor to remove
   # @return [Boolean] success
   @removeActor: (actor) ->
     param.required actor
 
     # Extract id
-    if actor instanceof AWGLActor then actor = actor.getId()
+    if actor instanceof AWGLRawActor then actor = actor.getId()
 
     # Attempt to find and remove actor
     for a, i in AWGLRenderer.actors

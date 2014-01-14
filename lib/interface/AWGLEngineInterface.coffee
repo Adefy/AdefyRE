@@ -7,12 +7,12 @@ class AWGLEngineInterface
 
   # Initialize the engine
   #
-  # @param [Method] ad function to call to create ad
   # @param [Number] width
   # @param [Number] height
+  # @param [Method] ad function to call to create ad
   # @param [Number] log loglevel, defaults to 1
   # @param [String] id id of element to instantiate on
-  initialize: (ad, width, height, log, id) ->
+  initialize: (width, height, ad, log, id) ->
     param.required ad
     param.required width
     param.required height
@@ -24,14 +24,13 @@ class AWGLEngineInterface
       AWGLLog.warn "Engine already initialized, bailing"
       return
 
-    window.ajax = microAjax
     me = @
-    new AWGLEngine null, log, (awgl) ->
+    new AWGLEngine width, height, (awgl) ->
       me._engine = awgl
 
       awgl.startRendering()
       ad awgl
-    , id, width, height
+    , log
 
   # Set engine clear color
   #
