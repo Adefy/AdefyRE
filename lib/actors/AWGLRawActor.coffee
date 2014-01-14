@@ -2,10 +2,12 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# Highly generic actor class
-class AWGLActor
+# Raw actor class, handles rendering and physics simulation. Offers a base
+# for the specialized actor classes.
+#
+# Constructs itself from the supplied vertex and UV sets
+class AWGLRawActor
 
-  # Default physical properties
   @defaultFriction: 0.3
   @defaultMass: 10
   @defaultElasticity: 0.2
@@ -26,9 +28,33 @@ class AWGLActor
     param.required verts
     texverts = param.optional texverts, null
 
+    @_initializeValues()
+    @_registerWithRenderer()
+
+    @updateVertices verts, texverts
+    @setColor new AWGLColor3 255, 255, 255
+
+    # Default to flat rendering
+    @clearTexture()
+
+  # Gets an id and registers our existence with the renderer
+  # @private
+  _registerWithRenderer: ->
+    @_id = AWGLRenderer.getNextId()
+    AWGLRenderer.addActor @
+
+  # Sets up default values and initializes our data structures.
+  # @private
+  _initializeValues: ->
+
     @_gl = AWGLRenderer._gl
     if @_gl == undefined or @_gl == null
       throw new Error "GL context is required for actor initialization!"
+
+    # Initialize our rendering objects
+    @_rotV = $V([0, 0, 1])
+    @_transV = $V([0, 0, 1])
+    @_modelM = Matrix.I 4
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
@@ -42,11 +68,6 @@ class AWGLActor
     @_id = -1
     @_position = new cp.v 0, 0
     @_rotation = 0 # Radians, but set in degrees by default
-
-    # Vectors and matrices used for drawing
-    @_rotV = null
-    @_transV = null
-    @_modelM = null
 
     # Chipmunk-js values
     @_shape = null
@@ -74,24 +95,6 @@ class AWGLActor
     #   1 == TRIANGLE_STRIP
     #   2 == TRIANGLE_FAN
     @_renderMode = 1
-
-    @_id = AWGLRenderer._nextID++
-
-    # Add us to the render actor list (in layer order)
-    AWGLRenderer.addActor @
-
-    # Sets up our vert buffer, also validates the vertex array (length)
-    @updateVertices verts, texverts
-
-    @setColor new AWGLColor3 255, 255, 255
-
-    # Initialize our rendering objects
-    @_rotV = $V([0, 0, 1])
-    @_transV = $V([0, 0, 1])
-    @_modelM = Matrix.I 4
-
-    # Flat rendering by default
-    @clearTexture()
 
     # No attached texture; when one exists, we render that texture (actor)
     # instead of ourselves!
@@ -270,32 +273,53 @@ class AWGLActor
   # have its' own set of verts. Note that for large actors this is expensive.
   #
   # Texture coordinates are only required if the actor needs to be textured. If
-  # provided, the array must be the same length as that containing the vertices
+  # provided, the array must be the same length as that containing the vertices.
+  #
+  # If either array is missing, no updates to that array are made.
   #
   # @param [Array<Number>] verts flat array of vertices
   # @param [Array<Number>] texverts flat array of texture coords
-  updateVertices: (verts, texverts) ->
-    @_vertices = param.required verts
-    @_texVerts = param.optional texverts, null
+  updateVertices: (vertices, texverts) ->
+    newVertices = param.optional vertices, @_vertices
+    newTexVerts = param.optional texverts, @_texVerts
 
-    if @_vertices.length < 6
+    if newVertices.length < 6
       throw new Error "At least 3 vertices make up an actor"
 
-    if @_texVerts != null
-      if @_vertices.length != @_texVerts.length
-        throw new Error "Vert array and texture vert array lengths must match!"
+    # Validate UV count
+    if newTexVerts != @_texVerts
+      if newVertices != @_vertices
+        if newVertices.length != newTexVerts.length
+          throw new Error "Vert and UV count must match!"
+      else
+        if @_vertices.length != newTexVerts.length
+          throw new Error "Vert and UV count must match!"
 
+    if newVertices != @_vertices then @updateVertBuffer newVertices
+    if newTexVerts != @_texVerts then @updateUVBuffer newTexVerts
+
+  # Updates vertex buffer
+  # NOTE: No check is made as to the validity of the supplied data!
+  #
+  # @private
+  # @param [Array<Number>] vertices
+  updateVertBuffer: (@_vertices) ->
     @_vertBuffer = @_gl.createBuffer()
     @_vertBufferFloats = new Float32Array(@_vertices)
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
     @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
+    @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
 
-    if @_texVerts != null
-      @_texBuffer = @_gl.createBuffer()
-      @_texVBufferFloats = new Float32Array(@_texVerts)
-      @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
-      @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
-
+  # Updates UV buffer (should only be called by updateVertices())
+  # NOTE: No check is made as to the validity of the supplied data!
+  #
+  # @private
+  # @param [Array<Number>] vertices
+  updateUVBuffer: (@_texVerts) ->
+    @_texBuffer = @_gl.createBuffer()
+    @_texVBufferFloats = new Float32Array(@_texVerts)
+    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
+    @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
 
   # Set an alternate vertex array for our physics object. Note that this also

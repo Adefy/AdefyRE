@@ -18,16 +18,42 @@ class AWGLActorInterface
   # representation of a flat array
   #
   # @param [String] verts
-  # @param [String] texverts optional
   # @return [Number] id created actor handle
-  createActor: (verts, texverts) ->
+  createRawActor: (verts) ->
     param.required verts
-    if texverts != undefined then texverts = JSON.parse texverts
 
-    verts = JSON.parse verts
+    new AWGLRawActor(JSON.parse verts).getId()
 
-    a = new AWGLActor verts, texverts
-    return a.getId()
+  # Create a variable sided actor of the specified radius
+  #
+  # @param [Number] radius
+  # @param [Number] segments
+  # @return [Number] id created actor handle
+  createPolygonActor: (radius, segments) ->
+    param.required radius
+    param.required segments
+
+    new AWGLPolygonActor(radius, segments).getId()
+
+  # Creates a rectangle actor of the specified width and height
+  #
+  # @param [Number] width
+  # @param [Number] height
+  # @return [Number] id created actor handle
+  createRectangleActor: (width, height) ->
+    param.required width
+    param.required height
+
+    new AWGLRectangleActor(width, height).getId()
+
+  # Creates a circle actor with the specified radius
+  #
+  # @param [Number] radius
+  # @return [Number] id created actor handle
+  createCircleActor: (radius) ->
+    param.required radius
+
+    new AWGLCircleActor(radius).getId()
 
   # Attach texture to actor. Fails if actor isn't found
   #
@@ -130,7 +156,7 @@ class AWGLActorInterface
 
     false
 
-  # Get actor vertices as a flat array
+  # Get actor vertices as a flat JSON array
   #
   # @param [Number] id actor id
   # @return [String] vertices
@@ -276,12 +302,6 @@ class AWGLActorInterface
 
     false
 
-  setTexture: (texture, id) ->
-    param.required texture
-    if (a = @_findActor(id)) != null
-      a.setTexture texture
-      return true
-
   # Returns actor color as a JSON triple, in 0-255 range
   # Uses id, fails with null
   #
@@ -331,7 +351,8 @@ class AWGLActorInterface
 
     false
 
-  # Assigns a texture to an actor by name
+  # Set actor texture by texture handle. Expects the texture to already be
+  # loaded by the asset system!
   #
   # @param [String] name
   # @param [Number] id

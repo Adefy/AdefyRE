@@ -9,5 +9,7 @@
 # this essentially serving as the root node in the dep tree.
 #
 # @depend util/AWGLUtilParam.coffee
-# @depend objects/AWGLActor.coffee
+# @depend actors/AWGLRectangleActor.coffee
+# @depend actors/AWGLCircleActor.coffee
+# @depend actors/AWGLPolygonActor.coffee
 # @depend AWGLEngine.coffee

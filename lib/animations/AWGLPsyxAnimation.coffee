@@ -28,6 +28,7 @@ class AWGLPsyxAnimation
     # Guards against multiple exeuctions
     @_animated = false
 
+  # Activates the animation (can only be run once)
   animate: ->
     if @_animated then return else @_animated = true
     if @options.cbStart != undefined then @options.cbStart()
