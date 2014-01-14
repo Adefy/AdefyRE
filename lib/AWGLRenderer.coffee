@@ -159,7 +159,7 @@ class AWGLRenderer
           AWGLLog.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
 
     # Initialize GL context
-    gl = @_canvas.getContext("webgl")
+    gl = @_canvas.getContext "webgl", antialias: true
 
     # If null, use experimental-webgl
     if gl is null

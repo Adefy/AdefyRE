@@ -16,7 +16,7 @@ class AWGLCircleActor extends AWGLPolygonActor
   # @param [Number] radius
   constructor: (@radius) ->
 
-    super radius, 64
+    super radius, 32
 
     # Clear out segment control
     delete @setSegments

@@ -4,46 +4,76 @@
   <meta charset="utf-8">
   <title>AdefyWebGL Test</title>
 
-  <script type="text/javascript" src="./mjax.min.js"></script>
   <script type="text/javascript" src="./underscore.min.js"></script>
   <script type="text/javascript" src="./cp.min.js"></script>
   <script type="text/javascript" src="./sylvester.js"></script>
   <script type="text/javascript" src="./glUtils.js"></script>
   <script type="text/javascript" src="./awgl.js"></script>
+
+  <style>
+  * {
+    padding: 0;
+    margin: 0;
+  }
+  </style>
 </head>
 
 <body>
   <script>
 
-    window.ajax = microAjax
-    var testAd = new AWGLEngine("./adefy-test/", 4, function() {
+    var manifest = {
+      "textures": [{
+        "type": "image",
+        "name": "metalGrate",
+        "path": "metalGrate.jpg"
+      },{
+        "type": "image",
+        "name": "roundThing",
+        "path": "roundThing.jpg"
+      }]
+    };
 
-      var boxVerts = [
-        -50, -50,
-        -50,  50,
-         50,  50,
-         50, -50,
-        -50, -50
-      ];
+    var width = window.innerWidth;
+    var height = window.innerHeight;
 
-      var boxUV = [
-        0, 0,
-        1, 0,
-        1, 1,
-        0, 1,
-        0, 0
-      ];
+    new AWGLEngine(width, height, function() {
+      window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function() {
 
-      window.box1 = new AWGLActor(boxVerts, boxUV);
-      box1.setPosition({ x: 400, y: 200 });
-      box1.setRotation(-90);
-      box1.setColor(255, 255, 0);
+        var ground = new AWGLRectangleActor(width, height * 0.05);
+        ground.setPosition({ x: width / 2, y: height * 0.025 })
+        .setTexture("metalGrate")
+        .setTextureRepeat(20, 0.5)
+        .createPhysicsBody(0, 0.7, 0.6);
 
-      window.box2 = new AWGLActor(boxVerts, boxUV);
-      box2.setPosition({ x: 350, y: 150 });
-      box2.setRotation(-90);
-      box2.setColor(255, 0, 0);
+        new AWGLCircleActor(128)
+        .setPosition({ x: width / 2, y: height / 2 })
+        .setTexture("roundThing")
+        .createPhysicsBody(100, 0.8, 0.7);
 
+        var createBall = function() {
+          var x = Math.random() * width;
+          var y = (Math.random() * 500) + height;
+
+          var mass = Math.random() * 100;
+          var friction = Math.random();
+          var elasticity = Math.random() * 1.2;
+
+          new AWGLCircleActor(Math.round(Math.random() * 32) + 5)
+          .setPosition({ x: x, y: y })
+          .setTexture("roundThing")
+          .createPhysicsBody(mass, friction, elasticity);
+        };
+
+        var scheduleBallTimeout = function() {
+          setTimeout(function() {
+            createBall();
+            scheduleBallTimeout();
+          }, Math.random() * 500);
+        };
+
+        scheduleBallTimeout();
+
+      });
     });
 
   </script>

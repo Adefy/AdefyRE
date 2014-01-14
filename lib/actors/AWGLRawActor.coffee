@@ -80,6 +80,11 @@ class AWGLRawActor
     # set of vertices for the physical body!
     @_vertices = []
     @_psyxVertices = []
+    @_texVerts = []
+
+    # If we modify our UVs (scaling, translation), we always do so relative
+    # to the original UVs in this array (updated on true UV update)
+    @_origTexVerts = []
 
     # Vertice containers
     @_vertBuffer = null
@@ -133,6 +138,7 @@ class AWGLRawActor
     @_texture = AWGLRenderer.getTexture name
     @setShader AWGLRenderer.getMe().getTextureShader()
     @_material = "texture"
+    @
 
   # Clear our internal texture, leaving us to render with a flat color
   clearTexture: ->
@@ -189,11 +195,11 @@ class AWGLRawActor
     if @_mass < 0 then @_mass = 0
 
     if @_friction == undefined
-      @_friction = AWGLActor.defaultFriction
+      @_friction = AWGLRawActor.defaultFriction
     else if @_friction < 0 then @_friction = 0
 
     if @_elasticity == undefined
-      @_elasticity = AWGLActor.defaultElasticity
+      @_elasticity = AWGLRawActor.defaultElasticity
     else if @_elasticity < 0 then @_elasticity = 0
 
     # Convert vertices
@@ -229,12 +235,13 @@ class AWGLRawActor
       @_shape.setLayers @_physicsLayer
       @_body = null
     else
-      moment = cp.momentForPoly @_mass, verts, AWGLActor._nullV
+      moment = cp.momentForPoly @_mass, verts, AWGLRawActor._nullV
       @_body = space.addBody new cp.Body @_mass, moment
       @_body.setPos pos
       @_body.setAngle @_rotation
 
-      @_shape = space.addShape new cp.PolyShape @_body, verts, AWGLActor._nullV
+      @_shape = new cp.PolyShape @_body, verts, AWGLRawActor._nullV
+      @_shape = space.addShape @_shape
       @_shape.setLayers @_physicsLayer
 
     @_shape.setFriction @_friction
@@ -316,11 +323,30 @@ class AWGLRawActor
   # @private
   # @param [Array<Number>] vertices
   updateUVBuffer: (@_texVerts) ->
+    @_origTexVerts = @_texVerts
+
     @_texBuffer = @_gl.createBuffer()
     @_texVBufferFloats = new Float32Array(@_texVerts)
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
     @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
     @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+
+  # Set texture repeat per coordinate axis
+  #
+  # @param [Number] x horizontal repeat
+  # @param [Number] y vertical repeat (default 1)
+  setTextureRepeat: (x, y) ->
+    param.required x
+    y = param.optional y, 1
+
+    uvs = []
+
+    for i in [0...@_origTexVerts.length] by 2
+      uvs.push @_origTexVerts[i] * y
+      uvs.push @_origTexVerts[i + 1] * x
+
+    @updateUVBuffer uvs
+    @
 
   # Set an alternate vertex array for our physics object. Note that this also
   # triggers a rebuild! If less than 6 vertices are provided, the normal
@@ -351,7 +377,7 @@ class AWGLRawActor
   # @param [Number] offx anchor point offset
   # @param [Number] offy anchor point offset
   # @param [Angle] angle anchor point rotation
-  # @return [AWGLActor] actor attached actor
+  # @return [AWGLRawActor] actor attached actor
   attachTexture: (texture, width, height, offx, offy, angle) ->
     param.required texture
     param.required width
@@ -372,7 +398,7 @@ class AWGLRawActor
     hW = width / 2.0
     hH = height / 2.0
 
-    @_attachedTexture = new AWGLActor [
+    @_attachedTexture = new AWGLRawActor [
       -hW, -hH
       -hW,  hH
        hW,  hH
@@ -426,7 +452,7 @@ class AWGLRawActor
 
   # Returns attached texture if we have one, null otherwise
   #
-  # @return [AWGLActor] attachment
+  # @return [AWGLRawActor] attachment
   getAttachment: -> @_attachedTexture
 
   # Update position from physics body if we have one
@@ -502,6 +528,8 @@ class AWGLRawActor
     else if @_body != null
       @_body.setPos AWGLRenderer.screenToWorld position
 
+    @
+
   # Set actor rotation, affects either the actor or the body directly if one
   # exists
   #
@@ -513,10 +541,12 @@ class AWGLRawActor
 
     if radians == false then rotation = Number(rotation) * 0.0174532925
 
-    if @_shape == null
-      @_rotation = rotation
-    else if @_body != null
+    @_rotation = rotation
+
+    if @_body != null
       @_body.SetAngle @_rotation
+
+    @
 
   # Returns the actor position as an object with x and y properties
   #
@@ -587,3 +617,5 @@ class AWGLRawActor
         @_color.getG true
         @_color.getB true
       ]
+
+    @

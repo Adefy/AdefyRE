@@ -90,7 +90,7 @@ class AWGLPolygonActor extends AWGLRawActor
 
     uvs = []
     for v in vertices
-      uvs.push (v / @radius) + 1
+      uvs.push ((v / @radius) / 2) + 0.5
 
     uvs
 
