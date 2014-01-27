@@ -538,3 +538,15 @@ class AWGLRenderer
     param.required tex.texture
 
     AWGLRenderer.textures.push tex
+
+  # Get texture object by name
+  #
+  # @param [String] name
+  # @return [Object] texture
+  @getTexture: (name) ->
+    param.required name
+
+    for texture in AWGLRenderer.textures
+      if texture.name == name then return texture
+
+    null

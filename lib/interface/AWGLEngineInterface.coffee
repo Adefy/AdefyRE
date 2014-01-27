@@ -122,6 +122,8 @@ class AWGLEngineInterface
         AWGLRenderer.addTexture
           name: name
           texture: tex
+          width: img.width
+          height: img.height
 
         # Call cb once we've loaded all textures
         count++
@@ -146,3 +148,9 @@ class AWGLEngineInterface
 
       # Gogo
       loadTexture tex.name, tex.path
+
+  # Get renderer texture by name
+  #
+  # @param [String] name
+  # @return [Object] texture
+  getTexture: (name) -> AWGLRenderer.getTexture name
