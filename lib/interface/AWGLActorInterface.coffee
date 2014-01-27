@@ -366,3 +366,20 @@ class AWGLActorInterface
       true
 
     false
+
+  # Set actor texture repeat
+  #
+  # @param [Number] x horizontal repeat
+  # @param [Number] y vertical repeat (default 1)
+  # @param [Number] id
+  # @return [Boolean] success
+  setActorTextureRepeat: (x, y, id) ->
+    param.required x
+    param.required id
+    y = param.optional y, 1
+
+    if (a = @_findActor(id)) != null
+      a.setTextureRepeat x, y
+      true
+
+    false
