@@ -149,8 +149,8 @@ class AWGLEngineInterface
       # Gogo
       loadTexture tex.name, tex.path
 
-  # Get renderer texture by name
+  # Get renderer texture size by name
   #
   # @param [String] name
-  # @return [Object] texture
-  getTexture: (name) -> AWGLRenderer.getTexture name
+  # @param [Object] size
+  getTextureSize: (name) -> AWGLRenderer.getTextureSize name

@@ -525,11 +525,23 @@ class AWGLRenderer
   # Fetches a texture by name
   #
   # @param [String] name name of texture to fetch
+  # @param [Object] texture
   @getTexture: (name) ->
     param.required name
 
     for t in AWGLRenderer.textures
       if t.name == name then return t.texture
+    return null
+
+  # Fetches texture size
+  #
+  # @param [String] name name of texture
+  # @param [Object] size
+  @getTextureSize: (name) ->
+    param.required name
+
+    for t in AWGLRenderer.textures
+      if t.name == name then return { w: t.width, h: t.height }
     return null
 
   # Adds a texture to our internal collection
