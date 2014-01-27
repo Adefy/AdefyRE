@@ -104,10 +104,9 @@ class AWGLEngineInterface
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
 
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
-        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, \
-          gl.LINEAR_MIPMAP_NEAREST
+        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR
 
-        gl.generateMipmap gl.TEXTURE_2D
+        # gl.generateMipmap gl.TEXTURE_2D
         gl.bindTexture gl.TEXTURE_2D, null
 
         # Add to renderer
