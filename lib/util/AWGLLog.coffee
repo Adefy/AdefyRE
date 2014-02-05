@@ -39,23 +39,21 @@ class AWGLLog
 
     # Specialized console output
     if level == 1 and console.error != undefined
-      console.error "#{me.tags[level]}#{str}"
-      return
+      if console.error then console.error "#{me.tags[level]}#{str}"
+      else console.log "#{me.tags[level]}#{str}"
     else if level == 2 and console.warn != undefined
-      console.warn "#{me.tags[level]}#{str}"
-      return
+      if console.warn then console.warn "#{me.tags[level]}#{str}"
+      else console.log "#{me.tags[level]}#{str}"
     else if level == 3 and console.debug != undefined
-      console.debug "#{me.tags[level]}#{str}"
-      return
+      if console.debug then console.debug "#{me.tags[level]}#{str}"
+      else console.log "#{me.tags[level]}#{str}"
     else if level == 4 and console.info != undefined
-      console.info "#{me.tags[level]}#{str}"
-      return
-
-    if level > 4 and me.tags[level] != undefined
-      console.log "#{me.tags[level]}#{str}"
-    else
-      console.log str
-    return
+      if console.info then console.info "#{me.tags[level]}#{str}"
+      else console.log "#{me.tags[level]}#{str}"
+    else if level > 4 and me.tags[level] != undefined
+        console.log "#{me.tags[level]}#{str}"
+      else
+        console.log str
 
   # Specialized, sets level to error directly
   #

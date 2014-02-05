@@ -395,22 +395,7 @@ class AWGLRawActor
     if @_attachedTexture != null then @removeAttachment()
 
     # Create actor
-    hW = width / 2.0
-    hH = height / 2.0
-
-    @_attachedTexture = new AWGLRawActor [
-      -hW, -hH
-      -hW,  hH
-       hW,  hH
-       hW, -hH
-      -hW, -hH
-    ], [
-      0, 0,
-      1, 0,
-      1, 1,
-      0, 1,
-      0, 0
-    ]
+    @_attachedTexture = new AWGLRectangleActor width, height
 
     # Set texture
     @_attachedTexture.setTexture texture
