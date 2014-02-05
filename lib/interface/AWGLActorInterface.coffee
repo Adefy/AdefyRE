@@ -12,7 +12,8 @@ class AWGLActorInterface
 
     for a in AWGLRenderer.actors
       if a.getId() == id then return a
-    return null
+    
+    null
 
   # Create actor using the supplied vertices, passed in as a JSON
   # representation of a flat array
@@ -54,6 +55,78 @@ class AWGLActorInterface
     param.required radius
 
     new AWGLCircleActor(radius).getId()
+
+  # Fetch the width of the rectangle actor with the specified ID
+  #
+  # @param [Number] id
+  # @return [Number] width
+  getRectangleActorWidth: (id) ->
+    for a in AWGLRenderer.actors
+      if a.getId() == id and a instanceof AWGLRectangleActor
+        return a.getWidth()
+    
+    null
+
+  # Fetch the height of the rectangle actor with the specified ID
+  #
+  # @param [Number] id
+  # @return [Number] height
+  getRectangleActorHeight: (id) ->
+    for a in AWGLRenderer.actors
+      if a.getId() == id and a instanceof AWGLRectangleActor
+        return a.getHeight()
+    
+    null
+
+  # Set the height of the rectangle actor with the specified ID
+  #
+  # @param [Number] id
+  # @param [Number] height
+  # @return [Boolean] success
+  setRectangleActorHeight: (id, height) ->
+    for a in AWGLRenderer.actors
+      if a.getId() == id and a instanceof AWGLRectangleActor
+        a.setHeight height
+        return true
+
+    false
+
+  # Set the width of the rectangle actor with the specified ID
+  #
+  # @param [Number] id
+  # @param [Number] width
+  # @return [Boolean] success
+  setRectangleActorWidth: (id, width) ->
+    for a in AWGLRenderer.actors
+      if a.getId() == id and a instanceof AWGLRectangleActor
+        a.setWidth width
+        return true
+
+    false
+
+  # Fetch the radius of the circle actor with the specified ID
+  #
+  # @param [Number] id
+  # @return [Number] radius
+  getCircleActorRadius: (id) ->
+    for a in AWGLRenderer.actors
+      if a.getId() == id and a instanceof AWGLPolygonActor
+        return a.getRadius()
+    
+    null
+
+  # Set the radius of the circle actor with the specified ID
+  #
+  # @param [Number] id
+  # @param [Number] radius
+  # @return [Boolean] success
+  setCircleActorRadius: (id, radius) ->
+    for a in AWGLRenderer.actors
+      if a.getId() == id and a instanceof AWGLPolygonActor
+        a.setRadius radius
+        return true
+
+    false
 
   # Attach texture to actor. Fails if actor isn't found
   #
