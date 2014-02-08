@@ -154,3 +154,13 @@ class AWGLEngineInterface
   # @param [String] name
   # @param [Object] size
   getTextureSize: (name) -> AWGLRenderer.getTextureSize name
+
+  # TODO: Implement
+  #
+  # Set remind me later button region
+  #
+  # @param [Number] x
+  # @param [Number] y
+  # @param [Number] w
+  # @param [Number] h
+  setRemindMeButton: (x, y, w, h) ->
