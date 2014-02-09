@@ -94,6 +94,7 @@ class AWGLEngineInterface
       # Create texture and image
       tex = gl.createTexture()
       img = new Image()
+      img.crossOrigin = "anonymous"
       img.onload = ->
 
         # Set up GL texture
