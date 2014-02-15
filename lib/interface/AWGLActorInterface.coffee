@@ -32,9 +32,18 @@ class AWGLActorInterface
   # @return [Number] id created actor handle
   createPolygonActor: (radius, segments) ->
     param.required radius
-    param.required segments
 
-    new AWGLPolygonActor(radius, segments).getId()
+    ##
+    ## NOTE: Things are a bit fucked up at the moment. The android engine
+    ##       doesn't implement the same polygon actor we do; so if we've been
+    ##       passed a vert array as the first parameter above, treat this as
+    ##       a raw actor creation request
+    ##
+    if typeof radius == "string"
+      @createRawActor radius
+    else
+      param.required segments
+      new AWGLPolygonActor(radius, segments).getId()
 
   # Creates a rectangle actor of the specified width and height
   #

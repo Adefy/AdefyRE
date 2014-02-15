@@ -17,17 +17,39 @@ class AWGLPolygonActor extends AWGLRawActor
   # @param [Number] segments
   constructor: (@radius, @segments) ->
     param.required radius
-    param.required segments
 
-    if radius <= 0 then throw new Error "Invalid radius: #{radius}"
-    if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
+    ##
+    ## NOTE: Things are a bit funky now. The Android engine doesn't implement
+    ##       our vert generation, so AJS handles that for us. That means it
+    ##       passes the verts in as the first parameter above, rendering
+    ##       the segment count undefined.
+    ##       
+    ##       So we need to check if we've been passed an array as the first
+    ##       param. If so, segments are unecessary; otherwise, we require the
+    ##       segment count, and generate our own verts
+    ##
 
-    verts = @generateVertices()
-    psyxVerts = @generateVertices mode: "physics"
-    uvs = @generateUVs verts
+    if @radius instanceof Array
 
-    super verts, uvs
-    @setPhysicsVertices psyxVerts
+      @_verts = @radius
+      @radius = null
+      uvs = @generateUVs @_verts
+
+      super @_verts, uvs
+      @setPhysicsVertices @_verts
+
+    else
+      param.required segments
+
+      if radius <= 0 then throw new Error "Invalid radius: #{radius}"
+      if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
+
+      verts = @generateVertices()
+      psyxVerts = @generateVertices mode: "physics"
+      uvs = @generateUVs verts
+
+      super verts, uvs
+      @setPhysicsVertices psyxVerts
 
     @setRenderMode 2
 
