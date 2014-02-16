@@ -151,7 +151,7 @@ class AWGLEngineInterface
         console.error tex.compression
         throw new Error "Only un-compressed textures are supported!"
 
-      if tex.type != "image"
+      if tex.type != undefined and tex.type != "image"
         console.error tex.type
         throw new Error "Only image textures are supported!"
 
