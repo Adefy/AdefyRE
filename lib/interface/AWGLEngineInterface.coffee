@@ -27,6 +27,9 @@ class AWGLEngineInterface
     AWGLRenderer._currentMaterial = "none"
     AWGLRenderer.camPos = x: 0, y: 0
 
+    # Clear out physics world
+    AWGLPhysics.stopStepping()
+
     me = @
     new AWGLEngine width, height, (awgl) ->
       me._engine = awgl
