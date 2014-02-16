@@ -17,7 +17,7 @@ class AWGLEngineInterface
     param.required width
     param.required height
     log = param.optional log, 4
-    param.optional id
+    id = param.optional id, ""
 
     # Bail if we've already been initalized
     if @_engine != undefined
@@ -30,7 +30,7 @@ class AWGLEngineInterface
 
       awgl.startRendering()
       ad awgl
-    , log
+    , log, id
 
   # Set engine clear color
   #
