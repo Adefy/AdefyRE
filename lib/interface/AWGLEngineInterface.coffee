@@ -19,10 +19,13 @@ class AWGLEngineInterface
     log = param.optional log, 4
     id = param.optional id, ""
 
-    # Bail if we've already been initalized
-    if @_engine != undefined
-      AWGLLog.warn "Engine already initialized, bailing"
-      return
+    # Clean us up just in case we are being initialized for a second time
+    AWGLRenderer.actors = []
+    AWGLRenderer.textures = []
+    AWGLRenderer._gl = null
+    AWGLRenderer.me = null
+    AWGLRenderer._currentMaterial = "none"
+    AWGLRenderer.camPos = x: 0, y: 0
 
     me = @
     new AWGLEngine width, height, (awgl) ->
