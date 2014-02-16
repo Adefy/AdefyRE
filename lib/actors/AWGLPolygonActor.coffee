@@ -23,7 +23,7 @@ class AWGLPolygonActor extends AWGLRawActor
     ##       our vert generation, so AJS handles that for us. That means it
     ##       passes the verts in as the first parameter above, rendering
     ##       the segment count undefined.
-    ##       
+    ##
     ##       So we need to check if we've been passed an array as the first
     ##       param. If so, segments are unecessary; otherwise, we require the
     ##       segment count, and generate our own verts

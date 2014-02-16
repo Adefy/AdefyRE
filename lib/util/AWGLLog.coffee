@@ -51,9 +51,9 @@ class AWGLLog
       if console.info then console.info "#{me.tags[level]}#{str}"
       else console.log "#{me.tags[level]}#{str}"
     else if level > 4 and me.tags[level] != undefined
-        console.log "#{me.tags[level]}#{str}"
-      else
-        console.log str
+      console.log "#{me.tags[level]}#{str}"
+    else
+      console.log str
 
   # Specialized, sets level to error directly
   #
