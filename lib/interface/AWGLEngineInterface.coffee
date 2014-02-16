@@ -92,6 +92,12 @@ class AWGLEngineInterface
     manifest = JSON.parse json
     gl = AWGLRenderer._gl
 
+    ##
+    ## NOTE: The manifest only contains textures now, but for the sake of
+    ##       backwards compatibilty, we check for a textures array
+
+    if manifest.textures != undefined then manifest = manifest.textures
+
     count = 0
 
     # Loads a texture, and adds it to our renderer
@@ -134,17 +140,13 @@ class AWGLEngineInterface
 
         # Call cb once we've loaded all textures
         count++
-        if count == manifest.textures.length then cb()
+        if count == manifest.length then cb()
 
       # Load!
       img.src = path
 
-    if manifest.textures == undefined or manifest.textures.length == 0
-      cb()
-      return
-
     # Load textures
-    for tex in manifest.textures
+    for tex in manifest
 
       # Feature check
       if tex.compression != undefined and tex.compression != "none"
