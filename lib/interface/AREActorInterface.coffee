@@ -3,16 +3,16 @@
 ##
 
 # Actor interface class
-class AWGLActorInterface
+class AREActorInterface
 
   # Fails with null
   # @private
   _findActor: (id) ->
     param.required id
 
-    for a in AWGLRenderer.actors
+    for a in ARERenderer.actors
       if a.getId() == id then return a
-    
+
     null
 
   # Create actor using the supplied vertices, passed in as a JSON
@@ -23,7 +23,7 @@ class AWGLActorInterface
   createRawActor: (verts) ->
     param.required verts
 
-    new AWGLRawActor(JSON.parse verts).getId()
+    new ARERawActor(JSON.parse verts).getId()
 
   # Create a variable sided actor of the specified radius
   #
@@ -43,7 +43,7 @@ class AWGLActorInterface
       @createRawActor radius
     else
       param.required segments
-      new AWGLPolygonActor(radius, segments).getId()
+      new AREPolygonActor(radius, segments).getId()
 
   # Creates a rectangle actor of the specified width and height
   #
@@ -54,7 +54,7 @@ class AWGLActorInterface
     param.required width
     param.required height
 
-    new AWGLRectangleActor(width, height).getId()
+    new ARERectangleActor(width, height).getId()
 
   # Creates a circle actor with the specified radius
   #
@@ -63,17 +63,17 @@ class AWGLActorInterface
   createCircleActor: (radius) ->
     param.required radius
 
-    new AWGLCircleActor(radius).getId()
+    new ARECircleActor(radius).getId()
 
   # Fetch the width of the rectangle actor with the specified ID
   #
   # @param [Number] id
   # @return [Number] width
   getRectangleActorWidth: (id) ->
-    for a in AWGLRenderer.actors
-      if a.getId() == id and a instanceof AWGLRectangleActor
+    for a in ARERenderer.actors
+      if a.getId() == id and a instanceof ARERectangleActor
         return a.getWidth()
-    
+
     null
 
   # Fetch the height of the rectangle actor with the specified ID
@@ -81,10 +81,10 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [Number] height
   getRectangleActorHeight: (id) ->
-    for a in AWGLRenderer.actors
-      if a.getId() == id and a instanceof AWGLRectangleActor
+    for a in ARERenderer.actors
+      if a.getId() == id and a instanceof ARERectangleActor
         return a.getHeight()
-    
+
     null
 
   # Set the height of the rectangle actor with the specified ID
@@ -93,8 +93,8 @@ class AWGLActorInterface
   # @param [Number] height
   # @return [Boolean] success
   setRectangleActorHeight: (id, height) ->
-    for a in AWGLRenderer.actors
-      if a.getId() == id and a instanceof AWGLRectangleActor
+    for a in ARERenderer.actors
+      if a.getId() == id and a instanceof ARERectangleActor
         a.setHeight height
         return true
 
@@ -106,8 +106,8 @@ class AWGLActorInterface
   # @param [Number] width
   # @return [Boolean] success
   setRectangleActorWidth: (id, width) ->
-    for a in AWGLRenderer.actors
-      if a.getId() == id and a instanceof AWGLRectangleActor
+    for a in ARERenderer.actors
+      if a.getId() == id and a instanceof ARERectangleActor
         a.setWidth width
         return true
 
@@ -118,10 +118,10 @@ class AWGLActorInterface
   # @param [Number] id
   # @return [Number] radius
   getCircleActorRadius: (id) ->
-    for a in AWGLRenderer.actors
-      if a.getId() == id and a instanceof AWGLPolygonActor
+    for a in ARERenderer.actors
+      if a.getId() == id and a instanceof AREPolygonActor
         return a.getRadius()
-    
+
     null
 
   # Set the radius of the circle actor with the specified ID
@@ -130,8 +130,8 @@ class AWGLActorInterface
   # @param [Number] radius
   # @return [Boolean] success
   setCircleActorRadius: (id, radius) ->
-    for a in AWGLRenderer.actors
-      if a.getId() == id and a instanceof AWGLPolygonActor
+    for a in ARERenderer.actors
+      if a.getId() == id and a instanceof AREPolygonActor
         a.setRadius radius
         return true
 
@@ -258,10 +258,10 @@ class AWGLActorInterface
   destroyActor: (id) ->
     param.required id
 
-    for a, i in AWGLRenderer.actors
+    for a, i in ARERenderer.actors
       if a.getId() == id
         a.destroyPhysicsBody()
-        AWGLRenderer.actors.splice i, 1
+        ARERenderer.actors.splice i, 1
         a = undefined
         return true
 
@@ -379,7 +379,7 @@ class AWGLActorInterface
     param.required id
 
     if (a = @_findActor(id)) != null
-      a.setColor new AWGLColor3 r, g, b
+      a.setColor new AREColor3 r, g, b
       return true
 
     false

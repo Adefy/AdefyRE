@@ -2,21 +2,21 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend AWGLRenderer.coffee
-# @depend AWGLPhysics.coffee
-# @depend util/AWGLLog.coffee
-# @depend animations/AWGLBezAnimation.coffee
-# @depend animations/AWGLVertAnimation.coffee
-# @depend animations/AWGLPsyxAnimation.coffee
-# @depend interface/AWGLInterface.coffee
+# @depend ARERenderer.coffee
+# @depend AREPhysics.coffee
+# @depend util/ARELog.coffee
+# @depend animations/AREBezAnimation.coffee
+# @depend animations/AREVertAnimation.coffee
+# @depend animations/AREPsyxAnimation.coffee
+# @depend interface/AREInterface.coffee
 
 # Requires Underscore.js fromhttp://documentcloud.github.io/underscore
 # Requires Chipmunk-js https://github.com/josephg/Chipmunk-js
 
 # The WebGL Adefy engine. Implements the full AJS interface.
 #
-# AWGLLog is used for all logging throughout the application
-class AWGLEngine
+# ARELog is used for all logging throughout the application
+class AREEngine
 
   # Instantiates the engine, starting the render loop and physics handler.
   # Further useage should happen through the interface layer, either manually
@@ -29,13 +29,13 @@ class AWGLEngine
   # @param [Number] width optional width to pass to the canvas
   # @param [Number] height optional height to pass to the canvas
   # @param [Method] cb callback to execute when finished initializing
-  # @param [Number] logLevel level to start AWGLLog at, defaults to 4
+  # @param [Number] logLevel level to start ARELog at, defaults to 4
   # @param [String] canvas optional canvas selector to initalize the renderer
   constructor: (width, height, cb, logLevel, canvas) ->
     param.required width
     param.required height
     param.required cb
-    AWGLLog.level = param.optional logLevel, 4
+    ARELog.level = param.optional logLevel, 4
     canvas = param.optional canvas, ""
 
     # Holds a handle on the render loop interval
@@ -46,13 +46,13 @@ class AWGLEngine
 
     # Ensure Underscore.js is loaded
     if window._ == null or window._ == undefined
-      return AWGLLog.error "Underscore.js is not present!"
+      return ARELog.error "Underscore.js is not present!"
 
     # Ensure Chipmunk-js is loaded
     if window.cp == undefined or window.cp == null
-      return AWGLLog.error "Chipmunk-js is not present!"
+      return ARELog.error "Chipmunk-js is not present!"
 
-    @_renderer = new AWGLRenderer canvas, width, height
+    @_renderer = new ARERenderer canvas, width, height
     @startRendering()
     cb @
 
@@ -64,14 +64,14 @@ class AWGLEngine
   startRendering: ->
     if @_renderIntervalId != null then return
 
-    AWGLLog.info "Starting render loop"
+    ARELog.info "Starting render loop"
     @_renderIntervalId = setInterval (=> @_renderer.render()), @_framerate
 
   # Halt render loop if it's running
   stopRendering: ->
     if @_renderIntervalId == null then return
 
-    AWGLLog.info "Halting render loop"
+    ARELog.info "Halting render loop"
     clearInterval @_renderIntervalId
     @_renderIntervalId = null
 
@@ -85,14 +85,14 @@ class AWGLEngine
     g = param.optional g, 0
     b = param.optional b, 0
 
-    if @_renderer instanceof AWGLRenderer
+    if @_renderer instanceof ARERenderer
       @_renderer.setClearColor r, g, b
 
   # Get clear color from renderer (if active, null otherwise)
   #
-  # @return [AWGLColor3] color
+  # @return [AREColor3] color
   getClearColor: ->
-    if @_renderer instanceof AWGLRenderer
+    if @_renderer instanceof ARERenderer
       @_renderer.getClearColor()
     else
       null
@@ -121,7 +121,7 @@ class AWGLEngine
   # @param [Method] cb cb to call post-render
   requestPickingRender: (buffer, cb) ->
     if @_renderer == null or @_renderer == undefined
-      AWGLLog.warn "Can't request a pick render, renderer not instantiated!"
+      ARELog.warn "Can't request a pick render, renderer not instantiated!"
     else
       @_renderer.requestPickingRender buffer, cb
 
@@ -129,8 +129,8 @@ class AWGLEngine
   #
   # @return [Object] gl
   getGL: ->
-    if AWGLRenderer._gl == null then AWGLLog.warn "Render not instantiated!"
-    AWGLRenderer._gl
+    if ARERenderer._gl == null then ARELog.warn "Render not instantiated!"
+    ARERenderer._gl
 
 # Break out an interface. Use responsibly
-window.AdefyGLI = new AWGLInterface
+window.AdefyGLI = new AREInterface

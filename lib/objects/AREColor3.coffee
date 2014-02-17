@@ -6,7 +6,7 @@
 #
 # Serves to provide a consistent structure for defining colors, and offers
 # useful float to int (0.0-1.0 to 0-255) conversion functions
-class AWGLColor3
+class AREColor3
 
   # Sets component values
   #
@@ -18,7 +18,7 @@ class AWGLColor3
     g = param.optional g, 0
     b = param.optional b, 0
 
-    if colOrR instanceof AWGLColor3
+    if colOrR instanceof AREColor3
       @_r = colOrR.getR()
       @_g = colOrR.getG()
       @_b = colOrR.getB()

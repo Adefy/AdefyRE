@@ -4,27 +4,27 @@
 
 # Engine interface, used by the ads themselves, serves as an API
 #
-# @depend AWGLActorInterface.coffee
-# @depend AWGLEngineInterface.coffee
-# @depend AWGLAnimationInterface.coffee
-class AWGLInterface
+# @depend AREActorInterface.coffee
+# @depend AREEngineInterface.coffee
+# @depend AREAnimationInterface.coffee
+class AREInterface
 
   # Instantiates sub-interfaces
   constructor: ->
-    @_Actors = new AWGLActorInterface()
-    @_Engine = new AWGLEngineInterface()
-    @_Animations = new AWGLAnimationInterface()
+    @_Actors = new AREActorInterface()
+    @_Engine = new AREEngineInterface()
+    @_Animations = new AREAnimationInterface()
 
   # Sub-interfaces are broken out through accessors to prevent modification
 
   # Get actor sub-interface
-  # @return [AWGLActorInterface] actors
+  # @return [AREActorInterface] actors
   Actors: -> @_Actors
 
   # Get renderer sub-interface
-  # @return [AWGLEngineInterface] renderer
+  # @return [AREEngineInterface] renderer
   Engine: -> @_Engine
 
   # Get animation sub-interface
-  # @return [AWGLAnimationInterface] animations
+  # @return [AREAnimationInterface] animations
   Animations: -> @_Animations

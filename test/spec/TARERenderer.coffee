@@ -2,10 +2,10 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-describe "AWGLRenderer", ->
+describe "ARERenderer", ->
 
   webGL = undefined
-  instance = new AWGLRenderer()
+  instance = new ARERenderer()
 
   it "should provide width/height getters", ->
     expect(instance.getWidth()).to.equal 800
@@ -16,32 +16,32 @@ describe "AWGLRenderer", ->
     expect(instance._height).to.equal 600
 
   it "should provide incremental ids for actors", ->
-    initial = AWGLRenderer.getNextId()
-    expect(AWGLRenderer.getNextId()).to.be.gt initial
+    initial = ARERenderer.getNextId()
+    expect(ARERenderer.getNextId()).to.be.gt initial
 
   describe "coord conversion", ->
 
     # This is purely here to catch any changes to the PPM, we might break
     # it out in future versions
     it "should use a PPM of 128", ->
-      expect(AWGLRenderer.getPPM()).to.equal 128
-      expect(AWGLRenderer._PPM).to.equal 128
+      expect(ARERenderer.getPPM()).to.equal 128
+      expect(ARERenderer._PPM).to.equal 128
 
     it "should convert between screen and world coordinates", ->
 
       tVec = new cp.v 10, 10
-      worldVec = AWGLRenderer.screenToWorld tVec
-      screenVec = AWGLRenderer.worldToScreen tVec
+      worldVec = ARERenderer.screenToWorld tVec
+      screenVec = ARERenderer.worldToScreen tVec
 
-      expect(worldVec.x).to.equal (10 / AWGLRenderer._PPM)
-      expect(worldVec.y).to.equal (10 / AWGLRenderer._PPM)
+      expect(worldVec.x).to.equal (10 / ARERenderer._PPM)
+      expect(worldVec.y).to.equal (10 / ARERenderer._PPM)
 
-      expect(screenVec.x).to.equal (10 * AWGLRenderer._PPM)
-      expect(screenVec.y).to.equal (10 * AWGLRenderer._PPM)
+      expect(screenVec.x).to.equal (10 * ARERenderer._PPM)
+      expect(screenVec.y).to.equal (10 * ARERenderer._PPM)
 
   #  This fails in phantomjs, and wgl dependent tests don't execute
   try
-    _c = document.getElementById "awgl_canvas"
+    _c = document.getElementById "are_canvas"
     webGL = _c.getContext("webgl") || _c.getContext("experimental-webgl")
   catch e
     console.log e
@@ -76,13 +76,13 @@ describe "AWGLRenderer", ->
       describe "gl context", ->
 
         it "should be created in the constructor", ->
-          expect(AWGLRenderer._gl).to.exist
+          expect(ARERenderer._gl).to.exist
 
       describe "@actors", ->
 
         it "should be static and initialize empty", ->
-          expect(AWGLRenderer.actors).to.be.an "array"
-          expect(AWGLRenderer.actors).to.be.empty
+          expect(ARERenderer.actors).to.be.an "array"
+          expect(ARERenderer.actors).to.be.empty
 
         it "should be appended to when creating a new actor", ->
 
@@ -94,4 +94,4 @@ describe "AWGLRenderer", ->
             -50, -50
           ]
 
-          newActor = new AWGLRawActor verts
+          newActor = new ARERawActor verts

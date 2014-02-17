@@ -3,7 +3,7 @@
 ##
 
 # Shader class
-class AWGLShader
+class AREShader
 
   # Doesn't do much except auto-build the shader if requested
   #
@@ -85,11 +85,11 @@ class AWGLShader
   generateHandles: ->
 
     if @_prog == null
-      AWGLEngine.getLog().error "Build program before generating handles"
+      AREEngine.getLog().error "Build program before generating handles"
       return false
 
     if @_handles != null
-      AWGLEngine.getLog().warn "Refusing to re-generate handles!"
+      AREEngine.getLog().warn "Refusing to re-generate handles!"
       return false
 
     @_handles = {}

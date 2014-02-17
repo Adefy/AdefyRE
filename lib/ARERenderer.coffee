@@ -2,14 +2,14 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# AWGLRenderer
+# ARERenderer
 #
-# @depend objects/AWGLColor3.coffee
-# @depend objects/AWGLShader.coffee
+# @depend objects/AREColor3.coffee
+# @depend objects/AREShader.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the
 # necessary functionality from the AdefyLib renderer
-class AWGLRenderer
+class ARERenderer
 
   @_nextID: 0
 
@@ -21,11 +21,11 @@ class AWGLRenderer
 
   # Returns PPM ratio
   # @return [Number] ppm pixels-per-meter
-  @getPPM: -> AWGLRenderer._PPM
+  @getPPM: -> ARERenderer._PPM
 
   # Returns MPP ratio
   # @return [Number] mpp meters-per-pixel
-  @getMPP: -> 1.0 / AWGLRenderer._PPM
+  @getMPP: -> 1.0 / ARERenderer._PPM
 
   # Converts screen coords to world coords
   #
@@ -33,8 +33,8 @@ class AWGLRenderer
   # @return [B2Vec2] ret v in world coords
   @screenToWorld: (v) ->
     ret = new cp.v
-    ret.x = v.x / AWGLRenderer._PPM
-    ret.y = v.y / AWGLRenderer._PPM
+    ret.x = v.x / ARERenderer._PPM
+    ret.y = v.y / ARERenderer._PPM
     ret
 
   # Converts world coords to screen coords
@@ -43,8 +43,8 @@ class AWGLRenderer
   # @return [B2Vec2] ret v in screen coords
   @worldToScreen: (v) ->
     ret = new cp.v
-    ret.x = v.x * AWGLRenderer._PPM
-    ret.y = v.y * AWGLRenderer._PPM
+    ret.x = v.x * ARERenderer._PPM
+    ret.y = v.y * ARERenderer._PPM
     ret
 
   # @property [Array<Object>] actors for rendering
@@ -58,7 +58,7 @@ class AWGLRenderer
   # to any class that asks for it, without an instance avaliable. @me is set
   # in the constructor, and an error is thrown if it is not already null.
   #
-  # @property [AWGLRenderer] instance reference, enforced const in constructor
+  # @property [ARERenderer] instance reference, enforced const in constructor
   @me: null
 
   # Signifies the current material; when this doesn't match, a material change
@@ -69,6 +69,11 @@ class AWGLRenderer
   @camPos:
     x: 0
     y: 0
+
+  # 0: canvas
+  # 1: wgl
+  @rendererMode: 0#1
+  @activeRendererMode: 0#1
 
   # Sets up the renderer, using either an existing canvas or creating a new one
   # If a canvasId is provided but the element is not a canvas, it is treated
@@ -105,12 +110,10 @@ class AWGLRenderer
     # to the new @me, without any warning. Blegh.
     #
     # TODO: fugly
-    if AWGLRenderer.me != null
-      throw new Error "Only one instance of AWGLRenderer can be created!"
+    if ARERenderer.me != null
+      throw new Error "Only one instance of ARERenderer can be created!"
     else
-      AWGLRenderer.me = @
-
-    gl = null
+      ARERenderer.me = @
 
     @_width = param.optional @_width, 800
     @_height = param.optional @_height, 600
@@ -120,10 +123,10 @@ class AWGLRenderer
 
     # Helper method
     _createCanvas = (parent, id, w, h) ->
-      _c = AWGLRenderer.me._canvas = document.createElement "canvas"
+      _c = ARERenderer.me._canvas = document.createElement "canvas"
       _c.width = w
       _c.height = h
-      _c.id = "awgl_canvas"
+      _c.id = "are_canvas"
 
       # TODO: Refactor this, it's terrible
       if parent == "body"
@@ -134,48 +137,79 @@ class AWGLRenderer
     # Create a new canvas if no id is supplied
     if canvasId == undefined or canvasId == null
 
-      _createCanvas "body", "awgl_canvas", @_width, @_height
-      AWGLLog.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
+      _createCanvas "body", "are_canvas", @_width, @_height
+      ARELog.info "Creating canvas #are_canvas [#{@_width}x#{@_height}]"
+      @_canvas = document.getElementById "are_canvas"
 
     else
+
       @_canvas = document.getElementById canvasId
 
       # Create canvas on the body with id canvasId
       if @_canvas == null
+
         _createCanvas "body", canvasId, @_width, @_height
-        AWGLLog.info "Creating canvas ##{canvasId} [#{@_width}x#{@_height}]"
+        ARELog.info "Creating canvas ##{canvasId} [#{@_width}x#{@_height}]"
+        @_canvas = document.getElementById canvasId
+
       else
 
         # Element exists, see if it is a canvas
         if @_canvas.nodeName.toLowerCase() == "canvas"
-          AWGLLog.warn "Canvas exists, ignoring supplied dimensions"
+          ARELog.warn "Canvas exists, ignoring supplied dimensions"
           @_width = @_canvas.width
           @_height = @_canvas.height
-          AWGLLog.info "Using canvas ##{canvasId} [#{@_width}x#{@_height}]"
+          ARELog.info "Using canvas ##{canvasId} [#{@_width}x#{@_height}]"
         else
 
           # Create canvas using element as a parent
-          _createCanvas canvasId, "awgl_canvas", @_width, @_height
-          AWGLLog.info "Creating canvas #awgl_canvas [#{@_width}x#{@_height}]"
+          _createCanvas canvasId, "are_canvas", @_width, @_height
+          ARELog.info "Creating canvas #are_canvas [#{@_width}x#{@_height}]"
+
+    if @_canvas is null
+      return ARELog.error "Canvas does not exist!"
+
+    # Initialize Canvas Cont
+    if ARERenderer.rendererMode == 0
+
+      @initializeCanvas()
 
     # Initialize GL context
-    gl = @_canvas.getContext "webgl", antialias: true
+    else if ARERenderer.rendererMode == 1
+
+      unless @initializeWGLCanvas(@_canvas)
+
+        ARELog.info "Falling back on regular canvas renderer"
+
+        @initializeCanvas()
+
+    else
+
+      ARELog.error "Invalid Renderer #{ARERenderer.rendererMode}"
+
+    ARELog.info "Using the #{ARERenderer.activeRendererMode} renderer mode"
+
+    @switchMaterial "flat"
+    @setClearColor 0, 0, 0
+
+  initializeWGLCanvas: (canvas) ->
+
+    gl = canvas.getContext "webgl", antialias: true
 
     # If null, use experimental-webgl
     if gl is null
-      AWGLLog.warn "Continuing with experimental webgl support"
-      gl = @_canvas.getContext("experimental-webgl")
+      ARELog.warn "Continuing with experimental webgl support"
+      gl = canvas.getContext "experimental-webgl"
 
     # If still null, FOL
     if gl is null
       alert "Your browser does not support WebGL! Adefy ads won't render ;("
       @initError = "Your browser does not support WebGL!"
-      return
+      return false
 
-    AWGLRenderer._gl = gl
-    @_ctx = @_canvas.getContext "2d"
+    ARERenderer._gl = gl
 
-    AWGLLog.info "Created WebGL context"
+    ARELog.info "Created WebGL context"
 
     # Perform rendering setup
     gl.enable gl.DEPTH_TEST
@@ -184,7 +218,27 @@ class AWGLRenderer
     gl.depthFunc gl.LEQUAL
     gl.blendFunc gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA
 
-    AWGLLog.info "Renderer initialized"
+    ARELog.info "Renderer initialized"
+
+    vertSrc_Wire = """
+      attribute vec2 Position;
+
+      uniform mat4 Projection;
+      uniform mat4 ModelView;
+
+      void main() {
+        gl_Position = Projection * ModelView * vec4(Position, 1, 1);
+      }
+    """
+
+    fragSrc_Wire = """
+      #ifdef GL_ES
+      precision mediump float;
+      #endif
+      void main() {
+        gl_FragColor = vec4(0.4, 0.4, 0.4, 1.0);
+      }
+    """
 
     ## Shaders for shapes with solid colors
     vertSrc_Solid = """
@@ -194,8 +248,7 @@ class AWGLRenderer
       uniform mat4 ModelView;
 
       void main() {
-        mat4 mvp = Projection * ModelView;
-        gl_Position = mvp * vec4(Position, 1, 1);
+        gl_Position = Projection * ModelView * vec4(Position, 1, 1);
       }
 
     """
@@ -207,7 +260,6 @@ class AWGLRenderer
       void main() {
         gl_FragColor = Color;
       }
-
     """
 
     ## Shaders for textured objects
@@ -224,7 +276,6 @@ class AWGLRenderer
         gl_Position = Projection * ModelView * vec4(Position, 1, 1);
         vTexCoord = aTexCoord;
       }
-
     """
 
     fragSrc_Tex = """
@@ -236,34 +287,53 @@ class AWGLRenderer
       void main() {
         gl_FragColor = texture2D(uSampler, vTexCoord);
       }
-
     """
 
-    @_defaultShader = new AWGLShader vertSrc_Solid, fragSrc_Solid, gl, true
+    @_defaultShader = new AREShader vertSrc_Solid, fragSrc_Solid, gl, true
     @_defaultShader.generateHandles()
 
-    @_texShader = new AWGLShader vertSrc_Tex, fragSrc_Tex, gl, true
+    @_wireShader = new AREShader vertSrc_Wire, fragSrc_Wire, gl, true
+    @_wireShader.generateHandles()
+
+    @_texShader = new AREShader vertSrc_Tex, fragSrc_Tex, gl, true
     @_texShader.generateHandles()
 
-    AWGLLog.info "Initialized shaders"
+    ARELog.info "Initialized shaders"
 
-    @switchMaterial "flat"
+    ARELog.info "ARE WGL initialized"
 
-    @setClearColor 0, 0, 0
+    ARERenderer.activeRendererMode = 1
+
+    true
+
+  initializeCanvas: ->
+
+    @_ctx = @_canvas.getContext "2d"
+
+    ARELog.info "ARE CTX initialized"
+
+    ARERenderer.activeRendererMode = 0
+
+    true
 
   # Returns instance (only one may exist, enforced in constructor)
   #
-  # @return [AWGLRenderer] me
-  @getMe: -> AWGLRenderer.me
+  # @return [ARERenderer] me
+  @getMe: -> ARERenderer.me
 
   # Returns the internal default shader
   #
-  # @return [AWGLShader] shader default shader
+  # @return [AREShader] shader default shader
   getDefaultShader: -> @_defaultShader
+
+  # Returns the shader used for wireframe objects
+  #
+  # @return [AREShader] shader wire shader
+  getWireShader: -> @_wireShader
 
   # Returns the shader used for textured objects
   #
-  # @return [AWGLShader] shader texture shader
+  # @return [AREShader] shader texture shader
   getTextureShader: -> @_texShader
 
   # Returns canvas element
@@ -279,7 +349,7 @@ class AWGLRenderer
   # Returns static gl object
   #
   # @return [Object] gl
-  @getGL: -> AWGLRenderer._gl
+  @getGL: -> ARERenderer._gl
 
   # Returns canvas width
   #
@@ -293,14 +363,14 @@ class AWGLRenderer
 
   # Returns the clear color
   #
-  # @return [AWGLColor3] clearCol
+  # @return [AREColor3] clearCol
   getClearColor: -> @_clearColor
 
   # Sets the clear color
   #
   # @overload setClearCol(col)
-  #   Set using an AWGLColor3 object
-  #   @param [AWGLColor3] col
+  #   Set using an AREColor3 object
+  #   @param [AREColor3] col
   #
   # @overload setClearCol(r, g, b)
   #   Set using component values (0.0-1.0 or 0-255)
@@ -309,9 +379,9 @@ class AWGLRenderer
   #   @param [Number] b blue component
   setClearColor: (colOrR, g, b) ->
 
-    if @_clearColor == undefined then @_clearColor = new AWGLColor3
+    if @_clearColor == undefined then @_clearColor = new AREColor3
 
-    if colOrR instanceof AWGLColor3
+    if colOrR instanceof AREColor3
       @_clearColor = colOrR
     else
 
@@ -329,11 +399,12 @@ class AWGLRenderer
     g = @_clearColor.getG true
     b = @_clearColor.getB true
 
-    # Actually set the color if possible
-    if AWGLRenderer._gl != null and AWGLRenderer._gl != undefined
-      AWGLRenderer._gl.clearColor colOrR, g, b, 1.0
-    else
-      AWGLLog.error "Can't set clear color, AWGLRenderer._gl not valid!"
+    if ARERenderer.activeRendererMode == 1
+      # Actually set the color if possible
+      if ARERenderer._gl != null and ARERenderer._gl != undefined
+        ARERenderer._gl.clearColor colOrR, g, b, 1.0
+      else
+        ARELog.error "Can't set clear color, ARERenderer._gl not valid!"
 
   # Request a frame to be rendered for scene picking.
   #
@@ -344,17 +415,17 @@ class AWGLRenderer
     param.required cb
 
     if @_pickRenderRequested
-      AWGLLog.warn "Pick render already requested! No request queue"
+      ARELog.warn "Pick render already requested! No request queue"
       return
 
     @_pickRenderBuff = buffer
     @_pickRenderCB = cb
     @_pickRenderRequested = true
 
-  # Draws a frame
-  render: ->
+  # Draws a using WebGL frame
+  wglRender: ->
 
-    gl = AWGLRenderer._gl # Code asthetics
+    gl = ARERenderer._gl # Code asthetics
 
     # Probably unecessary, but better to be safe
     if gl == undefined or gl == null then return
@@ -373,7 +444,7 @@ class AWGLRenderer
     gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    for a in AWGLRenderer.actors
+    for a in ARERenderer.actors
 
       if @_pickRenderRequested
 
@@ -388,7 +459,7 @@ class AWGLRenderer
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
-        a.draw gl
+        a.wglDraw gl
         a.setColor _savedColor
 
       else
@@ -415,10 +486,10 @@ class AWGLRenderer
           a.setPosition pos
           a.setRotation rot
 
-        if a.getMaterial() != AWGLRenderer._currentMaterial
+        if a.getMaterial() != ARERenderer._currentMaterial
           @switchMaterial a.getMaterial()
 
-        a.draw gl
+        a.wglDraw gl
 
     # Switch back to a normal rendering mode, and immediately re-render to the
     # actual screen
@@ -436,18 +507,79 @@ class AWGLRenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, null
       @render()
 
+  cvRender: ->
+
+    ctx = @_ctx
+
+    if ctx == undefined or ctx == null then return
+
+    # Draw everything!
+    for a in ARERenderer.actors
+
+      if @_pickRenderRequested
+
+        # If rendering for picking, we need to temporarily change the color
+        # of the actor. Blue key is 248
+        _savedColor = a.getColor()
+
+        _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
+        _idSector = Math.floor(a.getId() / 255)
+
+        @switchMaterial "flat"
+
+        # Recover id with (_idSector * 255) + _id
+        a.setColor _id, _idSector, 248
+        a.cvDraw ctx
+        a.setColor _savedColor
+
+      else
+
+        # Check if we have a visible attached texture.
+        # If so, set properties and draw
+        if a.hasAttachment() and a.getAttachment().visible
+
+          # Get physics updates
+          a.updatePosition()
+
+          # Setup anchor point
+          pos = a.getPosition()
+          rot = a.getRotation()
+
+          pos.x += a.attachedTextureAnchor.x
+          pos.y += a.attachedTextureAnchor.y
+          rot += a.attachedTextureAnchor.angle
+
+          # Switch to attached texture
+          a = a.getAttachment()
+
+          # Apply state update
+          a.setPosition pos
+          a.setRotation rot
+
+        if a.getMaterial() != ARERenderer._currentMaterial
+          @switchMaterial a.getMaterial()
+
+        a.cvDraw ctx
+
+  render: ->
+
+    if ARERenderer.activeRendererMode == 0
+      @cvRender()
+    else if ARERenderer.activeRendererMode == 1
+      @wglRender()
+
   # Returns a unique id, used by actors
   # @return [Number] id unique id
-  @getNextId: -> AWGLRenderer._nextID++
+  @getNextId: -> ARERenderer._nextID++
 
   # Add an actor to our render list. A layer can be optionally specified, at
   # which point it will also be applied to the actor.
   #
   # If no layer is specified, we use the current actor layer (default 0)
   #
-  # @param [AWGLRawActor] actor
+  # @param [ARERawActor] actor
   # @param [Number] layer
-  # @return [AWGLRawActor] actor added actor
+  # @return [ARERawActor] actor added actor
   @addActor: (actor, layer) ->
     param.required actor
     layer = param.optional layer, actor.layer
@@ -455,27 +587,27 @@ class AWGLRenderer
     if actor.layer != layer then actor.layer = layer
 
     # Find index to insert at to maintain layer order
-    layerIndex = _.sortedIndex AWGLRenderer.actors, actor, "layer"
+    layerIndex = _.sortedIndex ARERenderer.actors, actor, "layer"
 
     # Insert!
-    AWGLRenderer.actors.splice layerIndex, 0, actor
+    ARERenderer.actors.splice layerIndex, 0, actor
 
     actor
 
   # Remove an actor from our render list by either actor, or id
   #
-  # @param [AWGLRawActor,Number] actor actor, or id of actor to remove
+  # @param [ARERawActor,Number] actor actor, or id of actor to remove
   # @return [Boolean] success
   @removeActor: (actor) ->
     param.required actor
 
     # Extract id
-    if actor instanceof AWGLRawActor then actor = actor.getId()
+    if actor instanceof ARERawActor then actor = actor.getId()
 
     # Attempt to find and remove actor
-    for a, i in AWGLRenderer.actors
+    for a, i in ARERenderer.actors
       if a.getId() == actor
-        AWGLRenderer.actors.splice i, 1
+        ARERenderer.actors.splice i, 1
         return true
 
     false
@@ -486,10 +618,12 @@ class AWGLRenderer
   switchMaterial: (material) ->
     param.required material
 
-    ortho = makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
-    gl = AWGLRenderer._gl
+    return if ARERenderer.activeRendererMode == 0
 
-    if material == AWGLRenderer._currentMaterial then return
+    ortho = makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+    gl = ARERenderer._gl
+
+    if material == ARERenderer._currentMaterial then return
     else if material == "flat"
       gl.useProgram @_defaultShader.getProgram()
 
@@ -499,7 +633,7 @@ class AWGLRenderer
       gl.enableVertexAttribArray handles["Position"]
       gl.enableVertexAttribArray handles["Color"]
 
-      AWGLRenderer._currentMaterial = "flat"
+      ARERenderer._currentMaterial = "flat"
 
     else if material == "texture"
       gl.useProgram @_texShader.getProgram()
@@ -510,7 +644,7 @@ class AWGLRenderer
       gl.enableVertexAttribArray handles["Position"]
       gl.enableVertexAttribArray handles["aTexCoord"]
 
-      AWGLRenderer._currentMaterial = "texture"
+      ARERenderer._currentMaterial = "texture"
 
     else throw new Error "Unknown material #{material}"
 
@@ -518,7 +652,7 @@ class AWGLRenderer
   #
   # @param [String] name texture name to check for
   @hasTexture: (name) ->
-    for t in AWGLRenderer.textures
+    for t in ARERenderer.textures
       if t.name == name then return true
     return false
 
@@ -529,7 +663,7 @@ class AWGLRenderer
   @getTexture: (name) ->
     param.required name
 
-    for t in AWGLRenderer.textures
+    for t in ARERenderer.textures
       if t.name == name then return t.texture
     return null
 
@@ -540,7 +674,7 @@ class AWGLRenderer
   @getTextureSize: (name) ->
     param.required name
 
-    for t in AWGLRenderer.textures
+    for t in ARERenderer.textures
       if t.name == name then return { w: t.width, h: t.height }
     return null
 
@@ -551,4 +685,4 @@ class AWGLRenderer
     param.required tex.name
     param.required tex.texture
 
-    AWGLRenderer.textures.push tex
+    ARERenderer.textures.push tex

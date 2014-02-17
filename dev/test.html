@@ -8,7 +8,7 @@
   <script type="text/javascript" src="./cp.min.js"></script>
   <script type="text/javascript" src="./sylvester.js"></script>
   <script type="text/javascript" src="./glUtils.js"></script>
-  <script type="text/javascript" src="./awgl.js"></script>
+  <script type="text/javascript" src="./are.js"></script>
 
   <style>
   * {
@@ -36,16 +36,16 @@
     var width = window.innerWidth;
     var height = window.innerHeight;
 
-    new AWGLEngine(width, height, function() {
+    new AREEngine(width, height, function() {
       window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function() {
 
-        var ground = new AWGLRectangleActor(width, height * 0.05);
+        var ground = new ARERectangleActor(width, height * 0.05);
         ground.setPosition({ x: width / 2, y: height * 0.025 })
         .setTexture("metalGrate")
         .setTextureRepeat(20, 0.5)
         .createPhysicsBody(0, 0.7, 0.6);
 
-        new AWGLCircleActor(128)
+        new ARECircleActor(128)
         .setPosition({ x: width / 2, y: height / 2 })
         .setTexture("roundThing")
         .createPhysicsBody(100, 0.8, 0.7);
@@ -58,7 +58,7 @@
           var friction = Math.random();
           var elasticity = Math.random() * 1.2;
 
-          new AWGLCircleActor(Math.round(Math.random() * 32) + 5)
+          new ARECircleActor(Math.round(Math.random() * 32) + 5)
           .setPosition({ x: x, y: y })
           .setTexture("roundThing")
           .createPhysicsBody(mass, friction, elasticity);

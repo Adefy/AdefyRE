@@ -2,19 +2,19 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# Same concept as AWGL.coffee, lets us concat the tests in order for compiling
+# Same concept as ARE.coffee, lets us concat the tests in order for compiling
 #
-# @depend spec/TAWGLEnv.coffee
+# @depend spec/TAREEnv.coffee
 #
-# @depend spec/util/TAWGLAjax.coffee
-# @depend spec/util/TAWGLLog.coffee
-# @depend spec/util/TAWGLUtilParam.coffee
+# @depend spec/util/TAREAjax.coffee
+# @depend spec/util/TARELog.coffee
+# @depend spec/util/TAREUtilParam.coffee
 #
-# @depend spec/TAWGLEngine.coffee
-# @depend spec/TAWGLRenderer.coffee
-# @depend spec/TAWGLPhysics.coffee
-# @depend spec/TAWGLInterface.coffee
+# @depend spec/TAREEngine.coffee
+# @depend spec/TARERenderer.coffee
+# @depend spec/TAREPhysics.coffee
+# @depend spec/TAREInterface.coffee
 #
-# @depend spec/objects/TAWGLActor.coffee
-# @depend spec/objects/TAWGLShader.coffee
-# @depend spec/objects/TAWGLColor3.coffee
+# @depend spec/objects/TAREActor.coffee
+# @depend spec/objects/TAREShader.coffee
+# @depend spec/objects/TAREColor3.coffee

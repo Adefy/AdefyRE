@@ -2,11 +2,11 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend AWGLRawActor.coffee
+# @depend ARERawActor.coffee
 
 # Polygon Actor implementation; allows for the creation of polygons with
 # arbitrary side counts, and for manipulation by radius and segment count
-class AWGLPolygonActor extends AWGLRawActor
+class AREPolygonActor extends ARERawActor
 
   # Sets us up with the supplied radius and segment count, generating our
   # vertex sets.

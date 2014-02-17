@@ -2,10 +2,10 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# AWGLVertAnimation
+# AREVertAnimation
 #
 # Class to handle actor vertices updates
-class AWGLVertAnimation
+class AREVertAnimation
 
   # Class to animate vertices using vertex delta sets. The delta sets describe
   # the change in vertice structure at a specific point in time.
@@ -50,7 +50,7 @@ class AWGLVertAnimation
   #   Values passed in as numbers (not strings) will be interpreted as absolute
   #   changes. If you need to set a negative value, use a number, not a string!
   #
-  # @param [AWGLRawActor] actor the actor we apply the modifications to
+  # @param [ARERawActor] actor the actor we apply the modifications to
   # @param [Object] options the options we apply
   # @option options [Number, Array<Number>] delays
   # @option options [Array, Array<Array>] deltas
@@ -65,7 +65,7 @@ class AWGLVertAnimation
     param.required @options.deltas
 
     if @options.delays.length != @options.deltas.length
-      AWGLLog.warn "Vert animation delay count != delta set count! Bailing."
+      ARELog.warn "Vert animation delay count != delta set count! Bailing."
       @_animated = true
       return
 
@@ -127,7 +127,7 @@ class AWGLVertAnimation
       if typeof d == "number" then val = d
       else if typeof d == "string"
         if val == undefined
-          AWGLLog.warn "Vertex does not exist, yet delta is relative!"
+          ARELog.warn "Vertex does not exist, yet delta is relative!"
           return
 
         if d.charAt(0) == "|" then break
@@ -135,15 +135,15 @@ class AWGLVertAnimation
         else if d.charAt(0) == "+" then val += Number(d.slice(1))
         else if d == "..." then i = 0
         else if d.charAt(0) != "."
-          AWGLLog.warn "Unknown delta action, #{d}, can't apply deltas."
+          ARELog.warn "Unknown delta action, #{d}, can't apply deltas."
           return
 
       else
-        AWGLLog.warn "Unknown delta type, can't apply deltas! #{d} #{typeof d}"
+        ARELog.warn "Unknown delta type, can't apply deltas! #{d} #{typeof d}"
         return
 
       if i > finalVerts.length
-        AWGLLog.warn "Vertex gap, can't push new vert! #{val}:#{d}:#{i}"
+        ARELog.warn "Vertex gap, can't push new vert! #{val}:#{d}:#{i}"
         return
       else if i == finalVerts.length
         finalVerts.push val

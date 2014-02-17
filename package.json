@@ -1,6 +1,6 @@
 {
-  "name": "awgl",
-  "description": "Adefy WebGL platform",
+  "name": "are",
+  "description": "Adefy Rendering Engine platform",
   "author": "Cris Mihalache <cris.mihalache@spectrumit.eu>",
   "version": "0.0.1",
   "dependencies": {},

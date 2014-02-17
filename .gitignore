@@ -1,7 +1,7 @@
 build/*
 doc/*
 node_modules
-dev/awgl.js
-dev/awgl.js.map
-dev/awgl-concat.coffee
+dev/are.js
+dev/are.js.map
+dev/are-concat.coffee
 .DS_Store

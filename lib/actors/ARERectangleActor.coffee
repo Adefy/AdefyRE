@@ -2,11 +2,11 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend AWGLRawActor.coffee
+# @depend ARERawActor.coffee
 
 # Simple rectangle actor; allows for creation using a width and height, and
 # manipulation of that width/height
-class AWGLRectangleActor extends AWGLRawActor
+class ARERectangleActor extends ARERawActor
 
   # Sets us up with the supplied width and height, generating both our vertex
   # and UV sets.

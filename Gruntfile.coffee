@@ -1,9 +1,9 @@
 module.exports = (grunt) ->
 
   # Output
-  libName = "awgl.js"
-  productionName = "awgl-prod.min.js"
-  productionNameFull = "awgl-prod-full.min.js"
+  libName = "are.js"
+  productionName = "are-prod.min.js"
+  productionNameFull = "are-prod-full.min.js"
 
   # Directories
   buildDir = "build"
@@ -11,7 +11,7 @@ module.exports = (grunt) ->
   testDir = "test"
   devDir = "dev"
   docDir = "doc"
-  cdnDir = "../www/awgl"
+  cdnDir = "../www/are"
   production = "#{buildDir}/#{productionName}"
   productionFull = "#{buildDir}/#{productionNameFull}"
 
@@ -23,21 +23,21 @@ module.exports = (grunt) ->
     "#{devDir}/gl-matrix-min.js"
     "#{devDir}/cp.min.js"
 
-    "#{devDir}/awgl.js"
+    "#{devDir}/are.js"
   ]
 
   # Intermediate vars
-  __awglOut = {}
-  __awglOut["#{buildDir}/awgl-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
-  __awglOut["#{devDir}/awgl-concat.coffee"] = [ "#{libDir}/AWGL.coffee" ]
+  __areOut = {}
+  __areOut["#{buildDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
+  __areOut["#{devDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
 
   __coffeeConcatFiles = {}
 
   # Build concat output
-  __coffeeConcatFiles["#{buildDir}/#{libName}"] = "#{buildDir}/awgl-concat.coffee";
+  __coffeeConcatFiles["#{buildDir}/#{libName}"] = "#{buildDir}/are-concat.coffee";
 
   # Dev concat output, used for browser testing
-  __coffeeConcatFiles["#{devDir}/#{libName}"] = "#{buildDir}/awgl-concat.coffee";
+  __coffeeConcatFiles["#{devDir}/#{libName}"] = "#{buildDir}/are-concat.coffee";
 
   # 1 to 1 compiled files, for unit tests
   __coffeeFiles = [
@@ -81,7 +81,7 @@ module.exports = (grunt) ->
 
     concat_in_order:
       lib:
-        files: __awglOut
+        files: __areOut
         options:
           extractRequired: (path, content) ->
 
@@ -153,11 +153,11 @@ module.exports = (grunt) ->
           src: [ "**" ]
           dest: "#{cdnDir}/doc"
         ,
-          src: "#{buildDir}/awgl-prod.min.js"
-          dest: "#{cdnDir}/awgl.js"
+          src: "#{buildDir}/are-prod.min.js"
+          dest: "#{cdnDir}/are.js"
         ,
-          src: "#{buildDir}/awgl-prod-full.min.js"
-          dest: "#{cdnDir}/awgl-full.js"
+          src: "#{buildDir}/are-prod-full.min.js"
+          dest: "#{cdnDir}/are-full.js"
         ]
 
     clean: [
