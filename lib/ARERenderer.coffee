@@ -513,8 +513,17 @@ class ARERenderer
 
     if ctx == undefined or ctx == null then return
 
+    ctx.clearRect(0, 0, @_canvas.width, @_canvas.height)
+
     # Draw everything!
+    ctx.save()
+    # cursed inverted scene!
+    ctx.translate 0, @_canvas.height
+    ctx.scale 1, -1
+
     for a in ARERenderer.actors
+
+      ctx.save()
 
       if @_pickRenderRequested
 
@@ -560,6 +569,10 @@ class ARERenderer
           @switchMaterial a.getMaterial()
 
         a.cvDraw ctx
+
+      ctx.restore()
+
+    ctx.restore()
 
   render: ->
 

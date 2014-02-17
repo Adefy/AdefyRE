@@ -510,9 +510,23 @@ class ARERawActor
 
     @updatePosition()
 
+    # Prep our vectors and matrices
+    @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
+    @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
+
+    #@_modelM = Matrix.I 4
+    #@_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
+    #@_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+    #flatMV = new Float32Array(@_modelM.flatten())
+    #x = flatMV[0]
+    #y = flatMV[1]
+    x = @_transV.elements[0]
+    y = @_transV.elements[1]
+
+    context.translate(x, y)
     context.beginPath()
     context.rotate(@_rotation)
-    context.moveTo(@_vertices[0] + @_position.x, @_vertices[1] + @_position.x)
+    context.moveTo(@_vertices[0], @_vertices[1])
     for i in [1..(@_vertices.length / 2)]
       context.lineTo(@_vertices[i * 2], @_vertices[i * 2 + 1])
     context.closePath()
