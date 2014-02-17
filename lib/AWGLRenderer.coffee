@@ -168,7 +168,7 @@ class AWGLRenderer
 
     # If still null, FOL
     if gl is null
-      alert "Your browser does not support WebGL!"
+      alert "Your browser does not support WebGL! Adefy ads won't render ;("
       @initError = "Your browser does not support WebGL!"
       return
 
