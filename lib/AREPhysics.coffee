@@ -3,7 +3,7 @@
 ##
 
 # Chipmunk-js wrapper
-class AWGLPhysics
+class AREPhysics
 
   # @property [Number] velocity iterations
   @velIterations: 6
@@ -23,7 +23,7 @@ class AWGLPhysics
   @bodyCount: 0
 
   # Constructor, should never be called
-  # AWGLPhysics should only ever be accessed as static
+  # AREPhysics should only ever be accessed as static
   constructor: -> throw new Error "Physics constructor called"
 
   # Starts the world step loop if not already running
@@ -38,7 +38,7 @@ class AWGLPhysics
     @_world.sleepTimeThreshold = 0.5
 
     me = @
-    AWGLLog.info "Starting world update loop"
+    ARELog.info "Starting world update loop"
 
     @_stepIntervalId = setInterval ->
       me._world.step me.frameTime
@@ -47,7 +47,7 @@ class AWGLPhysics
   # Halt the world step loop if running
   @stopStepping: ->
     if @_stepIntervalId == null then return
-    AWGLLog.info "Halting world update loop"
+    ARELog.info "Halting world update loop"
     clearInterval @_stepIntervalId
     @_stepIntervalId = null
     @_world = null

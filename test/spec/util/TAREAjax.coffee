@@ -2,9 +2,9 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-describe "TAWGLAjax", ->
+describe "TAREAjax", ->
 
-  a = new AWGLAjax
+  a = new AREAjax
 
   it "should start with an empty queue", ->
     expect(a.busy).to.be.false

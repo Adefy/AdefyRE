@@ -2,7 +2,7 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-describe "AWGLUtilParam", ->
+describe "AREUtilParam", ->
 
   it "should be avaliable globally", ->
     expect(param).to.exist

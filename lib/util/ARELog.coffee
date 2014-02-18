@@ -12,7 +12,7 @@
 # 2 - Warning
 # 3 - Debug
 # 4 - Info
-class AWGLLog
+class ARELog
 
   # @property [Array<String>] tags, editable by the user
   @tags: [
@@ -32,7 +32,7 @@ class AWGLLog
   # @param [String] str log message
   @w: (level, str) ->
 
-    me = AWGLLog
+    me = ARELog
 
     # Return early if not at a suiteable level, or level is 0
     if level > me.level or level == 0 or me.level == 0 then return

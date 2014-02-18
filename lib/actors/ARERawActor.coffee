@@ -6,7 +6,7 @@
 # for the specialized actor classes.
 #
 # Constructs itself from the supplied vertex and UV sets
-class AWGLRawActor
+class ARERawActor
 
   @defaultFriction: 0.3
   @defaultMass: 10
@@ -32,7 +32,7 @@ class AWGLRawActor
     @_registerWithRenderer()
 
     @updateVertices verts, texverts
-    @setColor new AWGLColor3 255, 255, 255
+    @setColor new AREColor3 255, 255, 255
 
     # Default to flat rendering
     @clearTexture()
@@ -40,16 +40,17 @@ class AWGLRawActor
   # Gets an id and registers our existence with the renderer
   # @private
   _registerWithRenderer: ->
-    @_id = AWGLRenderer.getNextId()
-    AWGLRenderer.addActor @
+    @_id = ARERenderer.getNextId()
+    ARERenderer.addActor @
 
   # Sets up default values and initializes our data structures.
   # @private
   _initializeValues: ->
 
-    @_gl = AWGLRenderer._gl
-    if @_gl == undefined or @_gl == null
-      throw new Error "GL context is required for actor initialization!"
+    if ARERenderer.activeRendererMode == 1
+      @_gl = ARERenderer._gl
+      if @_gl == undefined or @_gl == null
+        throw new Error "GL context is required for actor initialization!"
 
     # Initialize our rendering objects
     @_rotV = $V([0, 0, 1])
@@ -58,6 +59,7 @@ class AWGLRawActor
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
+    @_stroke_color = null
     @_colArray = null
 
     @lit = false
@@ -68,6 +70,10 @@ class AWGLRawActor
     @_id = -1
     @_position = new cp.v 0, 0
     @_rotation = 0 # Radians, but set in degrees by default
+    ## size calculated by from verticies
+    @_size =
+      x: 0
+      y: 0
 
     # Chipmunk-js values
     @_shape = null
@@ -97,9 +103,10 @@ class AWGLRawActor
     @_sh_color = null
 
     # Render modes decide how the vertices are treated.
-    #   1 == TRIANGLE_STRIP
-    #   2 == TRIANGLE_FAN
-    @_renderMode = 1
+    #   1 == Stroked
+    #   2 == Filled
+    #   3 == Stroked | Filled
+    @_renderMode = 2
 
     # No attached texture; when one exists, we render that texture (actor)
     # instead of ourselves!
@@ -108,6 +115,14 @@ class AWGLRawActor
       x: 0
       y: 0
       angle: 0
+
+  destroy: ->
+    space = AREPhysics.getWorld()
+    if @_body
+      space.removeBody @_body
+
+    if @_shape
+      space.removeShape @_shape
 
   # Get material name
   #
@@ -121,8 +136,8 @@ class AWGLRawActor
     @layer = param.required layer
 
     # Re-insert ourselves with new layer
-    AWGLRenderer.removeActor @
-    AWGLRenderer.addActor @
+    ARERenderer.removeActor @
+    ARERenderer.addActor @
 
   # We support a single texture per actor for the time being. UV coords are
   # generated automatically internally, for a flat map.
@@ -131,19 +146,19 @@ class AWGLRawActor
   setTexture: (name) ->
     param.required name
 
-    if not AWGLRenderer.hasTexture name
+    if not ARERenderer.hasTexture name
       throw new Error "No such texture loaded: #{name}"
       return
 
-    @_texture = AWGLRenderer.getTexture name
-    @setShader AWGLRenderer.getMe().getTextureShader()
+    @_texture = ARERenderer.getTexture name
+    @setShader ARERenderer.getMe().getTextureShader()
     @_material = "texture"
     @
 
   # Clear our internal texture, leaving us to render with a flat color
   clearTexture: ->
     @_texture = undefined
-    @setShader AWGLRenderer.getMe().getDefaultShader()
+    @setShader ARERenderer.getMe().getDefaultShader()
     @_material = "flat"
 
   # Get our texture, if we have one
@@ -154,24 +169,26 @@ class AWGLRawActor
   # Set shader used to draw actor. For the time being, the routine mearly
   # pulls out handles for the ModelView, Color, and Position structures
   #
-  # @param [AWGLShader] shader
+  # @param [AREShader] shader
   setShader: (shader) ->
-    param.required shader
+    if ARERenderer.activeRendererMode == 1
+      param.required shader
+      # Ensure shader is built, and generate handles if not already done
+      if shader.getProgram() == null
+        throw new Error "Shader has to be built before it can be used!"
 
-    # Ensure shader is built, and generate handles if not already done
-    if shader.getProgram() == null
-      throw new Error "Shader has to be built before it can be used!"
+      if shader.getHandles() == null
+        shader.generateHandles()
 
-    if shader.getHandles() == null
-      shader.generateHandles()
+      handles = shader.getHandles()
 
-    handles = shader.getHandles()
-
-    @_sh_modelview = handles["ModelView"]
-    @_sh_position = handles["Position"]
-    @_sh_color = handles["Color"]
-    @_sh_texture = handles["aTexCoord"]
-    @_sh_sampler = handles["uSampler"]
+      @_sh_modelview = handles["ModelView"]
+      @_sh_position = handles["Position"]
+      @_sh_color = handles["Color"]
+      @_sh_texture = handles["aTexCoord"]
+      @_sh_sampler = handles["uSampler"]
+    else
+      #ARELog.info "Shader's are not supported with this render mode"
 
   # Creates the internal physics body, if one does not already exist
   #
@@ -181,25 +198,25 @@ class AWGLRawActor
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
     # Start the world stepping if not already doing so
-    if AWGLPhysics.getWorld() == null or AWGLPhysics.getWorld() == undefined
-      AWGLPhysics.startStepping()
+    if AREPhysics.getWorld() == null or AREPhysics.getWorld() == undefined
+      AREPhysics.startStepping()
 
     if @_shape == not null then return
 
-    if AWGLPhysics.bodyCount == 0 then AWGLPhysics.startStepping()
+    if AREPhysics.bodyCount == 0 then AREPhysics.startStepping()
 
-    AWGLPhysics.bodyCount++
+    AREPhysics.bodyCount++
 
     # Sanity checks
     if @_mass == undefined or @_mass == null then @_mass = 0
     if @_mass < 0 then @_mass = 0
 
     if @_friction == undefined
-      @_friction = AWGLRawActor.defaultFriction
+      @_friction = ARERawActor.defaultFriction
     else if @_friction < 0 then @_friction = 0
 
     if @_elasticity == undefined
-      @_elasticity = AWGLRawActor.defaultElasticity
+      @_elasticity = ARERawActor.defaultElasticity
     else if @_elasticity < 0 then @_elasticity = 0
 
     # Convert vertices
@@ -214,8 +231,8 @@ class AWGLRawActor
     for i in [0...origVerts.length - 1] by 2
 
       # Actual coord system conversion
-      verts.push origVerts[i] / AWGLRenderer.getPPM()
-      verts.push origVerts[i + 1] / AWGLRenderer.getPPM()
+      verts.push origVerts[i] / ARERenderer.getPPM()
+      verts.push origVerts[i + 1] / ARERenderer.getPPM()
 
       # Rotate vert if mass is 0, since we can't set static body angle
       if @_mass == 0
@@ -227,42 +244,44 @@ class AWGLRawActor
         verts[verts.length - 1] = x * Math.sin(a) + (y * Math.cos(a))
 
     # Grab world handle to shorten future calls
-    space = AWGLPhysics.getWorld()
-    pos = AWGLRenderer.screenToWorld @_position
+    space = AREPhysics.getWorld()
+    pos = ARERenderer.screenToWorld @_position
 
     if @_mass == 0
       @_shape = space.addShape new cp.PolyShape space.staticBody, verts, pos
       @_shape.setLayers @_physicsLayer
       @_body = null
     else
-      moment = cp.momentForPoly @_mass, verts, AWGLRawActor._nullV
+      moment = cp.momentForPoly @_mass, verts, ARERawActor._nullV
       @_body = space.addBody new cp.Body @_mass, moment
       @_body.setPos pos
       @_body.setAngle @_rotation
 
-      @_shape = new cp.PolyShape @_body, verts, AWGLRawActor._nullV
+      @_shape = new cp.PolyShape @_body, verts, ARERawActor._nullV
       @_shape = space.addShape @_shape
       @_shape.setLayers @_physicsLayer
 
     @_shape.setFriction @_friction
     @_shape.setElasticity @_elasticity
 
+    @
+
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
-    if AWGLPhysics.bodyCount == 0 then return
+    if AREPhysics.bodyCount == 0 then return
     if @_shape == null then return
 
-    AWGLPhysics.bodyCount--
+    AREPhysics.bodyCount--
 
-    AWGLPhysics.getWorld().removeShape @_shape
-    if @_body then AWGLPhysics.getWorld().removeBody @_body
+    AREPhysics.getWorld().removeShape @_shape
+    if @_body then AREPhysics.getWorld().removeBody @_body
 
     @_shape = null
     @_body = null
 
-    if AWGLPhysics.bodyCount == 0
-      AWGLPhysics.stopStepping()
-    else if AWGLPhysics.bodyCount < 0
+    if AREPhysics.bodyCount == 0
+      AREPhysics.stopStepping()
+    else if AREPhysics.bodyCount < 0
       throw new Error "Body count is negative!"
 
   # Set physics layer. If we have a physics body, applies immediately. Value
@@ -311,11 +330,30 @@ class AWGLRawActor
   # @private
   # @param [Array<Number>] vertices
   updateVertBuffer: (@_vertices) ->
-    @_vertBuffer = @_gl.createBuffer()
     @_vertBufferFloats = new Float32Array(@_vertices)
-    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
-    @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
-    @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+    if ARERenderer.activeRendererMode == 1
+      @_vertBuffer = @_gl.createBuffer()
+      @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
+      @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
+      @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+
+    mnx = 0
+    mny = 0
+    mxx = 0
+    mxy = 0
+
+    for i in [1..(@_vertices.length / 2)]
+      if @_vertices[i * 2] < mnx
+        mnx = @_vertices[i * 2]
+      if mxx < @_vertices[i * 2]
+        mxx = @_vertices[i * 2]
+      if @_vertices[i * 2 + 1] < mny
+        mny = @_vertices[i * 2 + 1]
+      if mxy < @_vertices[i * 2 + 1]
+        mxy = @_vertices[i * 2 + 1]
+
+    @_size.x = mxx - mnx
+    @_size.y = mxy - mny
 
   # Updates UV buffer (should only be called by updateVertices())
   # NOTE: No check is made as to the validity of the supplied data!
@@ -324,12 +362,13 @@ class AWGLRawActor
   # @param [Array<Number>] vertices
   updateUVBuffer: (@_texVerts) ->
     @_origTexVerts = @_texVerts
-
-    @_texBuffer = @_gl.createBuffer()
     @_texVBufferFloats = new Float32Array(@_texVerts)
-    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
-    @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
-    @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+
+    if ARERenderer.activeRendererMode == 1
+      @_texBuffer = @_gl.createBuffer()
+      @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
+      @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
+      @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
 
   # Set texture repeat per coordinate axis
   #
@@ -377,7 +416,7 @@ class AWGLRawActor
   # @param [Number] offx anchor point offset
   # @param [Number] offy anchor point offset
   # @param [Angle] angle anchor point rotation
-  # @return [AWGLRawActor] actor attached actor
+  # @return [ARERawActor] actor attached actor
   attachTexture: (texture, width, height, offx, offy, angle) ->
     param.required texture
     param.required width
@@ -387,7 +426,7 @@ class AWGLRawActor
     @attachedTextureAnchor.angle = param.optional angle, 0
 
     # Sanity check
-    if not AWGLRenderer.hasTexture texture
+    if not ARERenderer.hasTexture texture
       throw new Error "No such texture loaded: #{texture}"
       return
 
@@ -395,7 +434,7 @@ class AWGLRawActor
     if @_attachedTexture != null then @removeAttachment()
 
     # Create actor
-    @_attachedTexture = new AWGLRectangleActor width, height
+    @_attachedTexture = new ARERectangleActor width, height
 
     # Set texture
     @_attachedTexture.setTexture texture
@@ -409,10 +448,10 @@ class AWGLRawActor
   removeAttachment: ->
     if @_attachedTexture == null then return false
 
-    for a, i in AWGLRenderer.actors
+    for a, i in ARERenderer.actors
       if a.getId() == @_attachedTexture.getId()
         a.destroyPhysicsBody()
-        AWGLRenderer.actors.splice i, 1
+        ARERenderer.actors.splice i, 1
         @_attachedTexture = null
         return true
 
@@ -437,7 +476,7 @@ class AWGLRawActor
 
   # Returns attached texture if we have one, null otherwise
   #
-  # @return [AWGLRawActor] attachment
+  # @return [ARERawActor] attachment
   getAttachment: -> @_attachedTexture
 
   # Update position from physics body if we have one
@@ -445,13 +484,23 @@ class AWGLRawActor
 
     # @_body is null for static bodies!
     if @_body != null
-      @_position = AWGLRenderer.worldToScreen @_body.getPos()
+      @_position = ARERenderer.worldToScreen @_body.getPos()
       @_rotation = @_body.a
+
+  wglUpdateTexture: (gl) ->
+    # Texture rendering, if needed
+    if @_material == "texture"
+      gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+      gl.vertexAttribPointer @_sh_texture, 2, gl.FLOAT, false, 0, 0
+
+      gl.activeTexture gl.TEXTURE0
+      gl.bindTexture gl.TEXTURE_2D, @_texture
+      gl.uniform1i @_sh_sampler, 0
 
   # Renders the actor
   #
   # @param [Object] gl gl context
-  draw: (gl) ->
+  wglDraw: (gl) ->
     param.required gl
 
     # We only respect our own visibility flag! Any invisible attached textures
@@ -462,8 +511,8 @@ class AWGLRawActor
 
     # Prep our vectors and matrices
     @_modelM = Matrix.I 4
-    @_transV.elements[0] = @_position.x - AWGLRenderer.camPos.x
-    @_transV.elements[1] = @_position.y - AWGLRenderer.camPos.y
+    @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
+    @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
     @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
     @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
@@ -476,27 +525,99 @@ class AWGLRawActor
     gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
     gl.uniformMatrix4fv @_sh_modelview, false, flatMV
 
-    # Texture rendering, if needed
-    if @_material == "texture"
-      gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
-      gl.vertexAttribPointer @_sh_texture, 2, gl.FLOAT, false, 0, 0
-
-      gl.activeTexture gl.TEXTURE0
-      gl.bindTexture gl.TEXTURE_2D, @_texture
-      gl.uniform1i @_sh_sampler, 0
+    @wglUpdateTexture gl
 
     if @_renderMode == 1
-      gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
+      gl.drawArrays gl.LINE_LOOP, 0, @_vertices.length / 2
     else if @_renderMode == 2
       gl.drawArrays gl.TRIANGLE_FAN, 0, @_vertices.length / 2
+    else if @_renderMode == 3 # wireframe
+      gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
+    else throw new Error "Invalid render mode! #{@_renderMode}"
+
+  cvUpdateTexture: (context) ->
+
+    if @_material == "texture"
+      #
+    else
+      if @_stroke_color
+        r = @_stroke_color.getR()
+        g = @_stroke_color.getG()
+        b = @_stroke_color.getB()
+        context.strokeStyle = "rgb(#{r},#{g},#{b})"
+      else
+        context.strokeStyle = "#FFF"
+
+      if @_color
+        r = @_color.getR()
+        g = @_color.getG()
+        b = @_color.getB()
+        context.fillStyle = "rgb(#{r},#{g},#{b})"
+      else
+        context.fillStyle = "#FFF"
+
+  cvDraw: (context) ->
+    param.required context
+
+    # We only respect our own visibility flag! Any invisible attached textures
+    # cause us to render!
+    if not @visible then return
+
+    @updatePosition()
+
+    # Prep our vectors and matrices
+    @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
+    @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
+
+    #@_modelM = Matrix.I 4
+    #@_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
+    #@_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+    #flatMV = new Float32Array(@_modelM.flatten())
+    #x = flatMV[0]
+    #y = flatMV[1]
+    x = @_transV.elements[0]
+    y = @_transV.elements[1]
+
+    context.translate(x, y)
+    context.beginPath()
+    context.rotate(@_rotation)
+    context.moveTo(@_vertices[0], @_vertices[1])
+
+    for i in [1..(@_vertices.length / 2)]
+      context.lineTo(@_vertices[i * 2], @_vertices[i * 2 + 1])
+    context.closePath()
+    #context.fill()
+
+    @cvUpdateTexture context
+
+    if @_renderMode == 1
+      context.stroke()
+    else if @_renderMode == 2
+      if @_material == "texture"
+        context.clip()
+        context.drawImage @_texture,
+                          -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+      else
+        context.fill()
+    else if @_renderMode == 3 # wireframe
+      if @_material == "texture"
+        context.clip()
+        context.drawImage @_texture,
+                          -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+      else
+        context.fill()
+      context.stroke()
     else throw new Error "Invalid render mode! #{@_renderMode}"
 
   # Set actor render mode, decides how the vertices are perceived
-  #   1 == TRIANGLE_STRIP
+  #   1 == LINE_LOOP
   #   2 == TRIANGLE_FAN
+  #   3 == TRIANGLE_STRIP
   #
   # @paran [Number] mode
-  setRenderMode: (mode) -> @_renderMode = param.required mode, [1, 2]
+  setRenderMode: (mode) ->
+    @_renderMode = param.required mode, [1, 2, 3]
+    @
 
   # Set actor position, effects either the actor or the body directly if one
   # exists
@@ -511,7 +632,7 @@ class AWGLRawActor
       else
         @_position = new cp.v Number(position.x), Number(position.y)
     else if @_body != null
-      @_body.setPos AWGLRenderer.screenToWorld position
+      @_body.setPos ARERenderer.screenToWorld position
 
     @
 
@@ -564,14 +685,14 @@ class AWGLRawActor
 
   # Get color
   #
-  # @return [AWGLColor3] color
-  getColor: -> new AWGLColor3 @_color
+  # @return [AREColor3] color
+  getColor: -> new AREColor3 @_color
 
   # Set color
   #
   # @overload setColor(col)
-  #   Sets the color using an AWGLColor3 instance
-  #   @param [AWGLColor3] color
+  #   Sets the color using an AREColor3 instance
+  #   @param [AREColor3] color
   #
   # @overload setColor(r, g, b)
   #   Sets the color using component values
@@ -581,9 +702,9 @@ class AWGLRawActor
   setColor: (colOrR, g, b) ->
     param.required colOrR
 
-    if @_color == undefined or @_color == null then @_color = new AWGLColor3
+    if @_color == undefined or @_color == null then @_color = new AREColor3
 
-    if colOrR instanceof AWGLColor3
+    if colOrR instanceof AREColor3
       @_color = colOrR
 
       @_colArray = [

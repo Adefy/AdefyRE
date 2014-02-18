@@ -4,24 +4,24 @@
 
 #  This fails in phantomjs, and wgl dependent tests don't execute
 try
-  _c = document.getElementById "awgl_canvas"
+  _c = document.getElementById "are_canvas"
   webGL = _c.getContext("webgl") || _c.getContext("experimental-webgl")
 catch e
   console.log e
 
 if webGL == null or webGL == undefined
-  console.warn "WebGL not available, not executing AWGLShader tests"
+  console.warn "WebGL not available, not executing AREShader tests"
 else
 
-  if AWGLRenderer._gl == undefined or AWGLRenderer._gl == null
-    throw new Error "AWGLRenderer tests have to run before AWGLShader tests!"
+  if ARERenderer._gl == undefined or ARERenderer._gl == null
+    throw new Error "ARERenderer tests have to run before AREShader tests!"
 
-  describe "AWGLShader", ->
+  describe "AREShader", ->
 
     it "should require vert and frag sources, along with a gl context", ->
-      expect(-> new AWGLShader).to.throw Error
-      expect(-> new AWGLShader "").to.throw Error
-      expect(-> new AWGLShader "", "").to.throw Error
+      expect(-> new AREShader).to.throw Error
+      expect(-> new AREShader "").to.throw Error
+      expect(-> new AREShader "", "").to.throw Error
 
     _test = null
 
@@ -43,7 +43,7 @@ else
         "  gl_FragColor = Color;" +
         "}\n"
 
-      _test = new AWGLShader vertSrc, fragSrc, AWGLRenderer._gl, true
+      _test = new AREShader vertSrc, fragSrc, ARERenderer._gl, true
 
       expect(_test.errors.length).to.equal 0
 

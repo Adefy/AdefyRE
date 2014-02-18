@@ -2,12 +2,12 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-describe "AWGLPhysics", ->
+describe "AREPhysics", ->
 
-  psyx = AWGLPhysics
+  psyx = AREPhysics
 
   it "should not allow instantiation", ->
-    expect(-> new AWGLPhysics).to.throw Error
+    expect(-> new AREPhysics).to.throw Error
 
   it "should some values set by default", ->
     expect(psyx.velIterations).to.exist

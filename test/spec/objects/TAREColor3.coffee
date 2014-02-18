@@ -2,9 +2,9 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-describe "AWGLColor3", ->
+describe "AREColor3", ->
 
-  test = new AWGLColor3()
+  test = new AREColor3()
 
   it "should initialize to black", ->
     expect(test._r).to.equal 0

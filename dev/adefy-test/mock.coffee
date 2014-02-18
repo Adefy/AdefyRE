@@ -22,7 +22,7 @@ b = new AJSRectangle
   position: new AJSVector2 300, 100
 
 ####
-## Using AWGL directly
+## Using ARE directly
 ####
 
 fallBox = [
@@ -41,8 +41,8 @@ groundBox = [
   -200, -20
 ]
 
-box = new AWGLRawActor fallBox
-ground = new AWGLRawActor groundBox
+box = new ARERawActor fallBox
+ground = new ARERawActor groundBox
 
 box.setRotation 60
 box.setColor 255, 0, 0

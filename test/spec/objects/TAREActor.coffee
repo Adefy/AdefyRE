@@ -4,19 +4,19 @@
 
 #  This fails in phantomjs, and wgl dependent tests don't execute
 try
-  _c = document.getElementById "awgl_canvas"
+  _c = document.getElementById "are_canvas"
   webGL = _c.getContext("webgl") || _c.getContext("experimental-webgl")
 catch e
   console.log e
 
 if webGL == null or webGL == undefined
-  console.warn "WebGL not available, not executing AWGLRawActor tests"
+  console.warn "WebGL not available, not executing ARERawActor tests"
 else
 
-  if AWGLRenderer._gl == undefined or AWGLRenderer._gl == null
-    throw new Error "AWGLRenderer tests have to run before AWGLRawActor tests!"
+  if ARERenderer._gl == undefined or ARERenderer._gl == null
+    throw new Error "ARERenderer tests have to run before ARERawActor tests!"
 
-  describe "AWGLRawActor", ->
+  describe "ARERawActor", ->
 
     _actor = null
     _verts = [
@@ -30,14 +30,14 @@ else
     describe "instantiation", ->
 
       it "should require vertices to be created", ->
-        expect(-> new AWGLRawActor).to.throw Error
+        expect(-> new ARERawActor).to.throw Error
 
       it "should require at least 6 vertices to be created", ->
-        expect(-> new AWGLRawActor [0, 0, 0, 0, 0]).to.throw Error
-        expect(-> _actor = new AWGLRawActor _verts).to.not.throw Error
+        expect(-> new ARERawActor [0, 0, 0, 0, 0]).to.throw Error
+        expect(-> _actor = new ARERawActor _verts).to.not.throw Error
 
       it "should instantiate with a unique id", ->
-        _t = new AWGLRawActor _verts
+        _t = new ARERawActor _verts
         expect(_t.getId()).to.not.equal _actor.getId()
 
     describe "accessors", ->
@@ -64,22 +64,22 @@ else
 
     describe "physics body", ->
 
-      AWGLPhysics.stopStepping()
+      AREPhysics.stopStepping()
 
       it "should provide default physics body values", ->
-        expect(AWGLRawActor.defaultFriction).to.exist
-        expect(AWGLRawActor.defaultMass).to.exist
-        expect(AWGLRawActor.defaultElasticity).to.exist
+        expect(ARERawActor.defaultFriction).to.exist
+        expect(ARERawActor.defaultMass).to.exist
+        expect(ARERawActor.defaultElasticity).to.exist
 
       it "should not instantiate with a physics body", ->
         expect(_actor._body).to.not.exist
 
       it "should allow us to create a physics body with default properties", ->
-        AWGLPhysics.startStepping()
+        AREPhysics.startStepping()
         expect(-> _actor.createPhysicsBody(10)).to.not.throw Error
 
       it "should start stepping the world if it isn't already doing so", ->
-        expect(AWGLPhysics.getWorld()).to.exist
+        expect(AREPhysics.getWorld()).to.exist
 
       it "should store created body", ->
         expect(_actor._body).to.exist
@@ -99,4 +99,4 @@ else
     describe "draw routine", ->
 
       it "should allow itself to be drawn", ->
-        expect(-> _actor.draw AWGLRenderer._gl).to.not.throw Error
+        expect(-> _actor.draw ARERenderer._gl).to.not.throw Error

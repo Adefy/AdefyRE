@@ -2,25 +2,25 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-describe "AWGLLog", ->
+describe "ARELog", ->
 
   it "should have a static logging function", ->
-    expect(AWGLLog.w).to.exist
+    expect(ARELog.w).to.exist
 
   it "should have a default log level of 4", ->
-    expect(AWGLLog.level).to.equal 4
+    expect(ARELog.level).to.equal 4
 
   it "should provide 5 default tags", ->
-    expect(AWGLLog.tags.length).to.equal 5
+    expect(ARELog.tags.length).to.equal 5
 
   it "should provide an error function", ->
-    expect(AWGLLog.error).to.exist
+    expect(ARELog.error).to.exist
 
   it "should provide a warn function", ->
-    expect(AWGLLog.warn).to.exist
+    expect(ARELog.warn).to.exist
 
   it "should provide a debug function", ->
-    expect(AWGLLog.debug).to.exist
+    expect(ARELog.debug).to.exist
 
   it "should provide an info function", ->
-    expect(AWGLLog.info).to.exist
+    expect(ARELog.info).to.exist

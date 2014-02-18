@@ -3,7 +3,7 @@
 ##
 
 # Renderer interface class
-class AWGLEngineInterface
+class AREEngineInterface
 
   # Initialize the engine
   #
@@ -20,23 +20,33 @@ class AWGLEngineInterface
     id = param.optional id, ""
 
     # Clean us up just in case we are being initialized for a second time
-    AWGLRenderer.actors = []
-    AWGLRenderer.textures = []
-    AWGLRenderer._gl = null
-    AWGLRenderer.me = null
-    AWGLRenderer._currentMaterial = "none"
-    AWGLRenderer.camPos = x: 0, y: 0
+    ARERenderer.actors = []
+    ARERenderer.textures = []
+    ARERenderer._gl = null
+    ARERenderer.me = null
+    ARERenderer._currentMaterial = "none"
+    ARERenderer.camPos = x: 0, y: 0
 
     # Clear out physics world
-    AWGLPhysics.stopStepping()
+    AREPhysics.stopStepping()
 
     me = @
-    new AWGLEngine width, height, (awgl) ->
-      me._engine = awgl
+    new AREEngine width, height, (are) ->
+      me._engine = are
 
-      awgl.startRendering()
-      ad awgl
+      are.startRendering()
+      ad are
     , log, id
+
+  # Set global render mode
+  # 
+  #   0 - Canvas
+  #   1 - WebGL
+  # 
+  # This is a special method only we implement; as such, any libraries
+  # interfacing with us should check for the existence of the method before
+  # calling it!
+  setRenderMode: (mode) -> ARERenderer.rendererMode = mode
 
   # Set engine clear color
   #
@@ -49,7 +59,7 @@ class AWGLEngineInterface
     param.required b
 
     if @_engine == undefined then return
-    else AWGLRenderer.me.setClearColor r, g, b
+    else ARERenderer.me.setClearColor r, g, b
 
   # Get engine clear color as (r,g,b) JSON, fails with null
   #
@@ -57,7 +67,7 @@ class AWGLEngineInterface
   getClearColor: ->
     if @_engine == undefined then return null
 
-    col = AWGLRenderer.me.getClearColor()
+    col = ARERenderer.me.getClearColor()
     JSON.stringify { r: col.getR(), g: col.getG(), b: col.getB() }
 
   # Set log level
@@ -66,20 +76,20 @@ class AWGLEngineInterface
   setLogLevel: (level) ->
     param.required level, [0, 1, 2, 3, 4]
 
-    AWGLLog.level = level
+    ARELog.level = level
 
   # Set camera center position. Leaving out a component leaves it unchanged
   #
   # @param [Number] x
   # @param [Number] y
   setCameraPosition: (x, y) ->
-    AWGLRenderer.camPos.x = param.optional x, AWGLRenderer.camPos.x
-    AWGLRenderer.camPos.y = param.optional y, AWGLRenderer.camPos.y
+    ARERenderer.camPos.x = param.optional x, ARERenderer.camPos.x
+    ARERenderer.camPos.y = param.optional y, ARERenderer.camPos.y
 
   # Fetch camera position. Returns a JSON object with x,y keys
   #
   # @return [Object]
-  getCameraPosition: -> JSON.stringify AWGLRenderer.camPos
+  getCameraPosition: -> JSON.stringify ARERenderer.camPos
 
   # Load a package.json manifest, assume texture paths are relative to our
   # own
@@ -90,7 +100,6 @@ class AWGLEngineInterface
     param.required json
 
     manifest = JSON.parse json
-    gl = AWGLRenderer._gl
 
     ##
     ## NOTE: The manifest only contains textures now, but for the sake of
@@ -104,43 +113,67 @@ class AWGLEngineInterface
     loadTexture = (name, path) ->
 
       # Create texture and image
-      tex = gl.createTexture()
       img = new Image()
       img.crossOrigin = "anonymous"
-      img.onload = ->
 
-        # Set up GL texture
-        gl.bindTexture gl.TEXTURE_2D, tex
-        gl.texImage2D gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
+      gl = ARERenderer._gl
+      tex = null
 
-        # If image is a power of two
-        pot = false
-        if (img.width & (img.width - 1)) == 0
-          if (img.height & (img.height - 1)) == 0
-            gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
-            gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
-            pot = true
+      if ARERenderer.activeRendererMode == 1
 
-        if not pot
-          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
-          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
+        ARELog.info "Loading Gl Texture"
 
-        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
-        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR
+        tex = gl.createTexture()
+        img.onload = ->
 
-        # gl.generateMipmap gl.TEXTURE_2D
-        gl.bindTexture gl.TEXTURE_2D, null
+          # Set up GL texture
+          gl.bindTexture gl.TEXTURE_2D, tex
+          gl.texImage2D gl.TEXTURE_2D, 0,
+                        gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 
-        # Add to renderer
-        AWGLRenderer.addTexture
-          name: name
-          texture: tex
-          width: img.width
-          height: img.height
+          # If image is a power of two
+          pot = false
+          if (img.width & (img.width - 1)) == 0
+            if (img.height & (img.height - 1)) == 0
+              gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
+              gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
+              pot = true
 
-        # Call cb once we've loaded all textures
-        count++
-        if count == manifest.length then cb()
+          if not pot
+            gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
+            gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
+
+          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
+          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR
+
+          # gl.generateMipmap gl.TEXTURE_2D
+          gl.bindTexture gl.TEXTURE_2D, null
+
+          # Add to renderer
+          ARERenderer.addTexture
+            name: name
+            texture: tex
+            width: img.width
+            height: img.height
+
+          # Call cb once we've loaded all textures
+          count++
+          if count == manifest.length then cb()
+
+      else
+
+        img.onload = ->
+
+          # Add to renderer
+          ARERenderer.addTexture
+            name: name
+            texture: img
+            width: img.width
+            height: img.height
+
+          # Call cb once we've loaded all textures
+          count++
+          if count == manifest.length then cb()
 
       # Load!
       img.src = path
@@ -164,7 +197,7 @@ class AWGLEngineInterface
   #
   # @param [String] name
   # @param [Object] size
-  getTextureSize: (name) -> AWGLRenderer.getTextureSize name
+  getTextureSize: (name) -> ARERenderer.getTextureSize name
 
   # TODO: Implement
   #

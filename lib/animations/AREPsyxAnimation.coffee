@@ -2,15 +2,15 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# AWGLPsyxAnimation
+# AREPsyxAnimation
 #
 # Class to handle actor physics updates
-class AWGLPsyxAnimation
+class AREPsyxAnimation
 
   # Class to "animate" physics properties which means changing them
   # at certain times by calling the createPhysicsBody method of an actor
   #
-  # @param [AWGLRawActor] actor the actor we apply the modifications to
+  # @param [ARERawActor] actor the actor we apply the modifications to
   # @param [Object] options
   # @option options [Number] mass
   # @option options [Number] friction

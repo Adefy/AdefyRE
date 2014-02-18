@@ -2,12 +2,12 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# AWGLBezAnimation
+# AREBezAnimation
 #
 # Class to handle bezier animations
 # It can animate the Color, Rotation and Position properties,
 # each component only individually for the composite properties!
-class AWGLBezAnimation
+class AREBezAnimation
 
   # For all animateable properties the options param passes in the end value,
   # an array of [time, value] control points, the duration of the animation
@@ -17,7 +17,7 @@ class AWGLBezAnimation
   # values supplied as an array of the property name, and the composite name.
   #
   # i.e. ["position", "x"]
-  # @param [AWGLRawActor] actor represents the actor we animate
+  # @param [ARERawActor] actor represents the actor we animate
   # @param [Object] options represents the options used to animate
   # @option options [Number] endVal
   # @option options [Array<Object>] controlPoints

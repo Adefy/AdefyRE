@@ -2,13 +2,13 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-describe "AWGLEngine", ->
+describe "AREEngine", ->
 
   # TODO: Structure tests so they follow each other, and create a proper
   # dev/-esque environment
 
   ###
-    instance = new AWGLEngine
+    instance = new AREEngine
 
     validPackage =
       company: ""     # Owner

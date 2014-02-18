@@ -1,6 +1,6 @@
---name    "AdefyWebGL"
+--name    "AdefyRenderingEngine"
 --readme  Readme.md
---title   "AdefyWebGL Documentation"
+--title   "AdefyRenderingEngine Documentation"
 --quiet
 --output ./doc
 --undocumented

@@ -4,26 +4,26 @@
 
 #  This fails in phantomjs, and wgl dependent tests don't execute
 try
-  _c = document.getElementById "awgl_canvas"
+  _c = document.getElementById "are_canvas"
   webGL = _c.getContext("webgl") || _c.getContext("experimental-webgl")
 catch e
   console.log e
 
 if webGL == null or webGL == undefined
-  console.warn "WebGL not available, not executing AWGLInterface tests"
+  console.warn "WebGL not available, not executing AREInterface tests"
 else
 
-  if AWGLRenderer._gl == undefined or AWGLRenderer._gl == null
-    throw new Error "AWGLRenderer tests must run before AWGLInterface tests!"
+  if ARERenderer._gl == undefined or ARERenderer._gl == null
+    throw new Error "ARERenderer tests must run before AREInterface tests!"
 
-  describe "AWGLInterface", ->
+  describe "AREInterface", ->
 
-    _i = new AWGLInterface
+    _i = new AREInterface
 
     it "should provide an actors interface", ->
       expect(_i.Actors()).to.exist
 
-    describe "AWGLActorInterface", ->
+    describe "AREActorInterface", ->
 
       _actor = null
       _ai = _i.Actors()

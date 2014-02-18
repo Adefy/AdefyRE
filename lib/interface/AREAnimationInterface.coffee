@@ -3,7 +3,7 @@
 ##
 
 # Animation interface class
-class AWGLAnimationInterface
+class AREAnimationInterface
 
   # A map of properties and their animations. Note that the editor uses this
   # same map to properly format animation exports!
@@ -11,19 +11,19 @@ class AWGLAnimationInterface
   # @private
   @_animationMap:
 
-    # AWGLBezAnimation
-    "position": AWGLBezAnimation
-    "color": AWGLBezAnimation
-    "rotation": AWGLBezAnimation
+    # AREBezAnimation
+    "position": AREBezAnimation
+    "color": AREBezAnimation
+    "rotation": AREBezAnimation
 
-    # AWGLPsyxAnimation
-    "mass": AWGLPsyxAnimation
-    "friction": AWGLPsyxAnimation
-    "elasticity": AWGLPsyxAnimation
-    "physics": AWGLPsyxAnimation
+    # AREPsyxAnimation
+    "mass": AREPsyxAnimation
+    "friction": AREPsyxAnimation
+    "elasticity": AREPsyxAnimation
+    "physics": AREPsyxAnimation
 
-    # AWGLVertAnimation
-    "vertices": AWGLVertAnimation
+    # AREVertAnimation
+    "vertices": AREVertAnimation
 
   # Check if we know how to directly animate the property provided
   #
@@ -31,7 +31,7 @@ class AWGLAnimationInterface
   # @return [Boolean] canAnimate
   canAnimate: (property) ->
 
-    if AWGLAnimationInterface._animationMap[property] == undefined
+    if AREAnimationInterface._animationMap[property] == undefined
       return false
     true
 
@@ -40,16 +40,16 @@ class AWGLAnimationInterface
   # @param [String] property property name, arent name if composite
   # @return [String] name
   getAnimationName: (property) ->
-    if AWGLAnimationInterface._animationMap[property] == undefined
+    if AREAnimationInterface._animationMap[property] == undefined
       return false
     else
-      type = AWGLAnimationInterface._animationMap[property]
+      type = AREAnimationInterface._animationMap[property]
 
-      if type == AWGLBezAnimation then return "bezier"
-      else if type == AWGLPsyxAnimation then return "psyx"
-      else if type == AWGLVertAnimation then return "vert"
+      if type == AREBezAnimation then return "bezier"
+      else if type == AREPsyxAnimation then return "psyx"
+      else if type == AREVertAnimation then return "vert"
 
-  # Top-level animate method for AWGL, creates specific animations internally
+  # Top-level animate method for ARE, creates specific animations internally
   # depending on the requirements of the input. Fails with null if the property
   # is not recognized.
   #
@@ -59,7 +59,7 @@ class AWGLAnimationInterface
   #
   # Options and property are passed in as JSON strings
   #
-  # @param [Number] actorID id of actor to animate, as per AWGLActorInterface
+  # @param [Number] actorID id of actor to animate, as per AREActorInterface
   # @param [String] property property array, second element is component
   # @param [String] options options to pass to animation, varies by property
   animate: (actorID, property, options) ->
@@ -70,7 +70,7 @@ class AWGLAnimationInterface
 
     actor = null
 
-    for a in AWGLRenderer.actors
+    for a in ARERenderer.actors
       if a.getId() == actorID
         actor = a
         break
@@ -85,13 +85,13 @@ class AWGLAnimationInterface
 
     # Build animation according to mapping
     _spawnAnim = (_n, _a, _o) ->
-      if AWGLAnimationInterface._animationMap[_n] == AWGLBezAnimation
-        new AWGLBezAnimation(_a, _o).animate()
-      else if AWGLAnimationInterface._animationMap[_n] == AWGLPsyxAnimation
-        new AWGLPsyxAnimation(_a, _o).animate()
-      else if AWGLAnimationInterface._animationMap[_n] == AWGLVertAnimation
-        new AWGLVertAnimation(_a, _o).animate()
-      else AWGLLog.warn "Unrecognized property: #{_n}"
+      if AREAnimationInterface._animationMap[_n] == AREBezAnimation
+        new AREBezAnimation(_a, _o).animate()
+      else if AREAnimationInterface._animationMap[_n] == AREPsyxAnimation
+        new AREPsyxAnimation(_a, _o).animate()
+      else if AREAnimationInterface._animationMap[_n] == AREVertAnimation
+        new AREVertAnimation(_a, _o).animate()
+      else ARELog.warn "Unrecognized property: #{_n}"
 
     if options.start > 0
       setTimeout (-> _spawnAnim name, actor, options), options.start
@@ -120,5 +120,5 @@ class AWGLAnimationInterface
     options.controlPoints = param.required options.controlPoints, []
     options.fps = param.required options.fps, 30
 
-    ret = new AWGLBezAnimation(null, options, true).preCalculate()
+    ret = new AREBezAnimation(null, options, true).preCalculate()
     JSON.stringify ret

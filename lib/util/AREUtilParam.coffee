@@ -8,7 +8,7 @@
 #
 # Since it can be used in every method of every class, it is created static
 # and attached to the window object as 'param'
-class AWGLUtilParam
+class AREUtilParam
 
   # Defines an argument as required. Ensures it is defined and valid
   #
@@ -61,4 +61,4 @@ class AWGLUtilParam
 
     p
 
-if window.param == undefined then window.param = AWGLUtilParam
+if window.param == undefined then window.param = AREUtilParam
