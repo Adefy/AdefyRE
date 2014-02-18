@@ -514,7 +514,7 @@ class ARERenderer
     if ctx == undefined or ctx == null then return
 
     if @_clearColor
-      ctx.fillStyle = "rgb(#{@_clearColor})"
+      ctx.fillStyle = "rgb#{@_clearColor}"
       ctx.fillRect 0, 0, @_canvas.width, @_canvas.height
     else
       ctx.clearRect 0, 0, @_canvas.width, @_canvas.height
