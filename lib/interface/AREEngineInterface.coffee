@@ -39,10 +39,10 @@ class AREEngineInterface
     , log, id
 
   # Set global render mode
-  # 
+  #
   #   0 - Canvas
   #   1 - WebGL
-  # 
+  #
   # This is a special method only we implement; as such, any libraries
   # interfacing with us should check for the existence of the method before
   # calling it!

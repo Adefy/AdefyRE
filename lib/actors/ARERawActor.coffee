@@ -595,6 +595,7 @@ class ARERawActor
     else if @_renderMode == 2
       if @_material == "texture"
         context.clip()
+        context.scale 1, -1
         context.drawImage @_texture,
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
@@ -602,6 +603,7 @@ class ARERawActor
     else if @_renderMode == 3 # wireframe
       if @_material == "texture"
         context.clip()
+        context.scale 1, -1
         context.drawImage @_texture,
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
