@@ -72,7 +72,7 @@ class ARERenderer
 
   # 0: canvas
   # 1: wgl
-  @rendererMode: 0
+  @rendererMode: 1
   @activeRendererMode: null
 
   # Sets up the renderer, using either an existing canvas or creating a new one

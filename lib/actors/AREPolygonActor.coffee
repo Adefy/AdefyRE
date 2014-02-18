@@ -51,7 +51,7 @@ class AREPolygonActor extends ARERawActor
       super verts, uvs
       @setPhysicsVertices psyxVerts
 
-    @setRenderMode 1
+    @setRenderMode 2
 
   # @private
   # Private method that rebuilds our vertex array.

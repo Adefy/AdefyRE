@@ -70,6 +70,10 @@ class ARERawActor
     @_id = -1
     @_position = new cp.v 0, 0
     @_rotation = 0 # Radians, but set in degrees by default
+    ## size calculated by from verticies
+    @_size =
+      x: 0
+      y: 0
 
     # Chipmunk-js values
     @_shape = null
@@ -99,9 +103,10 @@ class ARERawActor
     @_sh_color = null
 
     # Render modes decide how the vertices are treated.
-    #   1 == TRIANGLE_STRIP
-    #   2 == TRIANGLE_FAN
-    @_renderMode = 1
+    #   1 == Stroked
+    #   2 == Filled
+    #   3 == Stroked | Filled
+    @_renderMode = 2
 
     # No attached texture; when one exists, we render that texture (actor)
     # instead of ourselves!
@@ -330,6 +335,24 @@ class ARERawActor
       @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
 
+    mnx = 0
+    mny = 0
+    mxx = 0
+    mxy = 0
+
+    for i in [1..(@_vertices.length / 2)]
+      if @_vertices[i * 2] < mnx
+        mnx = @_vertices[i * 2]
+      if mxx < @_vertices[i * 2]
+        mxx = @_vertices[i * 2]
+      if @_vertices[i * 2 + 1] < mny
+        mny = @_vertices[i * 2 + 1]
+      if mxy < @_vertices[i * 2 + 1]
+        mxy = @_vertices[i * 2 + 1]
+
+    @_size.x = mxx - mnx
+    @_size.y = mxy - mny
+
   # Updates UV buffer (should only be called by updateVertices())
   # NOTE: No check is made as to the validity of the supplied data!
   #
@@ -462,7 +485,7 @@ class ARERawActor
       @_position = ARERenderer.worldToScreen @_body.getPos()
       @_rotation = @_body.a
 
-  updateTexture: (gl) ->
+  wglUpdateTexture: (gl) ->
     # Texture rendering, if needed
     if @_material == "texture"
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
@@ -500,7 +523,7 @@ class ARERawActor
     gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
     gl.uniformMatrix4fv @_sh_modelview, false, flatMV
 
-    @updateTexture gl
+    @wglUpdateTexture gl
 
     if @_renderMode == 1
       gl.drawArrays gl.LINE_LOOP, 0, @_vertices.length / 2
@@ -509,6 +532,27 @@ class ARERawActor
     else if @_renderMode == 3 # wireframe
       gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
     else throw new Error "Invalid render mode! #{@_renderMode}"
+
+  cvUpdateTexture: (context) ->
+
+    if @_material == "texture"
+      #
+    else
+      if @_stroke_color
+        r = @_stroke_color.getR()
+        g = @_stroke_color.getG()
+        b = @_stroke_color.getB()
+        context.strokeStyle = "rgb(#{r},#{g},#{b})"
+      else
+        context.strokeStyle = "#FFF"
+
+      if @_color
+        r = @_color.getR()
+        g = @_color.getG()
+        b = @_color.getB()
+        context.fillStyle = "rgb(#{r},#{g},#{b})"
+      else
+        context.fillStyle = "#FFF"
 
   cvDraw: (context) ->
     param.required context
@@ -536,33 +580,30 @@ class ARERawActor
     context.beginPath()
     context.rotate(@_rotation)
     context.moveTo(@_vertices[0], @_vertices[1])
+
     for i in [1..(@_vertices.length / 2)]
       context.lineTo(@_vertices[i * 2], @_vertices[i * 2 + 1])
     context.closePath()
     #context.fill()
 
-    if @_stroke_color
-      r = @_stroke_color.getR()
-      g = @_stroke_color.getG()
-      b = @_stroke_color.getB()
-      context.strokeStyle = "rgb(#{r},#{g},#{b})"
-    else
-      context.strokeStyle = "#FFF"
-
-    if @_color
-      r = @_color.getR()
-      g = @_color.getG()
-      b = @_color.getB()
-      context.fillStyle = "rgb(#{r},#{g},#{b})"
-    else
-      context.fillStyle = "#FFF"
+    @cvUpdateTexture context
 
     if @_renderMode == 1
       context.stroke()
     else if @_renderMode == 2
-      context.fill()
+      if @_material == "texture"
+        context.clip()
+        context.drawImage @_texture,
+                          -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+      else
+        context.fill()
     else if @_renderMode == 3 # wireframe
-      context.fill()
+      if @_material == "texture"
+        context.clip()
+        context.drawImage @_texture,
+                          -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+      else
+        context.fill()
       context.stroke()
     else throw new Error "Invalid render mode! #{@_renderMode}"
 

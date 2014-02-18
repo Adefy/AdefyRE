@@ -15,11 +15,17 @@
     padding: 0;
     margin: 0;
   }
+  div#SceneInfo span{
+    padding: 4px;
+  }
   </style>
 </head>
 
 <body>
-  <div id="ActorCount" style="background-color: #33b5e5"></div>
+  <div id="SceneInfo" style="background-color: #33b5e5">
+    <span id="RendererMode"></span>
+    <span id="ActorCount"></span>
+  </div>
   <script>
 
     var manifest = {
@@ -36,6 +42,8 @@
 
     var width = window.innerWidth;
     var height = window.innerHeight;
+
+    ARERenderer.rendererMode = 0
 
     new AREEngine(width, height, function() {
       window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function() {
@@ -92,6 +100,8 @@
 
         scheduleBallTimeout();
         ballGCTimeout();
+
+        document.getElementById("RendererMode").innerHTML = "Renderer Mode: " + String(ARERenderer.rendererMode);
 
       });
     });
