@@ -201,11 +201,8 @@ class ARERenderer
       ARELog.warn "Continuing with experimental webgl support"
       gl = canvas.getContext "experimental-webgl"
 
-    # If still null, FOL
-    if gl is null
-      alert "Your browser does not support WebGL! Adefy ads won't render ;("
-      @initError = "Your browser does not support WebGL!"
-      return false
+    # If still null, switch to canvas rendering
+    if gl is null then return
 
     ARERenderer._gl = gl
 
