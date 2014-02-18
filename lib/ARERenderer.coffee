@@ -611,16 +611,18 @@ class ARERenderer
   #
   # @param [ARERawActor,Number] actor actor, or id of actor to remove
   # @return [Boolean] success
-  @removeActor: (actor) ->
-    param.required actor
+  @removeActor: (oactor) ->
+    param.required oactor
 
     # Extract id
+    actor = oactor
     if actor instanceof ARERawActor then actor = actor.getId()
 
     # Attempt to find and remove actor
     for a, i in ARERenderer.actors
       if a.getId() == actor
         ARERenderer.actors.splice i, 1
+        oactor.destroy()
         return true
 
     false

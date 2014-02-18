@@ -110,6 +110,14 @@ class ARERawActor
       y: 0
       angle: 0
 
+  destroy: ->
+    space = AREPhysics.getWorld()
+    if @_body
+      space.removeBody @_body
+
+    if @_shape
+      space.removeShape @_shape
+
   # Get material name
   #
   # @return [String] material
