@@ -59,6 +59,7 @@ class ARERawActor
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
+    @_stroke_color = null
     @_colArray = null
 
     @lit = false
@@ -540,7 +541,21 @@ class ARERawActor
     context.closePath()
     #context.fill()
 
-    context.strokeStyle = "#000"
+    if @_stroke_color
+      r = @_stroke_color.getR()
+      g = @_stroke_color.getG()
+      b = @_stroke_color.getB()
+      context.strokeStyle = "rgb(#{r},#{g},#{b})"
+    else
+      context.strokeStyle = "#FFF"
+
+    if @_color
+      r = @_color.getR()
+      g = @_color.getG()
+      b = @_color.getB()
+      context.fillStyle = "rgb(#{r},#{g},#{b})"
+    else
+      context.fillStyle = "#FFF"
 
     if @_renderMode == 1
       context.stroke()
