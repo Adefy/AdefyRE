@@ -136,7 +136,7 @@ class ARERawActor
     @layer = param.required layer
 
     # Re-insert ourselves with new layer
-    ARERenderer.removeActor @
+    ARERenderer.removeActor @, true
     ARERenderer.addActor @
 
   # We support a single texture per actor for the time being. UV coords are
