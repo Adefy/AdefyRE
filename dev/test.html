@@ -19,6 +19,7 @@
 </head>
 
 <body>
+  <div id="ActorCount" style="background-color: #33b5e5"></div>
   <script>
 
     var manifest = {
@@ -67,11 +68,30 @@
         var scheduleBallTimeout = function() {
           setTimeout(function() {
             createBall();
+            document.getElementById("ActorCount").innerHTML = "Actor Count: " + String(ARERenderer.actors.length);
             scheduleBallTimeout();
           }, Math.random() * 500);
         };
 
+        // Throw out the old balls ~_~
+        // For people like IceDragon, who has a shitty computer
+        var ballGCTimeout = function() {
+          setTimeout(function() {
+            var to_remove = [];
+            for (var i = 0; i < ARERenderer.actors.length; i++) {
+              actor = ARERenderer.actors[i];
+              if (actor.getPosition().y < -height)
+                to_remove.push(actor);
+            };
+            for (var i = 0; i < to_remove.length; i++) {
+              ARERenderer.removeActor(to_remove[i]);
+            };
+            ballGCTimeout();
+          }, 5000);
+        };
+
         scheduleBallTimeout();
+        ballGCTimeout();
 
       });
     });
