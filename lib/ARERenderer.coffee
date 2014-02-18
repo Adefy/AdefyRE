@@ -72,8 +72,8 @@ class ARERenderer
 
   # 0: canvas
   # 1: wgl
-  @rendererMode: 0#1
-  @activeRendererMode: 0#1
+  @rendererMode: 0
+  @activeRendererMode: null
 
   # Sets up the renderer, using either an existing canvas or creating a new one
   # If a canvasId is provided but the element is not a canvas, it is treated
@@ -513,7 +513,11 @@ class ARERenderer
 
     if ctx == undefined or ctx == null then return
 
-    ctx.clearRect(0, 0, @_canvas.width, @_canvas.height)
+    if @_clearColor
+      ctx.fillStyle = "rgb(#{@_clearColor})"
+      ctx.fillRect 0, 0, @_canvas.width, @_canvas.height
+    else
+      ctx.clearRect 0, 0, @_canvas.width, @_canvas.height
 
     # Draw everything!
     ctx.save()
