@@ -47,15 +47,15 @@ class ARERawActor
   # @private
   _initializeValues: ->
 
-    if ARERenderer.activeRendererMode == 1
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @_gl = ARERenderer._gl
       if @_gl == undefined or @_gl == null
         throw new Error "GL context is required for actor initialization!"
 
     # Initialize our rendering objects
-    @_rotV = $V([0, 0, 1])
-    @_transV = $V([0, 0, 1])
-    @_modelM = Matrix.I 4
+    @_rotV = new Vector3([0, 0, 1])
+    @_transV = new Vector3([0, 0, 1])
+    @_modelM = new Matrix4()
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
@@ -171,7 +171,7 @@ class ARERawActor
   #
   # @param [AREShader] shader
   setShader: (shader) ->
-    if ARERenderer.activeRendererMode == 1
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       param.required shader
       # Ensure shader is built, and generate handles if not already done
       if shader.getProgram() == null
@@ -329,7 +329,8 @@ class ARERawActor
   # @param [Array<Number>] vertices
   updateVertBuffer: (@_vertices) ->
     @_vertBufferFloats = new Float32Array(@_vertices)
-    if ARERenderer.activeRendererMode == 1
+
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @_vertBuffer = @_gl.createBuffer()
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
       @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
@@ -362,7 +363,7 @@ class ARERawActor
     @_origTexVerts = @_texVerts
     @_texVBufferFloats = new Float32Array(@_texVerts)
 
-    if ARERenderer.activeRendererMode == 1
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @_texBuffer = @_gl.createBuffer()
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
       @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
@@ -477,6 +478,34 @@ class ARERawActor
   # @return [ARERawActor] attachment
   getAttachment: -> @_attachedTexture
 
+  updateAttachment: ->
+
+    # Check if we have a visible attached texture.
+    # If so, set properties and draw
+    if @hasAttachment() and @getAttachment().visible
+
+      # Get physics updates
+      @updatePosition()
+
+      # Setup anchor point
+      pos = @getPosition()
+      rot = @getRotation()
+
+      pos.x += @attachedTextureAnchor.x
+      pos.y += @attachedTextureAnchor.y
+      rot += @attachedTextureAnchor.angle
+
+      # Switch to attached texture
+      a = @getAttachment()
+
+      # Apply state update
+      @setPosition pos
+      @setRotation rot
+
+      return a
+
+    return @
+
   # Update position from physics body if we have one
   updatePosition: ->
 
@@ -508,14 +537,17 @@ class ARERawActor
     @updatePosition()
 
     # Prep our vectors and matrices
-    @_modelM = Matrix.I 4
+    @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
     @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
-    @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
-    @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+    #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
+    #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
+    @_modelM.translate(@_transV)
+    @_modelM.rotate(@_rotation, @_rotV)
 
-    flatMV = new Float32Array(@_modelM.flatten())
+    #flatMV = new Float32Array(@_modelM.flatten())
+    flatMV = @_modelM.flatten()
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_position, 2, gl.FLOAT, false, 0, 0
@@ -567,12 +599,6 @@ class ARERawActor
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
     @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
-    #@_modelM = Matrix.I 4
-    #@_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
-    #@_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
-    #flatMV = new Float32Array(@_modelM.flatten())
-    #x = flatMV[0]
-    #y = flatMV[1]
     x = @_transV.elements[0]
     y = @_transV.elements[1]
 
@@ -606,6 +632,15 @@ class ARERawActor
         context.fill()
       context.stroke()
     else throw new Error "Invalid render mode! #{@_renderMode}"
+
+  nullDraw: (context) ->
+    param.required context
+
+    # We only respect our own visibility flag! Any invisible attached textures
+    # cause us to render!
+    if not @visible then return
+
+    @updatePosition()
 
   # Set actor render mode, decides how the vertices are perceived
   #   1 == LINE_LOOP

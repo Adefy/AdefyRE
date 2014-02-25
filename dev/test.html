@@ -4,21 +4,15 @@
   <meta charset="utf-8">
   <title>AdefyWebGL Test</title>
 
-  <script type="text/javascript" src="./underscore.min.js"></script>
-  <script type="text/javascript" src="./cp.min.js"></script>
-  <script type="text/javascript" src="./sylvester.js"></script>
-  <script type="text/javascript" src="./glUtils.js"></script>
-  <script type="text/javascript" src="./are.js"></script>
+  <script type="text/javascript" src="./js/underscore.min.js"></script>
+  <script type="text/javascript" src="./js/cp.min.js"></script>
+  <!-- <script type="text/javascript" src="./js/sylvester.js"></script> -->
+  <script type="text/javascript" src="./js/EWGL_math.js"></script>
+  <!-- <script type="text/javascript" src="./js/glUtils.js"></script> -->
+  <script type="text/javascript" src="./js/inkyEWGL.js"></script>
+  <script type="text/javascript" src="./js/are.js"></script>
 
-  <style>
-  * {
-    padding: 0;
-    margin: 0;
-  }
-  div#SceneInfo span{
-    padding: 4px;
-  }
-  </style>
+  <link type="text/css" rel="stylesheet" href="./css/main.css"/>
 </head>
 
 <body>
@@ -32,18 +26,18 @@
       "textures": [{
         "type": "image",
         "name": "metalGrate",
-        "path": "metalGrate.jpg"
+        "path": "images/metalGrate.jpg"
       },{
         "type": "image",
         "name": "roundThing",
-        "path": "roundThing.jpg"
+        "path": "images/roundThing.jpg"
       }]
     };
 
     var width = window.innerWidth;
     var height = window.innerHeight;
 
-    ARERenderer.rendererMode = 0
+    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
 
     new AREEngine(width, height, function() {
       window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function() {
@@ -101,7 +95,13 @@
         scheduleBallTimeout();
         ballGCTimeout();
 
-        document.getElementById("RendererMode").innerHTML = "Renderer Mode: " + String(ARERenderer.rendererMode);
+        var modestr = "N/A";
+        if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
+          modestr = "WebGL"
+        else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
+          modestr = "Canvas"
+
+        document.getElementById("RendererMode").innerHTML = "Renderer Mode: " + modestr;
 
       });
     });

@@ -109,7 +109,7 @@ class AREEngineInterface
       gl = ARERenderer._gl
       tex = null
 
-      if ARERenderer.activeRendererMode == 1
+      if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
 
         ARELog.info "Loading Gl Texture"
 
