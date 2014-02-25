@@ -39,8 +39,10 @@
 
     ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
 
-    new AREEngine(width, height, function() {
+    window.engine = new AREEngine(width, height, function() {
       window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function() {
+
+        window.engine.setClearColor(255, 255, 255);
 
         var ground = new ARERectangleActor(width, height * 0.05);
         ground.setPosition({ x: width / 2, y: height * 0.025 })
@@ -61,7 +63,7 @@
           var friction = Math.random();
           var elasticity = Math.random() * 1.2;
 
-          new ARECircleActor(Math.round(Math.random() * 32) + 5)
+          var ball = new ARECircleActor(Math.round(Math.random() * 32) + 5)
           .setPosition({ x: x, y: y })
           .setTexture("roundThing")
           .createPhysicsBody(mass, friction, elasticity);

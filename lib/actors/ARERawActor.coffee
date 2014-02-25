@@ -264,6 +264,8 @@ class ARERawActor
     @_shape.setFriction @_friction
     @_shape.setElasticity @_elasticity
 
+    @
+
   # Destroys the physics body if one exists
   destroyPhysicsBody: ->
     if AREPhysics.bodyCount == 0 then return
@@ -648,7 +650,9 @@ class ARERawActor
   #   3 == TRIANGLE_STRIP
   #
   # @paran [Number] mode
-  setRenderMode: (mode) -> @_renderMode = param.required mode, [1, 2, 3]
+  setRenderMode: (mode) ->
+    @_renderMode = param.required mode, [1, 2, 3]
+    @
 
   # Set actor position, effects either the actor or the body directly if one
   # exists
