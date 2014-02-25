@@ -411,22 +411,14 @@ class ARERenderer
     if colOrR instanceof AREColor3
       @_clearColor = colOrR
     else
-
-      # Sanity checks
-      if colOrR == undefined or colOrR == null then colOrR = 0
-      if g == undefined or g == null then g = 0
-      if b == undefined or b == null then b = 0
-
-      @_clearColor.setR colOrR
-      @_clearColor.setG g
-      @_clearColor.setB b
-
-    # Serves to apply bounds checks automatically
-    colOrR = @_clearColor.getR true
-    g = @_clearColor.getG true
-    b = @_clearColor.getB true
+      @_clearColor.setR colOrR || 0
+      @_clearColor.setG g || 0
+      @_clearColor.setB b || 0
 
     if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
+      colOrR = @_clearColor.getR true
+      g = @_clearColor.getG true
+      b = @_clearColor.getB true
       # Actually set the color if possible
       if ARERenderer._gl != null and ARERenderer._gl != undefined
         ARERenderer._gl.clearColor colOrR, g, b, 1.0
@@ -468,7 +460,8 @@ class ARERenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     # Clear the screen
-    gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
+    # Did you know? WebGL actually clears the screen by itself :D
+    #gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
     for a in ARERenderer.actors
@@ -522,14 +515,14 @@ class ARERenderer
 
     if @_clearColor
       ctx.fillStyle = "rgb#{@_clearColor}"
-      ctx.fillRect 0, 0, @_canvas.width, @_canvas.height
+      ctx.fillRect 0, 0, @_width, @_height
     else
-      ctx.clearRect 0, 0, @_canvas.width, @_canvas.height
+      ctx.clearRect 0, 0, @_width, @_height
 
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    ctx.translate 0, @_canvas.height
+    ctx.translate 0, @_height
     ctx.scale 1, -1
 
     for a in ARERenderer.actors
