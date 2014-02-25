@@ -210,8 +210,15 @@ class ARERenderer
   initializeWGLContext: (canvas) ->
 
     ##
-    # Grab the webgl context, and see if we can get some antialias with it.
-    gl = canvas.getContext "webgl", antialias: true
+    # Grab the webgl context
+    options =
+      preserveDrawingBuffer: false
+      antialias: true
+      alpha: true
+      premultipliedAlpha: true
+      depth: true
+      stencil: false
+    gl = canvas.getContext "webgl", options
 
     # If null, use experimental-webgl
     if gl is null
@@ -460,7 +467,10 @@ class ARERenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     # Clear the screen
-    # Did you know? WebGL actually clears the screen by itself :D
+    # Did you know? WebGL actually clears the screen by itself:
+    # if preserveDrawingBuffer is false
+    # However a bit of dragging occurs when rendering, probaly some fake
+    # motion blur?
     #gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
