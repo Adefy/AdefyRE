@@ -42,7 +42,7 @@ class AREEngine
     @_renderIntervalId = null
 
     # Framerate for renderer, defaults to 60FPS
-    @_framerate = 1.0 / 60.0
+    @setFPS(60)
 
     # Ensure Underscore.js is loaded
     if window._ == null or window._ == undefined
