@@ -133,4 +133,7 @@ class AREEngine
     ARERenderer._gl
 
 # Break out an interface. Use responsibly
-window.AdefyGLI = new AREInterface
+# wat
+#window.AdefyGLI = new AREInterface
+# All we need, is the awesome
+window.Adefy = new AREInterface
