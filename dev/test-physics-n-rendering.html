@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AdefyWebGL Test</title>
+  <title>AdefyWebGL Physics + Rendering Test</title>
 
   <script type="text/javascript" src="./js/underscore.min.js"></script>
   <script type="text/javascript" src="./js/cp.min.js"></script>
@@ -40,7 +40,7 @@
     ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
 
     window.engine = new AREEngine(width, height, function() {
-      window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function() {
+      window.Adefy.Engine().loadManifest(JSON.stringify(manifest), function() {
 
         window.engine.setClearColor(255, 255, 255);
 

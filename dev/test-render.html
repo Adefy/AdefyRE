@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AdefyWebGL Rendering Test</title>
+
+  <script type="text/javascript" src="./js/underscore.min.js"></script>
+  <script type="text/javascript" src="./js/cp.min.js"></script>
+  <!-- <script type="text/javascript" src="./js/sylvester.js"></script> -->
+  <script type="text/javascript" src="./js/EWGL_math.js"></script>
+  <!-- <script type="text/javascript" src="./js/glUtils.js"></script> -->
+  <script type="text/javascript" src="./js/inkyEWGL.js"></script>
+  <script type="text/javascript" src="./js/are.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="./css/main.css"/>
+</head>
+
+<body>
+  <div id="SceneInfo" style="background-color: #33b5e5">
+    <span id="RendererMode"></span>
+    <span id="ActorCount"></span>
+  </div>
+  <script>
+
+    onManifestLoad = function(engine) {
+      // FINALLY WE CAN START!
+
+    };
+
+    onEngineInit = function(engine) {
+      window.Adefy.Engine().loadManifest(JSON.stringify(manifest), function() {
+        onManifestLoad(engine); // Callback #2
+      })
+    };
+
+    // First order of business, CHOOSE YOUR DESTINY
+    // Actually just choose a renderer mode, you can choose from
+    // the NULL renderer, the WGL rendere, or the CANVAS renderer; modes
+    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
+
+    window.engine = new AREEngine(width, height, function() {
+      onEngineInit(engine); // Callback #1
+    });
+
+    // Man this gets ugly fast...
+
+  </script>
+</body>
+</html>
