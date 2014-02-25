@@ -129,12 +129,7 @@ class ARERawActor
   # @return [null]
   ###
   destroy: ->
-    space = AREPhysics.getWorld()
-    if @_body
-      space.removeBody @_body
-
-    if @_shape
-      space.removeShape @_shape
+    @destroyPhysicsBody()
     null
 
   ###
