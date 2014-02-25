@@ -136,7 +136,7 @@ class ARERawActor
     @layer = param.required layer
 
     # Re-insert ourselves with new layer
-    ARERenderer.removeActor @
+    ARERenderer.removeActor @, true
     ARERenderer.addActor @
 
   # We support a single texture per actor for the time being. UV coords are
@@ -621,6 +621,7 @@ class ARERawActor
     else if @_renderMode == 2
       if @_material == "texture"
         context.clip()
+        context.scale 1, -1
         context.drawImage @_texture,
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
@@ -628,6 +629,7 @@ class ARERawActor
     else if @_renderMode == 3 # wireframe
       if @_material == "texture"
         context.clip()
+        context.scale 1, -1
         context.drawImage @_texture,
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else

@@ -225,11 +225,8 @@ class ARERenderer
       ARELog.warn "Continuing with experimental webgl support"
       gl = canvas.getContext "experimental-webgl"
 
-    # If still null, FOL
-    if gl is null
-      alert "Your browser does not support WebGL! Adefy ads won't render ;("
-      @initError = "Your browser does not support WebGL!"
-      return false
+    # If still null, switch to canvas rendering
+    if gl is null then return
 
     ARERenderer._gl = gl
 
@@ -625,9 +622,11 @@ class ARERenderer
   # Remove an actor from our render list by either actor, or id
   #
   # @param [ARERawActor,Number] actor actor, or id of actor to remove
+  # @param [Boolean] nodestroy optional, defaults to false
   # @return [Boolean] success
-  @removeActor: (oactor) ->
+  @removeActor: (oactor, nodestroy) ->
     param.required oactor
+    nodestroy = param.optional nodestroy, false
 
     # Extract id
     actor = oactor
@@ -637,7 +636,7 @@ class ARERenderer
     for a, i in ARERenderer.actors
       if a.getId() == actor
         ARERenderer.actors.splice i, 1
-        oactor.destroy()
+        if not nodestroy then oactor.destroy()
         return true
 
     false
