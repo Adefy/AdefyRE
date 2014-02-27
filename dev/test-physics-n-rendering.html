@@ -66,7 +66,10 @@
           var ball = new ARECircleActor(Math.round(Math.random() * 32) + 5)
           .setPosition({ x: x, y: y })
           .setTexture("roundThing")
-          .createPhysicsBody(mass, friction, elasticity);
+          .createPhysicsBody(mass, friction, elasticity)
+          .setStrokeColor(0, 0, 0)
+          .setStrokeWidth(4)
+          .setRenderMode(3);
         };
 
         var scheduleBallTimeout = function() {

@@ -67,7 +67,8 @@ class ARERawActor
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
-    @_stroke_color = null
+    @_strokeColor = null
+    @_strokeWidth = 1
     @_colArray = null
 
     @lit = false
@@ -585,6 +586,8 @@ class ARERawActor
       gl.bindTexture gl.TEXTURE_2D, @_texture
       gl.uniform1i @_sh_sampler, 0
 
+    @
+
   ###
   # Renders the Actor using the WebGL interface, this function should only
   # be called by a ARERenderer in WGL mode
@@ -628,14 +631,21 @@ class ARERawActor
       gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
     else throw new Error "Invalid render mode! #{@_renderMode}"
 
+    @
+
   ###
   # Updates the context settings with the Actor's strokeStyle and fillStyle
   # @param [Object] 2d context
   ###
   cvSetupStyle: (context) ->
 
-    if @_stroke_color
-      context.strokeStyle = "rgb(#{@_stroke_color})"
+    if @_strokeWidth != null
+      context.lineWidth = @_strokeWidth
+    else
+      context.lineWidth = 1
+
+    if @_strokeColor
+      context.strokeStyle = "rgb(#{@_strokeColor})"
     else
       context.strokeStyle = "#FFF"
 
@@ -647,6 +657,8 @@ class ARERawActor
         context.fillStyle = "rgb(#{@_color})"
       else
         context.fillStyle = "#FFF"
+
+    @
 
   ###
   # Renders the current actor using the 2d context, this function should only
@@ -681,9 +693,9 @@ class ARERawActor
 
     @cvSetupStyle context
 
-    if @_renderMode == 1
+    if @_renderMode == 1 # stroke
       context.stroke()
-    else if @_renderMode == 2
+    else if @_renderMode == 2 # fill
       if @_material == "texture"
         context.clip()
         context.scale 1, -1
@@ -691,7 +703,8 @@ class ARERawActor
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
         context.fill()
-    else if @_renderMode == 3 # wireframe
+    else if @_renderMode == 3 # stroke + fill
+      context.stroke()
       if @_material == "texture"
         context.clip()
         context.scale 1, -1
@@ -699,8 +712,9 @@ class ARERawActor
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
         context.fill()
-      context.stroke()
     else throw new Error "Invalid render mode! #{@_renderMode}"
+
+    @
 
   ###
   # Renders the current actor using the 2d context, however, nothing is
@@ -717,11 +731,13 @@ class ARERawActor
 
     @updatePosition()
 
+    @
+
   ###
   # Set actor render mode, decides how the vertices are perceived
-  #   1 == LINE_LOOP
-  #   2 == TRIANGLE_FAN
-  #   3 == TRIANGLE_STRIP
+  #   1 == Stroke
+  #   2 == Fill
+  #   3 == Stroke + Fill
   #
   # @paran [Number] mode
   ###
@@ -771,6 +787,41 @@ class ARERawActor
 
     @
 
+  setStrokeWidth: (width) ->
+    @_strokeWidth = Number(width)
+    @
+
+  ###
+  # Set color
+  # @private
+  # @param [Integer] target color to extract information to
+  # @overload setColor_ext(target,col)
+  #   Sets the color using an AREColor3 instance
+  #   @param [AREColor3] color
+  #
+  # @overload setColor_ext(target, r, g, b)
+  #   Sets the color using component values
+  #   @param [Integer] r red component
+  #   @param [Integer] g green component
+  #   @param [Integer] b blue component
+  ###
+  setColor_ext: (target, colOrR, g, b) ->
+    param.required colOrR
+
+    if colOrR instanceof AREColor3
+      target.setR colOrR.getR()
+      target.setG colOrR.getG()
+      target.setB colOrR.getB()
+    else
+      param.required g
+      param.required b
+
+      target.setR Number(colOrR)
+      target.setG Number(g)
+      target.setB Number(b)
+
+    @
+
   ###
   # Set color
   #
@@ -789,28 +840,41 @@ class ARERawActor
 
     unless @_color then @_color = new AREColor3
 
-    if colOrR instanceof AREColor3
-      @_color = colOrR
+    @setColor_ext @_color, colOrR, g, b
 
-      @_colArray = [
-        colOrR.getR true
-        colOrR.getG true
-        colOrR.getB true
-      ]
+    @_colArray = [
+      @_color.getR true
+      @_color.getG true
+      @_color.getB true
+    ]
 
-    else
-      param.required g
-      param.required b
+    @
 
-      @_color.setR Number(colOrR)
-      @_color.setG Number(g)
-      @_color.setB Number(b)
+  ###
+  # Set stroke color
+  #
+  # @overload setStrokeColor(col)
+  #   Sets the color using an AREColor3 instance
+  #   @param [AREColor3] color
+  #
+  # @overload setStrokeColor(r, g, b)
+  #   Sets the color using component values
+  #   @param [Integer] r red component
+  #   @param [Integer] g green component
+  #   @param [Integer] b blue component
+  ###
+  setStrokeColor: (colOrR, g, b) ->
+    param.required colOrR
 
-      @_colArray = [
-        @_color.getR true
-        @_color.getG true
-        @_color.getB true
-      ]
+    unless @_strokeColor then @_strokeColor = new AREColor3
+
+    @setColor_ext @_strokeColor, colOrR, g, b
+
+    @_strokeColorArray = [
+      @_strokeColor.getR true
+      @_strokeColor.getG true
+      @_strokeColor.getB true
+    ]
 
     @
 
