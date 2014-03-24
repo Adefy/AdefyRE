@@ -60,12 +60,31 @@ class AREEngine
   # @param [Number] fps
   setFPS: (fps) -> @_framerate = 1.0 / fps
 
+  benchmark: false
+
   # Start render loop if it isn't already running
   startRendering: ->
     if @_renderIntervalId != null then return
 
     ARELog.info "Starting render loop"
-    @_renderIntervalId = setInterval (=> @_renderer.render()), @_framerate
+
+    avgStep = 0
+    stepCount = 0
+
+    @_renderIntervalId = setInterval =>
+      start = Date.now()
+
+      @_renderer.render()
+
+      if @benchmark
+        stepCount++
+        avgStep = avgStep + ((Date.now() - start) / stepCount)
+
+        if stepCount % 500 == 0
+          fps = (1000 / avgStep).toFixed 2
+          console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
+
+    , @_framerate
 
   # Halt render loop if it's running
   stopRendering: ->

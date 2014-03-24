@@ -91,6 +91,13 @@ class AREEngineInterface
   # @return [Object]
   getCameraPosition: -> JSON.stringify ARERenderer.camPos
 
+  # Enable/disable benchmarking
+  #
+  # @param [Boolean] benchmark
+  setBenchmark: (status) ->
+    AREPhysics.benchmark = status
+    @_engine.benchmark = status
+
   # Load a package.json manifest, assume texture paths are relative to our
   # own
   #

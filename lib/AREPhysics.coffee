@@ -22,6 +22,8 @@ class AREPhysics
 
   @bodyCount: 0
 
+  @benchmark: false
+
   # Constructor, should never be called
   # AREPhysics should only ever be accessed as static
   constructor: -> throw new Error "Physics constructor called"
@@ -37,11 +39,23 @@ class AREPhysics
     @_world.collisionSlop = 0.5
     @_world.sleepTimeThreshold = 0.5
 
-    me = @
     ARELog.info "Starting world update loop"
 
-    @_stepIntervalId = setInterval ->
-      me._world.step me.frameTime
+    avgStep = 0
+    stepCount = 0
+
+    @_stepIntervalId = setInterval =>
+      start = Date.now()
+
+      @_world.step @frameTime
+
+      if @benchmark
+        stepCount++
+        avgStep = avgStep + ((Date.now() - start) / stepCount)
+
+        if stepCount % 500 == 0
+          console.log "Physics step time: #{avgStep.toFixed(2)}ms"
+
     , @frameTime
 
   # Halt the world step loop if running
