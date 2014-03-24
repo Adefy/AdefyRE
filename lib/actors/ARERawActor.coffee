@@ -101,6 +101,7 @@ class ARERawActor
     @_sh_modelview = null
     @_sh_position = null
     @_sh_color = null
+    @_sh_uvscale = null
 
     # Render modes decide how the vertices are treated.
     #   1 == Stroked
@@ -187,6 +188,10 @@ class ARERawActor
       @_sh_color = handles["Color"]
       @_sh_texture = handles["aTexCoord"]
       @_sh_sampler = handles["uSampler"]
+
+      if handles["aUVscale"] != undefined
+        @_sh_uvscale = handles["aUVscale"]
+
     else
       #ARELog.info "Shader's are not supported with this render mode"
 
@@ -488,13 +493,16 @@ class ARERawActor
       @_rotation = @_body.a
 
   wglUpdateTexture: (gl) ->
+
     # Texture rendering, if needed
     if @_material == "texture"
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
       gl.vertexAttribPointer @_sh_texture, 2, gl.FLOAT, false, 0, 0
 
+      gl.vertexAttrib2f @_sh_uvscale, @_texture.scaleX, @_texture.scaleY
+
       gl.activeTexture gl.TEXTURE0
-      gl.bindTexture gl.TEXTURE_2D, @_texture
+      gl.bindTexture gl.TEXTURE_2D, @_texture.texture
       gl.uniform1i @_sh_sampler, 0
 
   # Renders the actor

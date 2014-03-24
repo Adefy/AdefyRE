@@ -45,7 +45,7 @@
 
     ARERenderer.rendererMode = 0
 
-    window.engine = new AREEngine(width, height, function() {
+    window.engine = window.AdefyGLI.Engine().initialize(width, height, function() {
       window.AdefyGLI.Engine().loadManifest(JSON.stringify(manifest), function() {
 
         window.engine.setClearColor(255, 255, 255);

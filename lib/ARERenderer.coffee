@@ -263,15 +263,18 @@ class ARERenderer
     vertSrc_Tex = """
       attribute vec2 Position;
       attribute vec2 aTexCoord;
+      attribute vec2 aUVscale;
 
       uniform mat4 Projection;
       uniform mat4 ModelView;
 
       varying highp vec2 vTexCoord;
+      varying highp vec2 vUVScale;
 
       void main() {
         gl_Position = Projection * ModelView * vec4(Position, 1, 1);
         vTexCoord = aTexCoord;
+        vUVScale = aUVscale;
       }
     """
 
@@ -280,9 +283,13 @@ class ARERenderer
 
       varying highp vec2 vTexCoord;
       uniform sampler2D uSampler;
+      varying highp vec2 vUVScale;
 
       void main() {
-        gl_FragColor = texture2D(uSampler, vTexCoord);
+        vec4 baseColor = texture2D(uSampler, vTexCoord * vUVScale);
+        if(baseColor.rgb == vec3(1.0, 0.0, 1.0))
+          discard;
+        gl_FragColor = baseColor;
       }
     """
 
@@ -682,7 +689,7 @@ class ARERenderer
     param.required name
 
     for t in ARERenderer.textures
-      if t.name == name then return t.texture
+      if t.name == name then return t
     return null
 
   # Fetches texture size

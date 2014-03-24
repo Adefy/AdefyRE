@@ -2,6 +2,16 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
+nextHighestPowerOfTwo = (x) ->
+  --x
+  i = 1
+
+  while i < 32
+    x = x | x >> i
+    i <<= 1
+
+  x + 1
+
 # Renderer interface class
 class AREEngineInterface
 
@@ -30,9 +40,8 @@ class AREEngineInterface
     # Clear out physics world
     AREPhysics.stopStepping()
 
-    me = @
-    new AREEngine width, height, (are) ->
-      me._engine = are
+    new AREEngine width, height, (are) =>
+      @_engine = are
 
       are.startRendering()
       ad are
@@ -133,23 +142,37 @@ class AREEngineInterface
         tex = gl.createTexture()
         img.onload = ->
 
+          scaleX = 1
+          scaleY = 1
+
+          # Resize image if needed
+          if (img.width & (img.width - 1)) != 0 or \
+            (img.height & (img.height - 1)) != 0
+
+              canvas = document.createElement "canvas"
+
+              canvas.width = nextHighestPowerOfTwo img.width
+              canvas.height = nextHighestPowerOfTwo img.height
+
+              scaleX = img.width / canvas.width
+              scaleY = img.height / canvas.height
+
+              ctx = canvas.getContext "2d"
+              ctx.drawImage img, 0, 0, img.width, img.height
+
+              img = canvas
+
           # Set up GL texture
           gl.bindTexture gl.TEXTURE_2D, tex
           gl.texImage2D gl.TEXTURE_2D, 0,
                         gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 
-          # If image is a power of two
-          pot = false
-          if (img.width & (img.width - 1)) == 0
-            if (img.height & (img.height - 1)) == 0
-              gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
-              gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
-              pot = true
+          # if not pot
+          #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
+          #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
 
-          if not pot
-            gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
-            gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
-
+          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
+          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
           gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
           gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR
 
@@ -162,6 +185,8 @@ class AREEngineInterface
             texture: tex
             width: img.width
             height: img.height
+            scaleX: scaleX
+            scaleY: scaleY
 
           # Call cb once we've loaded all textures
           count++
