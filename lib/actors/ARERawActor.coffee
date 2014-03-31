@@ -598,7 +598,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    if not @visible then return
+    return false if !@visible
 
     @updatePosition()
 
@@ -670,7 +670,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    if not @visible then return
+    return false if !@visible
 
     @updatePosition()
 
@@ -879,6 +879,12 @@ class ARERawActor
     @
 
   ###
+  # Set the visible state of the actor
+  # @param [Boolean] visible
+  ###
+  setVisible: (_visible) -> @visible = _visible
+
+  ###
   # Returns the actor position as an object with x and y properties
   #
   # @return [Object] position x, y
@@ -918,3 +924,8 @@ class ARERawActor
   # @return [AREColor3] color
   ###
   getColor: -> new AREColor3 @_color
+
+  ###
+  # @return [Boolean] visible
+  ###
+  getVisible: -> @visible
