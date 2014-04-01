@@ -132,8 +132,6 @@ class AREEngine
     if ARERenderer._gl == null then ARELog.warn "Render not instantiated!"
     ARERenderer._gl
 
-# Break out an interface. Use responsibly
-# wat
-#window.AdefyGLI = new AREInterface
+# Break out an interface. Use responsibly.
 # All we need, is the awesome
-window.Adefy = new AREInterface
+window.AdefyRE = new AREInterface
