@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AdefyWebGL Rendering Test</title>
+
+  <script type="text/javascript" src="./js/underscore.min.js"></script>
+  <script type="text/javascript" src="./js/cp.min.js"></script>
+  <!-- <script type="text/javascript" src="./js/sylvester.js"></script> -->
+  <script type="text/javascript" src="./js/EWGL_math.js"></script>
+  <!-- <script type="text/javascript" src="./js/glUtils.js"></script> -->
+  <script type="text/javascript" src="./js/inkyEWGL.js"></script>
+  <script type="text/javascript" src="./js/are.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="./css/main.css"/>
+</head>
+
+<body>
+  <div id="SceneInfo" style="background-color: #33b5e5">
+    <span id="RendererMode"></span>
+    <span id="ActorCount"></span>
+  </div>
+  <script>
+
+    Array.prototype.sample = function() {
+      return this[Math.floor(Math.random() * this.length)];
+    }
+
+    onManifestLoad = function() {
+      // FINALLY WE CAN START!
+      // So after the manifests have loaded, we can finally get started (I hope)
+      // Don't ask, too lazy to convert these values to ints...
+      // Proves that setClearColor works
+      window.engine.setClearColor(0xb2, 0xd9, 0xbe);
+      var texs = ["red_block", "green_block", "blue_block", "yellow_block"];
+      var cols = Math.floor(window.engine.getWidth() / 96);
+      var rows = Math.floor(window.engine.getHeight() / 96);
+      var totalblocks = Math.floor(cols * rows);
+      for (var i = 0; i < totalblocks; i++) {
+        new ARERectangleActor(96, 96)
+        // Little fact: The scene is upside down.
+        .setPosition({ x: 48 + 96 * Math.floor(i % cols),
+                       y: window.engine.getHeight() - 48 - 96 * Math.floor(i / cols) })
+        .setTexture(texs.sample());
+      }
+    };
+
+    onEngineInit = function() {
+      // So lets load some blocks into the Texture cache
+      var manifest = {
+        "textures": [{
+          "type": "image",
+          "name": "red_block",
+          "path": "images/block_0000.png"
+        },{
+          "type": "image",
+          "name": "green_block",
+          "path": "images/block_0001.png"
+        },{
+          "type": "image",
+          "name": "blue_block",
+          "path": "images/block_0002.png"
+        },{
+          "type": "image",
+          "name": "yellow_block",
+          "path": "images/block_0003.png"
+        }]
+      };
+
+      window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
+        onManifestLoad(); // Callback #2
+      })
+    };
+
+    // First order of business, CHOOSE YOUR DESTINY
+    // Actually just choose a renderer mode, you can choose from
+    // the NULL renderer, the WGL renderer, or the CANVAS renderer; modes
+    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_NULL
+    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS
+    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
+
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    window.engine = new AREEngine(width, height, function() {
+      onEngineInit(); // Callback #1
+    });
+
+    // Man this gets ugly fast...
+
+    var modestr = "N/A";
+    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
+      modestr = "WebGL"
+    else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
+      modestr = "Canvas"
+
+    document.getElementById("RendererMode").innerHTML = "Renderer Mode: " + modestr;
+
+  </script>
+</body>
+</html>

@@ -16,20 +16,20 @@ module.exports = (grunt) ->
   productionFull = "#{buildDir}/#{productionNameFull}"
 
   productionConcatFull = [
-    "#{devDir}/underscore.min.js"
-    "#{devDir}/sylvester.js"
-    "#{devDir}/mjax.min.js"
-    "#{devDir}/glUtils.js"
-    "#{devDir}/gl-matrix-min.js"
-    "#{devDir}/cp.min.js"
+    "#{devDir}/js/underscore.min.js"
+    "#{devDir}/js/sylvester.js"
+    "#{devDir}/js/mjax.min.js"
+    "#{devDir}/js/glUtils.js"
+    "#{devDir}/js/gl-matrix-min.js"
+    "#{devDir}/js/cp.min.js"
 
-    "#{devDir}/are.js"
+    "#{devDir}/js/are.js"
   ]
 
   # Intermediate vars
   __areOut = {}
   __areOut["#{buildDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
-  __areOut["#{devDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
+  __areOut["#{devDir}/js/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
 
   __coffeeConcatFiles = {}
 
@@ -37,7 +37,7 @@ module.exports = (grunt) ->
   __coffeeConcatFiles["#{buildDir}/#{libName}"] = "#{buildDir}/are-concat.coffee";
 
   # Dev concat output, used for browser testing
-  __coffeeConcatFiles["#{devDir}/#{libName}"] = "#{buildDir}/are-concat.coffee";
+  __coffeeConcatFiles["#{devDir}/js/#{libName}"] = "#{buildDir}/are-concat.coffee";
 
   # 1 to 1 compiled files, for unit tests
   __coffeeFiles = [
