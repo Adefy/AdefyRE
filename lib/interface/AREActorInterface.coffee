@@ -361,6 +361,20 @@ class AREActorInterface
     false
 
   ###
+  # Get actor visible using handle, fails with null
+  #
+  # @param [Number] id
+  # @return [Boolean] visible
+  ###
+  getActorVisible: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      return a.getVisible()
+
+    null
+
+  ###
   # Set actor position using handle, fails with false
   #
   # @param [Number] x x coordinate
