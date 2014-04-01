@@ -118,6 +118,8 @@ class ARERawActor
     #   3 == Stroked | Filled
     @_renderMode = 2
 
+    @_texture = null
+
     # No attached texture; when one exists, we render that texture (actor)
     # instead of ourselves!
     @_attachedTexture = null
@@ -706,7 +708,7 @@ class ARERawActor
       if @_material == "texture"
         context.clip()
         context.scale 1, -1
-        context.drawImage @_texture,
+        context.drawImage @_texture.texture,
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
         context.fill()
@@ -715,7 +717,7 @@ class ARERawActor
       if @_material == "texture"
         context.clip()
         context.scale 1, -1
-        context.drawImage @_texture,
+        context.drawImage @_texture.texture,
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
         context.fill()
