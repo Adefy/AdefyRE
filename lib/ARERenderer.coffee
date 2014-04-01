@@ -119,8 +119,16 @@ class ARERenderer
   ###
   # denotes the currently chosen internal Renderer, this value may be different
   # from the rendererMode, especially if webgl failed to load.
+  # @type [Number]
   ###
   @activeRendererMode: null
+
+  ###
+  # Should the screen be cleared every frame, or should the engine handle
+  # screen clearing. This option is only valid with the WGL renderer mode.
+  # @type [Boolean]
+  ###
+  @alwaysClearScreen: true
 
   ###
   # Sets up the renderer, using either an existing canvas or creating a new one
@@ -251,12 +259,15 @@ class ARERenderer
     ##
     # Grab the webgl context
     options =
-      preserveDrawingBuffer: false
+      # preserveDrawingBuffer set to false will cause WebGL to clear the
+      # screen automatically.
+      preserveDrawingBuffer: ARERenderer.alwaysClearScreen
       antialias: true
       alpha: true
       premultipliedAlpha: true
       depth: true
       stencil: false
+
     gl = canvas.getContext "webgl", options
 
     # If null, use experimental-webgl
@@ -548,7 +559,8 @@ class ARERenderer
     # if preserveDrawingBuffer is false
     # However a bit of dragging occurs when rendering, probaly some fake
     # motion blur?
-    #gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
+    if ARERenderer.alwaysClearScreen
+      gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
     for a in ARERenderer.actors
