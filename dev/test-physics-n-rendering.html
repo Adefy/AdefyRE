@@ -39,7 +39,7 @@
 
     ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
 
-    window.engine = new AREEngine(width, height, function() {
+    window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
       window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
 
         window.engine.setClearColor(255, 255, 255);
@@ -69,7 +69,7 @@
           .createPhysicsBody(mass, friction, elasticity)
           .setStrokeColor(0, 0, 0)
           .setStrokeWidth(4)
-          .setRenderMode(3);
+          .setRenderMode(2);
         };
 
         var scheduleBallTimeout = function() {
