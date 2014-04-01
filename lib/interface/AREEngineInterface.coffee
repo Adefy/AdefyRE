@@ -48,10 +48,7 @@ class AREEngineInterface
     , log, id
 
   # Set global render mode
-  #
-  #   0 - Canvas
-  #   1 - WebGL
-  #
+  #   @see ARERenderer.RENDER_MODE_*
   # This is a special method only we implement; as such, any libraries
   # interfacing with us should check for the existence of the method before
   # calling it!
@@ -135,7 +132,7 @@ class AREEngineInterface
       gl = ARERenderer._gl
       tex = null
 
-      if ARERenderer.activeRendererMode == 1
+      if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
 
         ARELog.info "Loading Gl Texture"
 
@@ -164,6 +161,7 @@ class AREEngineInterface
 
           # Set up GL texture
           gl.bindTexture gl.TEXTURE_2D, tex
+          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, true
           gl.texImage2D gl.TEXTURE_2D, 0,
                         gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 

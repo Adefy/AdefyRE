@@ -70,9 +70,23 @@ class ARERenderer
     x: 0
     y: 0
 
-  # 0: canvas
-  # 1: wgl
-  @rendererMode: 1
+  ##
+  # 0: null
+  #    The null renderer is the same as the canvas renderer, however
+  #    it will only clear the screen each tick.
+  # 1: canvas
+  #    All rendering will be done using the 2d Context
+  # 2: wgl
+  #    All rendering will be done using WebGL
+  @RENDERER_MODE_NULL: 0
+  @RENDERER_MODE_CANVAS: 1
+  @RENDERER_MODE_WGL: 2
+  ##
+  # This denote the rendererMode that is wanted by the user
+  @rendererMode: @RENDERER_MODE_WGL
+  ##
+  # denotes the currently chosen internal Renderer, this value may be different
+  # from the rendererMode, especially if webgl failed to load.
   @activeRendererMode: null
 
   # Sets up the renderer, using either an existing canvas or creating a new one
@@ -169,32 +183,42 @@ class ARERenderer
     if @_canvas is null
       return ARELog.error "Canvas does not exist!"
 
-    # Initialize Canvas Cont
-    if ARERenderer.rendererMode == 0
+    # Initialize Null Context
+    switch ARERenderer.rendererMode
+      when ARERenderer.RENDERER_MODE_NULL
+        @initializeNullContext()
 
-      @initializeCanvas()
+    # Initialize Canvas context
+      when ARERenderer.RENDERER_MODE_CANVAS
+        @initializeCanvasContext()
 
     # Initialize GL context
-    else if ARERenderer.rendererMode == 1
+      when ARERenderer.RENDERER_MODE_WGL
+        unless @initializeWGLContext(@_canvas)
+          ARELog.info "Falling back on regular canvas renderer"
+          @initializeCanvasContext()
 
-      unless @initializeWGLCanvas(@_canvas)
+      else
 
-        ARELog.info "Falling back on regular canvas renderer"
-
-        @initializeCanvas()
-
-    else
-
-      ARELog.error "Invalid Renderer #{ARERenderer.rendererMode}"
+        ARELog.error "Invalid Renderer #{ARERenderer.rendererMode}"
 
     ARELog.info "Using the #{ARERenderer.activeRendererMode} renderer mode"
 
     @switchMaterial "flat"
     @setClearColor 0, 0, 0
 
-  initializeWGLCanvas: (canvas) ->
+  initializeWGLContext: (canvas) ->
 
-    gl = canvas.getContext "webgl", antialias: true
+    ##
+    # Grab the webgl context
+    options =
+      preserveDrawingBuffer: false
+      antialias: true
+      alpha: true
+      premultipliedAlpha: true
+      depth: true
+      stencil: false
+    gl = canvas.getContext "webgl", options
 
     # If null, use experimental-webgl
     if gl is null
@@ -306,17 +330,27 @@ class ARERenderer
 
     ARELog.info "ARE WGL initialized"
 
-    ARERenderer.activeRendererMode = 1
+    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL
 
     true
 
-  initializeCanvas: ->
+  initializeCanvasContext: ->
 
     @_ctx = @_canvas.getContext "2d"
 
     ARELog.info "ARE CTX initialized"
 
-    ARERenderer.activeRendererMode = 0
+    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS
+
+    true
+
+  initializeNullContext: ->
+
+    @_ctx = @_canvas.getContext "2d"
+
+    ARELog.info "ARE Null initialized"
+
+    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL
 
     true
 
@@ -388,22 +422,14 @@ class ARERenderer
     if colOrR instanceof AREColor3
       @_clearColor = colOrR
     else
+      @_clearColor.setR colOrR || 0
+      @_clearColor.setG g || 0
+      @_clearColor.setB b || 0
 
-      # Sanity checks
-      if colOrR == undefined or colOrR == null then colOrR = 0
-      if g == undefined or g == null then g = 0
-      if b == undefined or b == null then b = 0
-
-      @_clearColor.setR colOrR
-      @_clearColor.setG g
-      @_clearColor.setB b
-
-    # Serves to apply bounds checks automatically
-    colOrR = @_clearColor.getR true
-    g = @_clearColor.getG true
-    b = @_clearColor.getB true
-
-    if ARERenderer.activeRendererMode == 1
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
+      colOrR = @_clearColor.getR true
+      g = @_clearColor.getG true
+      b = @_clearColor.getB true
       # Actually set the color if possible
       if ARERenderer._gl != null and ARERenderer._gl != undefined
         ARERenderer._gl.clearColor colOrR, g, b, 1.0
@@ -445,7 +471,11 @@ class ARERenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     # Clear the screen
-    gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
+    # Did you know? WebGL actually clears the screen by itself:
+    # if preserveDrawingBuffer is false
+    # However a bit of dragging occurs when rendering, probaly some fake
+    # motion blur?
+    #gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
     for a in ARERenderer.actors
@@ -468,27 +498,7 @@ class ARERenderer
 
       else
 
-        # Check if we have a visible attached texture.
-        # If so, set properties and draw
-        if a.hasAttachment() and a.getAttachment().visible
-
-          # Get physics updates
-          a.updatePosition()
-
-          # Setup anchor point
-          pos = a.getPosition()
-          rot = a.getRotation()
-
-          pos.x += a.attachedTextureAnchor.x
-          pos.y += a.attachedTextureAnchor.y
-          rot += a.attachedTextureAnchor.angle
-
-          # Switch to attached texture
-          a = a.getAttachment()
-
-          # Apply state update
-          a.setPosition pos
-          a.setRotation rot
+        a = a.updateAttachment()
 
         if a.getMaterial() != ARERenderer._currentMaterial
           @switchMaterial a.getMaterial()
@@ -519,14 +529,14 @@ class ARERenderer
 
     if @_clearColor
       ctx.fillStyle = "rgb#{@_clearColor}"
-      ctx.fillRect 0, 0, @_canvas.width, @_canvas.height
+      ctx.fillRect 0, 0, @_width, @_height
     else
-      ctx.clearRect 0, 0, @_canvas.width, @_canvas.height
+      ctx.clearRect 0, 0, @_width, @_height
 
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    ctx.translate 0, @_canvas.height
+    ctx.translate 0, @_height
     ctx.scale 1, -1
 
     for a in ARERenderer.actors
@@ -551,27 +561,7 @@ class ARERenderer
 
       else
 
-        # Check if we have a visible attached texture.
-        # If so, set properties and draw
-        if a.hasAttachment() and a.getAttachment().visible
-
-          # Get physics updates
-          a.updatePosition()
-
-          # Setup anchor point
-          pos = a.getPosition()
-          rot = a.getRotation()
-
-          pos.x += a.attachedTextureAnchor.x
-          pos.y += a.attachedTextureAnchor.y
-          rot += a.attachedTextureAnchor.angle
-
-          # Switch to attached texture
-          a = a.getAttachment()
-
-          # Apply state update
-          a.setPosition pos
-          a.setRotation rot
+        a = a.updateAttachment()
 
         if a.getMaterial() != ARERenderer._currentMaterial
           @switchMaterial a.getMaterial()
@@ -582,11 +572,32 @@ class ARERenderer
 
     ctx.restore()
 
+  nullRender: ->
+
+    ctx = @_ctx
+
+    if ctx == undefined or ctx == null then return
+
+    if @_clearColor
+      ctx.fillStyle = "rgb(#{@_clearColor})"
+      ctx.fillRect 0, 0, @_canvas.width, @_canvas.height
+    else
+      ctx.clearRect 0, 0, @_canvas.width, @_canvas.height
+
+    # Draw everything!
+    for a in ARERenderer.actors
+
+      a = a.updateAttachment()
+
+      a.nullDraw ctx
+
   render: ->
 
-    if ARERenderer.activeRendererMode == 0
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_NULL
+      @nullRender()
+    else if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_CANVAS
       @cvRender()
-    else if ARERenderer.activeRendererMode == 1
+    else if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @wglRender()
 
   # Returns a unique id, used by actors
@@ -643,9 +654,15 @@ class ARERenderer
   switchMaterial: (material) ->
     param.required material
 
-    return if ARERenderer.activeRendererMode == 0
+    ##
+    # Materials aren't exactly supported in the canvas renderer mode.
+    return if ARERenderer.activeRendererMode != ARERenderer.RENDERER_MODE_WGL
 
-    ortho = makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+    ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+    ##
+    # Its a "Gotcha" from using EWGL
+    ortho[15] = 1.0
+
     gl = ARERenderer._gl
 
     if material == ARERenderer._currentMaterial then return

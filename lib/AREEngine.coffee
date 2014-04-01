@@ -42,7 +42,7 @@ class AREEngine
     @_renderIntervalId = null
 
     # Framerate for renderer, defaults to 60FPS
-    @_framerate = 1.0 / 60.0
+    @setFPS(60)
 
     # Ensure Underscore.js is loaded
     if window._ == null or window._ == undefined
@@ -151,5 +151,6 @@ class AREEngine
     if ARERenderer._gl == null then ARELog.warn "Render not instantiated!"
     ARERenderer._gl
 
-# Break out an interface. Use responsibly
-window.AdefyGLI = new AREInterface
+# Break out an interface. Use responsibly.
+# All we need, is the awesome
+window.AdefyRE = new AREInterface

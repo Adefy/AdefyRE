@@ -12,10 +12,13 @@ class ARERawActor
   @defaultMass: 10
   @defaultElasticity: 0.2
 
+  ###
   # Null offset, used when creating dynamic bodies
   # @private
+  ###
   @_nullV: new cp.v 0, 0
 
+  ###
   # Adds the actor to the renderer actor list, gets a unique id from the
   # renderer, and builds our vert buffer.
   #
@@ -24,6 +27,7 @@ class ARERawActor
   #
   # @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
   # @param [Array<Number>] texverts flat array of texture coords, optional
+  ###
   constructor: (verts, texverts) ->
     param.required verts
     texverts = param.optional texverts, null
@@ -37,29 +41,34 @@ class ARERawActor
     # Default to flat rendering
     @clearTexture()
 
+  ###
   # Gets an id and registers our existence with the renderer
   # @private
+  ###
   _registerWithRenderer: ->
     @_id = ARERenderer.getNextId()
     ARERenderer.addActor @
 
+  ###
   # Sets up default values and initializes our data structures.
   # @private
+  ###
   _initializeValues: ->
 
-    if ARERenderer.activeRendererMode == 1
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @_gl = ARERenderer._gl
       if @_gl == undefined or @_gl == null
         throw new Error "GL context is required for actor initialization!"
 
     # Initialize our rendering objects
-    @_rotV = $V([0, 0, 1])
-    @_transV = $V([0, 0, 1])
-    @_modelM = Matrix.I 4
+    @_rotV = new Vector3([0, 0, 1])
+    @_transV = new Vector3([0, 0, 1])
+    @_modelM = new Matrix4()
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
-    @_stroke_color = null
+    @_strokeColor = null
+    @_strokeWidth = 1
     @_colArray = null
 
     @lit = false
@@ -117,22 +126,26 @@ class ARERawActor
       y: 0
       angle: 0
 
+  ###
+  # Removes the Actor
+  # @return [null]
+  ###
   destroy: ->
-    space = AREPhysics.getWorld()
-    if @_body
-      space.removeBody @_body
+    @destroyPhysicsBody()
+    null
 
-    if @_shape
-      space.removeShape @_shape
-
+  ###
   # Get material name
   #
   # @return [String] material
+  ###
   getMaterial: -> @_material
 
+  ###
   # Set our render layer. Higher layers render on top of lower ones
   #
   # @param [Number] layer
+  ###
   setLayer: (layer) ->
     @layer = param.required layer
 
@@ -140,10 +153,13 @@ class ARERawActor
     ARERenderer.removeActor @, true
     ARERenderer.addActor @
 
+  ###
   # We support a single texture per actor for the time being. UV coords are
   # generated automatically internally, for a flat map.
   #
   # @param [String] name name of texture to use from renderer
+  # @return [this]
+  ###
   setTexture: (name) ->
     param.required name
 
@@ -156,23 +172,32 @@ class ARERawActor
     @_material = "texture"
     @
 
+  ###
   # Clear our internal texture, leaving us to render with a flat color
+  # @return [this]
+  ###
   clearTexture: ->
     @_texture = undefined
     @setShader ARERenderer.getMe().getDefaultShader()
     @_material = "flat"
+    @
 
+  ###
   # Get our texture, if we have one
   #
   # @return [WebGLTexture] texture
+  ###
   getTexture: -> @_texture
 
+  ###
   # Set shader used to draw actor. For the time being, the routine mearly
   # pulls out handles for the ModelView, Color, and Position structures
   #
   # @param [AREShader] shader
+  # @return [this]
+  ###
   setShader: (shader) ->
-    if ARERenderer.activeRendererMode == 1
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       param.required shader
       # Ensure shader is built, and generate handles if not already done
       if shader.getProgram() == null
@@ -195,11 +220,13 @@ class ARERawActor
     else
       #ARELog.info "Shader's are not supported with this render mode"
 
+  ###
   # Creates the internal physics body, if one does not already exist
   #
   # @param [Number] mass 0.0 - unbound
   # @param [Number] friction 0.0 - unbound
   # @param [Number] elasticity 0.0 - unbound
+  ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
 
     # Start the world stepping if not already doing so
@@ -271,7 +298,9 @@ class ARERawActor
 
     @
 
+  ###
   # Destroys the physics body if one exists
+  ###
   destroyPhysicsBody: ->
     if AREPhysics.bodyCount == 0 then return
     if @_shape == null then return
@@ -289,17 +318,20 @@ class ARERawActor
     else if AREPhysics.bodyCount < 0
       throw new Error "Body count is negative!"
 
+  ###
   # Set physics layer. If we have a physics body, applies immediately. Value
   # persists between physics bodies!
   #
   # There are only 16 physics layers (17 with default layer 0)!
   #
   # @param [Number] layer
+  ###
   setPhysicsLayer: (layer) ->
     @_physicsLayer = 1 << param.required(layer, [0..16])
 
     if @_shape != null then @_shape.setLayers @_physicsLayer
 
+  ###
   # Update our vertices, causing a rebuild of the physics body, if it doesn't
   # have its' own set of verts. Note that for large actors this is expensive.
   #
@@ -310,6 +342,7 @@ class ARERawActor
   #
   # @param [Array<Number>] verts flat array of vertices
   # @param [Array<Number>] texverts flat array of texture coords
+  ###
   updateVertices: (vertices, texverts) ->
     newVertices = param.optional vertices, @_vertices
     newTexVerts = param.optional texverts, @_texVerts
@@ -329,14 +362,17 @@ class ARERawActor
     if newVertices != @_vertices then @updateVertBuffer newVertices
     if newTexVerts != @_texVerts then @updateUVBuffer newTexVerts
 
+  ###
   # Updates vertex buffer
   # NOTE: No check is made as to the validity of the supplied data!
   #
   # @private
   # @param [Array<Number>] vertices
+  ###
   updateVertBuffer: (@_vertices) ->
     @_vertBufferFloats = new Float32Array(@_vertices)
-    if ARERenderer.activeRendererMode == 1
+
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @_vertBuffer = @_gl.createBuffer()
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
       @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
@@ -360,25 +396,29 @@ class ARERawActor
     @_size.x = mxx - mnx
     @_size.y = mxy - mny
 
+  ###
   # Updates UV buffer (should only be called by updateVertices())
   # NOTE: No check is made as to the validity of the supplied data!
   #
   # @private
   # @param [Array<Number>] vertices
+  ###
   updateUVBuffer: (@_texVerts) ->
     @_origTexVerts = @_texVerts
     @_texVBufferFloats = new Float32Array(@_texVerts)
 
-    if ARERenderer.activeRendererMode == 1
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @_texBuffer = @_gl.createBuffer()
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
       @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
 
+  ###
   # Set texture repeat per coordinate axis
   #
   # @param [Number] x horizontal repeat
   # @param [Number] y vertical repeat (default 1)
+  ###
   setTextureRepeat: (x, y) ->
     param.required x
     y = param.optional y, 1
@@ -392,11 +432,13 @@ class ARERawActor
     @updateUVBuffer uvs
     @
 
+  ###
   # Set an alternate vertex array for our physics object. Note that this also
   # triggers a rebuild! If less than 6 vertices are provided, the normal
   # set of vertices is used
   #
   # @param [Array<Number>] verts flat array of vertices
+  ###
   setPhysicsVertices: (verts) ->
     @_psyxVertices = param.required verts
 
@@ -404,6 +446,7 @@ class ARERawActor
       @destroyPhysicsBody()
       @createPhysicsBody @_mass, @_friction, @_elasticity
 
+  ###
   # Attach texture to render instead of ourselves. This is very useful when
   # texturing strange physics shapes. We create a square actor of the desired
   # dimensions, set the texture, and render it instead of ourselves when it is
@@ -422,6 +465,7 @@ class ARERawActor
   # @param [Number] offy anchor point offset
   # @param [Angle] angle anchor point rotation
   # @return [ARERawActor] actor attached actor
+  ###
   attachTexture: (texture, width, height, offx, offy, angle) ->
     param.required texture
     param.required width
@@ -447,9 +491,11 @@ class ARERawActor
     # Ship eeet
     @_attachedTexture
 
+  ###
   # Remove attached texture, if we have one
   #
   # @return [Boolean] success fails if we have no attached texture
+  ###
   removeAttachment: ->
     if @_attachedTexture == null then return false
 
@@ -462,10 +508,12 @@ class ARERawActor
 
     false
 
+  ###
   # Set attachment visiblity. Fails if we don't have an attached texture
   #
   # @param [Boolean] visible
   # @return [Boolean] success
+  ###
   setAttachmentVisibility: (visible) ->
     param.required visible
 
@@ -479,21 +527,61 @@ class ARERawActor
   # @return [Boolean] hasAttachment
   hasAttachment: -> @_attachedTexture != null
 
+  ###
   # Returns attached texture if we have one, null otherwise
   #
   # @return [ARERawActor] attachment
+  ###
   getAttachment: -> @_attachedTexture
 
-  # Update position from physics body if we have one
-  updatePosition: ->
+  ###
+  # Updates any attachments on the actor, if there are any, the value
+  # returned is the attachment, if not, then the actor is returned instead.
+  # @return [ARERawActor]
+  ###
+  updateAttachment: ->
+    # Check if we have a visible attached texture.
+    # If so, set properties and draw
+    if @hasAttachment() and @getAttachment().visible
 
+      # Get physics updates
+      @updatePosition()
+
+      # Setup anchor point
+      pos = @getPosition()
+      rot = @getRotation()
+
+      pos.x += @attachedTextureAnchor.x
+      pos.y += @attachedTextureAnchor.y
+      rot += @attachedTextureAnchor.angle
+
+      # Switch to attached texture
+      a = @getAttachment()
+
+      # Apply state update
+      @setPosition pos
+      @setRotation rot
+
+      return a
+
+    return @
+
+  ###
+  # Update position from physics body if we have one
+  ###
+  updatePosition: ->
     # @_body is null for static bodies!
     if @_body != null
       @_position = ARERenderer.worldToScreen @_body.getPos()
       @_rotation = @_body.a
 
-  wglUpdateTexture: (gl) ->
+    @
 
+  ###
+  # Binds the actor's WebGL Texture with all needed attributes
+  # @param [Object] gl WebGL Context
+  ###
+  wglBindTexture: (gl) ->
     # Texture rendering, if needed
     if @_material == "texture"
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
@@ -505,27 +593,34 @@ class ARERawActor
       gl.bindTexture gl.TEXTURE_2D, @_texture.texture
       gl.uniform1i @_sh_sampler, 0
 
-  # Renders the actor
-  #
-  # @param [Object] gl gl context
+    @
+
+  ###
+  # Renders the Actor using the WebGL interface, this function should only
+  # be called by a ARERenderer in WGL mode
+  # @param [Object] gl WebGL context
+  ###
   wglDraw: (gl) ->
     param.required gl
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    if not @visible then return
+    return false if !@visible
 
     @updatePosition()
 
     # Prep our vectors and matrices
-    @_modelM = Matrix.I 4
+    @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
     @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
-    @_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
-    @_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
+    #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
+    #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
+    @_modelM.translate(@_transV)
+    @_modelM.rotate(@_rotation, @_rotV)
 
-    flatMV = new Float32Array(@_modelM.flatten())
+    #flatMV = new Float32Array(@_modelM.flatten())
+    flatMV = @_modelM.flatten()
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_position, 2, gl.FLOAT, false, 0, 0
@@ -533,7 +628,7 @@ class ARERawActor
     gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
     gl.uniformMatrix4fv @_sh_modelview, false, flatMV
 
-    @wglUpdateTexture gl
+    @wglBindTexture gl
 
     if @_renderMode == 1
       gl.drawArrays gl.LINE_LOOP, 0, @_vertices.length / 2
@@ -543,33 +638,46 @@ class ARERawActor
       gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
     else throw new Error "Invalid render mode! #{@_renderMode}"
 
-  cvUpdateTexture: (context) ->
+    @
+
+  ###
+  # Updates the context settings with the Actor's strokeStyle and fillStyle
+  # @param [Object] 2d context
+  ###
+  cvSetupStyle: (context) ->
+
+    if @_strokeWidth != null
+      context.lineWidth = @_strokeWidth
+    else
+      context.lineWidth = 1
+
+    if @_strokeColor
+      context.strokeStyle = "rgb(#{@_strokeColor})"
+    else
+      context.strokeStyle = "#FFF"
 
     if @_material == "texture"
       #
     else
-      if @_stroke_color
-        r = @_stroke_color.getR()
-        g = @_stroke_color.getG()
-        b = @_stroke_color.getB()
-        context.strokeStyle = "rgb(#{r},#{g},#{b})"
-      else
-        context.strokeStyle = "#FFF"
 
       if @_color
-        r = @_color.getR()
-        g = @_color.getG()
-        b = @_color.getB()
-        context.fillStyle = "rgb(#{r},#{g},#{b})"
+        context.fillStyle = "rgb(#{@_color})"
       else
         context.fillStyle = "#FFF"
 
+    @
+
+  ###
+  # Renders the current actor using the 2d context, this function should only
+  # be called by a ARERenderer in CANVAS mode
+  # @param [Object] 2d context
+  ###
   cvDraw: (context) ->
     param.required context
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    if not @visible then return
+    return false if !@visible
 
     @updatePosition()
 
@@ -577,12 +685,6 @@ class ARERawActor
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
     @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
-    #@_modelM = Matrix.I 4
-    #@_modelM = @_modelM.x (Matrix.Translation(@_transV).ensure4x4())
-    #@_modelM = @_modelM.x (Matrix.Rotation(@_rotation, @_rotV).ensure4x4())
-    #flatMV = new Float32Array(@_modelM.flatten())
-    #x = flatMV[0]
-    #y = flatMV[1]
     x = @_transV.elements[0]
     y = @_transV.elements[1]
 
@@ -596,11 +698,11 @@ class ARERawActor
     context.closePath()
     #context.fill()
 
-    @cvUpdateTexture context
+    @cvSetupStyle context
 
-    if @_renderMode == 1
+    if @_renderMode == 1 # stroke
       context.stroke()
-    else if @_renderMode == 2
+    else if @_renderMode == 2 # fill
       if @_material == "texture"
         context.clip()
         context.scale 1, -1
@@ -608,7 +710,8 @@ class ARERawActor
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
         context.fill()
-    else if @_renderMode == 3 # wireframe
+    else if @_renderMode == 3 # stroke + fill
+      context.stroke()
       if @_material == "texture"
         context.clip()
         context.scale 1, -1
@@ -616,23 +719,45 @@ class ARERawActor
                           -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
       else
         context.fill()
-      context.stroke()
     else throw new Error "Invalid render mode! #{@_renderMode}"
 
+    @
+
+  ###
+  # Renders the current actor using the 2d context, however, nothing is
+  # drawn, only the internal position is updated
+  # this function should only be called by a ARERenderer in NULL mode
+  # @param [Object] 2d context
+  ###
+  nullDraw: (context) ->
+    param.required context
+
+    # We only respect our own visibility flag! Any invisible attached textures
+    # cause us to render!
+    if not @visible then return
+
+    @updatePosition()
+
+    @
+
+  ###
   # Set actor render mode, decides how the vertices are perceived
-  #   1 == LINE_LOOP
-  #   2 == TRIANGLE_FAN
-  #   3 == TRIANGLE_STRIP
+  #   1 == Stroke
+  #   2 == Fill
+  #   3 == Stroke + Fill
   #
   # @paran [Number] mode
+  ###
   setRenderMode: (mode) ->
     @_renderMode = param.required mode, [1, 2, 3]
     @
 
+  ###
   # Set actor position, effects either the actor or the body directly if one
   # exists
   #
   # @param [Object] position x, y
+  ###
   setPosition: (position) ->
     param.required position
 
@@ -646,11 +771,13 @@ class ARERawActor
 
     @
 
+  ###
   # Set actor rotation, affects either the actor or the body directly if one
   # exists
   #
   # @param [Number] rotation angle
   # @param [Number] radians true if angle is in radians
+  ###
   setRotation: (rotation, radians) ->
     param.required rotation
     radians = param.optional radians, false
@@ -667,37 +794,42 @@ class ARERawActor
 
     @
 
-  # Returns the actor position as an object with x and y properties
-  #
-  # @return [Object] position x, y
-  getPosition: -> @_position
+  setStrokeWidth: (width) ->
+    @_strokeWidth = Number(width)
+    @
 
-  # Returns actor rotation as an angle in degrees
+  ###
+  # Set color
+  # @private
+  # @param [Integer] target color to extract information to
+  # @overload setColor_ext(target,col)
+  #   Sets the color using an AREColor3 instance
+  #   @param [AREColor3] color
   #
-  # @param [Boolean] radians true to return in radians
-  # @return [Number] angle rotation in degrees on z axis
-  getRotation: (radians) ->
-    radians = param.optional radians, false
-    if radians == false
-      return @_rotation * 57.2957795
+  # @overload setColor_ext(target, r, g, b)
+  #   Sets the color using component values
+  #   @param [Integer] r red component
+  #   @param [Integer] g green component
+  #   @param [Integer] b blue component
+  ###
+  setColor_ext: (target, colOrR, g, b) ->
+    param.required colOrR
+
+    if colOrR instanceof AREColor3
+      target.setR colOrR.getR()
+      target.setG colOrR.getG()
+      target.setB colOrR.getB()
     else
-      return @_rotation
+      param.required g
+      param.required b
 
-  # Get array of vertices
-  #
-  # @return [Array<Number>] vertices
-  getVertices: -> @_vertices
+      target.setR Number(colOrR)
+      target.setG Number(g)
+      target.setB Number(b)
 
-  # Get body id
-  #
-  # @return [Number] id
-  getId: -> @_id
+    @
 
-  # Get color
-  #
-  # @return [AREColor3] color
-  getColor: -> new AREColor3 @_color
-
+  ###
   # Set color
   #
   # @overload setColor(col)
@@ -709,32 +841,98 @@ class ARERawActor
   #   @param [Integer] r red component
   #   @param [Integer] g green component
   #   @param [Integer] b blue component
+  ###
   setColor: (colOrR, g, b) ->
     param.required colOrR
 
-    if @_color == undefined or @_color == null then @_color = new AREColor3
+    unless @_color then @_color = new AREColor3
 
-    if colOrR instanceof AREColor3
-      @_color = colOrR
+    @setColor_ext @_color, colOrR, g, b
 
-      @_colArray = [
-        colOrR.getR true
-        colOrR.getG true
-        colOrR.getB true
-      ]
-
-    else
-      param.required g
-      param.required b
-
-      @_color.setR Number(colOrR)
-      @_color.setG Number(g)
-      @_color.setB Number(b)
-
-      @_colArray = [
-        @_color.getR true
-        @_color.getG true
-        @_color.getB true
-      ]
+    @_colArray = [
+      @_color.getR true
+      @_color.getG true
+      @_color.getB true
+    ]
 
     @
+
+  ###
+  # Set stroke color
+  #
+  # @overload setStrokeColor(col)
+  #   Sets the color using an AREColor3 instance
+  #   @param [AREColor3] color
+  #
+  # @overload setStrokeColor(r, g, b)
+  #   Sets the color using component values
+  #   @param [Integer] r red component
+  #   @param [Integer] g green component
+  #   @param [Integer] b blue component
+  ###
+  setStrokeColor: (colOrR, g, b) ->
+    param.required colOrR
+
+    unless @_strokeColor then @_strokeColor = new AREColor3
+
+    @setColor_ext @_strokeColor, colOrR, g, b
+
+    @_strokeColorArray = [
+      @_strokeColor.getR true
+      @_strokeColor.getG true
+      @_strokeColor.getB true
+    ]
+
+    @
+
+  ###
+  # Set the visible state of the actor
+  # @param [Boolean] visible
+  ###
+  setVisible: (_visible) -> @visible = _visible
+
+  ###
+  # Returns the actor position as an object with x and y properties
+  #
+  # @return [Object] position x, y
+  ###
+  getPosition: -> @_position
+
+  ###
+  # Returns actor rotation as an angle in degrees
+  #
+  # @param [Boolean] radians true to return in radians
+  # @return [Number] angle rotation in degrees on z axis
+  ###
+  getRotation: (radians) ->
+    radians = param.optional radians, false
+    if radians == false
+      return @_rotation * 57.2957795
+    else
+      return @_rotation
+
+  ###
+  # Get array of vertices
+  #
+  # @return [Array<Number>] vertices
+  ###
+  getVertices: -> @_vertices
+
+  ###
+  # Get body id
+  #
+  # @return [Number] id
+  ###
+  getId: -> @_id
+
+  ###
+  # Get color
+  #
+  # @return [AREColor3] color
+  ###
+  getColor: -> new AREColor3 @_color
+
+  ###
+  # @return [Boolean] visible
+  ###
+  getVisible: -> @visible
