@@ -17,12 +17,9 @@ module.exports = (grunt) ->
 
   productionConcatFull = [
     "#{devDir}/js/underscore.min.js"
-    "#{devDir}/js/sylvester.js"
-    "#{devDir}/js/mjax.min.js"
-    "#{devDir}/js/glUtils.js"
-    "#{devDir}/js/gl-matrix-min.js"
     "#{devDir}/js/cp.min.js"
-
+    "#{devDir}/js/EWGL_math.js"
+    "#{devDir}/js/inkyEWGL.js"
     "#{devDir}/js/are.js"
   ]
 
