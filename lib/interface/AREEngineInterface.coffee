@@ -15,6 +15,7 @@ nextHighestPowerOfTwo = (x) ->
 # Renderer interface class
 class AREEngineInterface
 
+  ###
   # Initialize the engine
   #
   # @param [Number] width
@@ -22,6 +23,7 @@ class AREEngineInterface
   # @param [Method] ad function to call to create ad
   # @param [Number] log loglevel, defaults to 1
   # @param [String] id id of element to instantiate on
+  ###
   initialize: (width, height, ad, log, id) ->
     param.required ad
     param.required width
@@ -47,18 +49,22 @@ class AREEngineInterface
       ad are
     , log, id
 
+  ###
   # Set global render mode
   #   @see ARERenderer.RENDER_MODE_*
   # This is a special method only we implement; as such, any libraries
   # interfacing with us should check for the existence of the method before
   # calling it!
+  ###
   setRenderMode: (mode) -> ARERenderer.rendererMode = mode
 
+  ###
   # Set engine clear color
   #
   # @param [Number] r
   # @param [Number] g
   # @param [Number] b
+  ###
   setClearColor: (r, g, b) ->
     param.required r
     param.required g
@@ -67,48 +73,60 @@ class AREEngineInterface
     if @_engine == undefined then return
     else ARERenderer.me.setClearColor r, g, b
 
+  ###
   # Get engine clear color as (r,g,b) JSON, fails with null
   #
   # @return [String] clearcol
+  ###
   getClearColor: ->
     if @_engine == undefined then return null
 
     col = ARERenderer.me.getClearColor()
     JSON.stringify { r: col.getR(), g: col.getG(), b: col.getB() }
 
+  ###
   # Set log level
   #
   # @param [Number] level 0-4
+  ###
   setLogLevel: (level) ->
     param.required level, [0, 1, 2, 3, 4]
 
     ARELog.level = level
 
+  ###
   # Set camera center position. Leaving out a component leaves it unchanged
   #
   # @param [Number] x
   # @param [Number] y
+  ###
   setCameraPosition: (x, y) ->
     ARERenderer.camPos.x = param.optional x, ARERenderer.camPos.x
     ARERenderer.camPos.y = param.optional y, ARERenderer.camPos.y
 
+  ###
   # Fetch camera position. Returns a JSON object with x,y keys
   #
   # @return [Object]
+  ###
   getCameraPosition: -> JSON.stringify ARERenderer.camPos
 
+  ###
   # Enable/disable benchmarking
   #
   # @param [Boolean] benchmark
+  ###
   setBenchmark: (status) ->
     AREPhysics.benchmark = status
     @_engine.benchmark = status
 
+  ###
   # Load a package.json manifest, assume texture paths are relative to our
   # own
   #
   # @param [String] json package.json source
   # @param [Method] cb callback to call once the load completes (textures)
+  ###
   loadManifest: (json, cb) ->
     param.required json
 
@@ -224,12 +242,15 @@ class AREEngineInterface
       # Gogo
       loadTexture tex.name, tex.path
 
+  ###
   # Get renderer texture size by name
   #
   # @param [String] name
   # @param [Object] size
+  ###
   getTextureSize: (name) -> ARERenderer.getTextureSize name
 
+  ###
   # TODO: Implement
   #
   # Set remind me later button region
@@ -238,4 +259,5 @@ class AREEngineInterface
   # @param [Number] y
   # @param [Number] w
   # @param [Number] h
+  ###
   setRemindMeButton: (x, y, w, h) ->

@@ -11,66 +11,93 @@
 # necessary functionality from the AdefyLib renderer
 class ARERenderer
 
+  ###
+  # @type [Number]
+  ###
   @_nextID: 0
 
+  ###
   # GL Context
+  # @type [Context]
+  ###
   @_gl: null
 
+  ###
   # Physics pixel-per-meter ratio
+  # @type [Number]
+  ###
   @_PPM: 128
 
+  ###
   # Returns PPM ratio
   # @return [Number] ppm pixels-per-meter
+  ###
   @getPPM: -> ARERenderer._PPM
 
+  ###
   # Returns MPP ratio
   # @return [Number] mpp meters-per-pixel
+  ###
   @getMPP: -> 1.0 / ARERenderer._PPM
 
+  ###
   # Converts screen coords to world coords
   #
   # @param [B2Vec2] v vector in x, y form
   # @return [B2Vec2] ret v in world coords
+  ###
   @screenToWorld: (v) ->
     ret = new cp.v
     ret.x = v.x / ARERenderer._PPM
     ret.y = v.y / ARERenderer._PPM
     ret
 
+  ###
   # Converts world coords to screen coords
   #
   # @param [B2Vec2] v vector in x, y form
   # @return [B2Vec2] ret v in screen coords
+  ###
   @worldToScreen: (v) ->
     ret = new cp.v
     ret.x = v.x * ARERenderer._PPM
     ret.y = v.y * ARERenderer._PPM
     ret
 
+  ###
   # @property [Array<Object>] actors for rendering
+  ###
   @actors: []
 
+  ###
   # @property [Array<Object>] texture objects, with names and gl textures
+  ###
   @textures: []
 
+  ###
   # This is a tad ugly, but it works well. We need to be able to create
   # instance objects in the constructor, and provide one resulting object
   # to any class that asks for it, without an instance avaliable. @me is set
   # in the constructor, and an error is thrown if it is not already null.
   #
   # @property [ARERenderer] instance reference, enforced const in constructor
+  ###
   @me: null
 
+  ###
   # Signifies the current material; when this doesn't match, a material change
   # is made (different shader program)
+  ###
   @_currentMaterial: "none"
 
+  ###
   # @property [Object] camPos Camera position, with x and y keys
+  ###
   @camPos:
     x: 0
     y: 0
 
-  ##
+  ###
   # 0: null
   #    The null renderer is the same as the canvas renderer, however
   #    it will only clear the screen each tick.
@@ -78,17 +105,24 @@ class ARERenderer
   #    All rendering will be done using the 2d Context
   # 2: wgl
   #    All rendering will be done using WebGL
+  ###
   @RENDERER_MODE_NULL: 0
   @RENDERER_MODE_CANVAS: 1
   @RENDERER_MODE_WGL: 2
-  ##
+
+  ###
   # This denote the rendererMode that is wanted by the user
+  # @type [Number]
+  ###
   @rendererMode: @RENDERER_MODE_WGL
-  ##
+
+  ###
   # denotes the currently chosen internal Renderer, this value may be different
   # from the rendererMode, especially if webgl failed to load.
+  ###
   @activeRendererMode: null
 
+  ###
   # Sets up the renderer, using either an existing canvas or creating a new one
   # If a canvasId is provided but the element is not a canvas, it is treated
   # as a parent. If it is a canvas, it is adopted as our canvas.
@@ -99,6 +133,7 @@ class ARERenderer
   # @param [Number] width canvas width
   # @param [Number] height canvas height
   # @return [Boolean] success
+  ###
   constructor: (canvasId, @_width, @_height) ->
     canvasId = param.optional canvasId, ""
 
@@ -207,6 +242,10 @@ class ARERenderer
     @switchMaterial "flat"
     @setClearColor 0, 0, 0
 
+  ###
+  # Initializes a WebGL renderer context
+  # @return [Boolean]
+  ###
   initializeWGLContext: (canvas) ->
 
     ##
@@ -334,6 +373,10 @@ class ARERenderer
 
     true
 
+  ###
+  # Initializes a canvas renderer context
+  # @return [Boolean]
+  ###
   initializeCanvasContext: ->
 
     @_ctx = @_canvas.getContext "2d"
@@ -344,6 +387,10 @@ class ARERenderer
 
     true
 
+  ###
+  # Initializes a null renderer context
+  # @return [Boolean]
+  ###
   initializeNullContext: ->
 
     @_ctx = @_canvas.getContext "2d"
@@ -354,56 +401,77 @@ class ARERenderer
 
     true
 
+  ###
   # Returns instance (only one may exist, enforced in constructor)
   #
   # @return [ARERenderer] me
+  ###
   @getMe: -> ARERenderer.me
 
+  ###
   # Returns the internal default shader
   #
   # @return [AREShader] shader default shader
+  ###
   getDefaultShader: -> @_defaultShader
 
+  ###
   # Returns the shader used for wireframe objects
   #
   # @return [AREShader] shader wire shader
+  ###
   getWireShader: -> @_wireShader
 
+  ###
   # Returns the shader used for textured objects
   #
   # @return [AREShader] shader texture shader
+  ###
   getTextureShader: -> @_texShader
 
+  ###
   # Returns canvas element
   #
   # @return [Object] canvas
+  ###
   getCanvas: -> @_canvas
 
+  ###
   # Returns canvas rendering context
   #
   # @return [Object] ctx
+  ###
   getContext: -> @_ctx
 
+  ###
   # Returns static gl object
   #
   # @return [Object] gl
+  ###
   @getGL: -> ARERenderer._gl
 
+  ###
   # Returns canvas width
   #
   # @return [Number] width
+  ###
   getWidth: -> @_width
 
+  ###
   # Returns canvas height
   #
   # @return [Number] height
+  ###
   getHeight: -> @_height
 
+  ###
   # Returns the clear color
   #
   # @return [AREColor3] clearCol
+  ###
   getClearColor: -> @_clearColor
 
+  ###
   # Sets the clear color
   #
   # @overload setClearCol(col)
@@ -415,6 +483,7 @@ class ARERenderer
   #   @param [Number] r red component
   #   @param [Number] g green component
   #   @param [Number] b blue component
+  ###
   setClearColor: (colOrR, g, b) ->
 
     if @_clearColor == undefined then @_clearColor = new AREColor3
@@ -436,10 +505,12 @@ class ARERenderer
       else
         ARELog.error "Can't set clear color, ARERenderer._gl not valid!"
 
+  ###
   # Request a frame to be rendered for scene picking.
   #
   # @param [FrameBuffer] buffer
   # @param [Method] cb cb to call post-render
+  ###
   requestPickingRender: (buffer, cb) ->
     param.required buffer
     param.required cb
@@ -451,8 +522,10 @@ class ARERenderer
     @_pickRenderBuff = buffer
     @_pickRenderCB = cb
     @_pickRenderRequested = true
-
+  ###
   # Draws a using WebGL frame
+  # @return [Void]
+  ###
   wglRender: ->
 
     gl = ARERenderer._gl # Code asthetics
@@ -521,6 +594,10 @@ class ARERenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, null
       @render()
 
+  ###
+  # Canavs render
+  # @return [Void]
+  ###
   cvRender: ->
 
     ctx = @_ctx
@@ -572,6 +649,10 @@ class ARERenderer
 
     ctx.restore()
 
+  ###
+  # "No render" function
+  # @return [Void]
+  ###
   nullRender: ->
 
     ctx = @_ctx
@@ -591,6 +672,10 @@ class ARERenderer
 
       a.nullDraw ctx
 
+  ###
+  # main render function
+  # @return [Void]
+  ###
   render: ->
 
     if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_NULL
@@ -600,10 +685,13 @@ class ARERenderer
     else if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
       @wglRender()
 
+  ###
   # Returns a unique id, used by actors
   # @return [Number] id unique id
+  ###
   @getNextId: -> ARERenderer._nextID++
 
+  ###
   # Add an actor to our render list. A layer can be optionally specified, at
   # which point it will also be applied to the actor.
   #
@@ -612,6 +700,7 @@ class ARERenderer
   # @param [ARERawActor] actor
   # @param [Number] layer
   # @return [ARERawActor] actor added actor
+  ###
   @addActor: (actor, layer) ->
     param.required actor
     layer = param.optional layer, actor.layer
@@ -626,11 +715,13 @@ class ARERenderer
 
     actor
 
+  ###
   # Remove an actor from our render list by either actor, or id
   #
   # @param [ARERawActor,Number] actor actor, or id of actor to remove
   # @param [Boolean] nodestroy optional, defaults to false
   # @return [Boolean] success
+  ###
   @removeActor: (oactor, nodestroy) ->
     param.required oactor
     nodestroy = param.optional nodestroy, false
@@ -648,9 +739,11 @@ class ARERenderer
 
     false
 
+  ###
   # Switch material (shader program)
   #
   # @param [String] material
+  ###
   switchMaterial: (material) ->
     param.required material
 
@@ -690,39 +783,50 @@ class ARERenderer
 
     else throw new Error "Unknown material #{material}"
 
+  ###
   # Checks if we have a texture loaded
   #
   # @param [String] name texture name to check for
+  ###
   @hasTexture: (name) ->
     for t in ARERenderer.textures
-      if t.name == name then return true
+      return true if t.name == name
+
     return false
 
+  ###
   # Fetches a texture by name
   #
   # @param [String] name name of texture to fetch
   # @param [Object] texture
+  ###
   @getTexture: (name) ->
     param.required name
 
     for t in ARERenderer.textures
-      if t.name == name then return t
+      return t if t.name == name
+
     return null
 
+  ###
   # Fetches texture size
   #
   # @param [String] name name of texture
   # @param [Object] size
+  ###
   @getTextureSize: (name) ->
     param.required name
 
-    for t in ARERenderer.textures
-      if t.name == name then return { w: t.width, h: t.height }
+    if t = @getTexture(name)
+      return { w: t.width, h: t.height }
+
     return null
 
+  ###
   # Adds a texture to our internal collection
   #
   # @param [Object] texture texture object with name and gl texture
+  ###
   @addTexture: (tex) ->
     param.required tex.name
     param.required tex.texture
