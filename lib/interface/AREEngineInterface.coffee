@@ -143,21 +143,22 @@ class AREEngineInterface
           scaleY = 1
 
           # Resize image if needed
-          if (img.width & (img.width - 1)) != 0 or \
-            (img.height & (img.height - 1)) != 0
+          w = (img.width & (img.width - 1)) != 0
+          h = (img.height & (img.height - 1)) != 0
+          if w || h
 
-              canvas = document.createElement "canvas"
+            canvas = document.createElement "canvas"
 
-              canvas.width = nextHighestPowerOfTwo img.width
-              canvas.height = nextHighestPowerOfTwo img.height
+            canvas.width = nextHighestPowerOfTwo img.width
+            canvas.height = nextHighestPowerOfTwo img.height
 
-              scaleX = img.width / canvas.width
-              scaleY = img.height / canvas.height
+            scaleX = img.width / canvas.width
+            scaleY = img.height / canvas.height
 
-              ctx = canvas.getContext "2d"
-              ctx.drawImage img, 0, 0, img.width, img.height
+            ctx = canvas.getContext "2d"
+            ctx.drawImage img, 0, 0, img.width, img.height
 
-              img = canvas
+            img = canvas
 
           # Set up GL texture
           gl.bindTexture gl.TEXTURE_2D, tex
