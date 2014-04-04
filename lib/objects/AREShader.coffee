@@ -5,12 +5,14 @@
 # Shader class
 class AREShader
 
+  ###
   # Doesn't do much except auto-build the shader if requested
   #
   # @param [String] vertSrc vertex shader source
   # @param [String] fragSrc fragment shader source
   # @param [Object] gl gl object if building
   # @param [Boolean] build if true, builds the shader now
+  ###
   constructor: (@_vertSrc, @_fragSrc, @_gl, build) ->
 
     param.required @_vertSrc
@@ -32,10 +34,12 @@ class AREShader
       if _success == false
         throw new Error "Failed to build shader! #{JSON.stringify(@errors)}"
 
+  ###
   # Builds the shader using the vert/frag sources supplied
   #
   # @param [Object] gl gl object to build shaders with/into
   # @return [Boolean] success false implies an error stored in @errors
+  ###
   build: (@_gl) ->
     param.required @_gl
 
@@ -78,10 +82,12 @@ class AREShader
     if @errors.length > 0 then return false
     true
 
+  ###
   # Really neat helper function, breaks out and supplies handles to all
   # variables. Really the meat of this class
   #
   # @return [Boolean] success fails if handles have already been generated
+  ###
   generateHandles: ->
 
     if @_prog == null
@@ -138,12 +144,16 @@ class AREShader
 
     true
 
+  ###
   # Get generated handles
   #
   # @return [Object] handles
+  ###
   getHandles: -> @_handles
 
+  ###
   # Get generated program (null by default)
   #
   # @return [Object] program
+  ###
   getProgram: -> @_prog

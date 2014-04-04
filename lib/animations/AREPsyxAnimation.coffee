@@ -7,6 +7,7 @@
 # Class to handle actor physics updates
 class AREPsyxAnimation
 
+  ###
   # Class to "animate" physics properties which means changing them
   # at certain times by calling the createPhysicsBody method of an actor
   #
@@ -18,6 +19,7 @@ class AREPsyxAnimation
   # @option options [Number] timeout
   # @option options [Method] cbStart callback to call before animating
   # @option options [Method] cbEnd callback to call after animating
+  ###
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options.mass
@@ -28,7 +30,9 @@ class AREPsyxAnimation
     # Guards against multiple exeuctions
     @_animated = false
 
+  ###
   # Activates the animation (can only be run once)
+  ###
   animate: ->
     if @_animated then return else @_animated = true
     if @options.cbStart != undefined then @options.cbStart()

@@ -7,6 +7,7 @@
 # Class to handle actor vertices updates
 class AREVertAnimation
 
+  ###
   # Class to animate vertices using vertex delta sets. The delta sets describe
   # the change in vertice structure at a specific point in time.
   #
@@ -58,6 +59,7 @@ class AREVertAnimation
   # @option options [Method] cbStart callback to call before animating
   # @option options [Method] cbStep callback to call on each delta application
   # @option options [Method] cbEnd callback to call after animating
+  ###
   constructor: (@actor, @options) ->
     param.required @actor
     param.required @options
@@ -72,6 +74,7 @@ class AREVertAnimation
     # Guards against multiple exeuctions
     @_animated = false
 
+  ###
   # Set the timeout for our _applyDeltas() method
   #
   # @param [Object] deltaSet set of deltas to apply to the actor
@@ -79,6 +82,7 @@ class AREVertAnimation
   # @param [Object] udata optional userdata to send to callback
   # @param [Boolean] last signals this is the last timeout
   # @private
+  ###
   _setTimeout: (deltaSet, delay, udata, last) ->
     param.required deltaSet
     param.required delay
@@ -89,11 +93,13 @@ class AREVertAnimation
       if last then if @options.cbEnd != undefined then @options.cbEnd()
     ), delay
 
+  ###
   # @private
   # Applies the delta set to the actor
   #
   # @param [Array<String, Number>] deltaSet
   # @param [Object] udata optional userdata to send to callback
+  ###
   _applyDeltas: (deltaSet, udata) ->
     param.required deltaSet
     if @options.cbStep != undefined then @options.cbStep udata
@@ -151,8 +157,10 @@ class AREVertAnimation
 
     @actor.updateVertices finalVerts
 
+  ###
   # Looks through all the options provided and sends them to the update
   # function so they are not lost when i updates
+  ###
   animate: ->
     if @_animated then return else @_animated = true
     if @options.cbStart != undefined then @options.cbStart()
