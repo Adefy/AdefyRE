@@ -18,6 +18,7 @@
 # ARELog is used for all logging throughout the application
 class AREEngine
 
+  ###
   # Instantiates the engine, starting the render loop and physics handler.
   # Further useage should happen through the interface layer, either manually
   # or with the aid of AJS.
@@ -31,6 +32,7 @@ class AREEngine
   # @param [Method] cb callback to execute when finished initializing
   # @param [Number] logLevel level to start ARELog at, defaults to 4
   # @param [String] canvas optional canvas selector to initalize the renderer
+  ###
   constructor: (width, height, cb, logLevel, canvas) ->
     param.required width
     param.required height
@@ -40,6 +42,8 @@ class AREEngine
 
     # Holds a handle on the render loop interval
     @_renderIntervalId = null
+
+    @benchmark: false
 
     # Framerate for renderer, defaults to 60FPS
     @setFPS(60)
@@ -56,13 +60,20 @@ class AREEngine
     @startRendering()
     cb @
 
+  ###
   # Set framerate as an FPS figure
   # @param [Number] fps
-  setFPS: (fps) -> @_framerate = 1.0 / fps
+  # @return [self]
+  ###
+  setFPS: (fps) ->
+    @_framerate = 1.0 / fps
 
-  benchmark: false
+    @
 
+  ###
   # Start render loop if it isn't already running
+  # @return [Void]
+  ###
   startRendering: ->
     if @_renderIntervalId != null then return
 
@@ -86,7 +97,10 @@ class AREEngine
 
     , @_framerate
 
+  ###
   # Halt render loop if it's running
+  # @return [Void]
+  ###
   stopRendering: ->
     if @_renderIntervalId == null then return
 
@@ -94,11 +108,14 @@ class AREEngine
     clearInterval @_renderIntervalId
     @_renderIntervalId = null
 
+  ###
   # Set renderer clear color in integer RGB form (passes through to renderer)
   #
   # @param [Number] r
   # @param [Number] g
   # @param [Number] b
+  # @return [self]
+  ###
   setClearColor: (r, g, b) ->
     r = param.optional r, 0
     g = param.optional g, 0
@@ -107,27 +124,35 @@ class AREEngine
     if @_renderer instanceof ARERenderer
       @_renderer.setClearColor r, g, b
 
+    @
+
+  ###
   # Get clear color from renderer (if active, null otherwise)
   #
   # @return [AREColor3] color
+  ###
   getClearColor: ->
     if @_renderer instanceof ARERenderer
       @_renderer.getClearColor()
     else
       null
 
+  ###
   # Return our internal renderer width, returns -1 if we don't have a renderer
   #
   # @return [Number] width
+  ###
   getWidth: ->
     if @_renderer == null or @_renderer == undefined
       -1
     else
       @_renderer.getWidth()
 
+  ###
   # Return our internal renderer height
   #
   # @return [Number] height
+  ###
   getHeight: ->
     if @_renderer == null or @_renderer == undefined
       -1
@@ -166,12 +191,21 @@ class AREEngine
         ARELog.warn "Can't request a canvas pick render, " + \
                     "not using canvas renderer"
 
+  ###
   # Get our renderer's gl object
   #
   # @return [Object] gl
+  ###
   getGL: ->
     if ARERenderer._gl == null then ARELog.warn "Render not instantiated!"
     ARERenderer._gl
+
+  ###
+  # Return the current active renderer mode
+  #
+  # @return [Number]
+  ###
+  getActiveRendererMode: -> ARERenderer.getActiveRendererMode()
 
 # Break out an interface. Use responsibly.
 # All we need, is the awesome
