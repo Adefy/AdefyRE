@@ -8,11 +8,13 @@
 # manipulation of that width/height
 class ARERectangleActor extends ARERawActor
 
+  ###
   # Sets us up with the supplied width and height, generating both our vertex
   # and UV sets.
   #
   # @param [Number] width
   # @param [Number] height
+  ###
   constructor: (@width, @height) ->
     param.required width
     param.required height
@@ -25,9 +27,11 @@ class ARERectangleActor extends ARERawActor
 
     super verts, uvs
 
+  ###
   # Generate array of vertices using our dimensions
   #
   # @return [Array<Number>] vertices
+  ###
   generateVertices: ->
     hW = @width  / 2
     hH = @height / 2
@@ -40,9 +44,11 @@ class ARERectangleActor extends ARERawActor
       -hW, -hH
     ]
 
+  ###
   # Generate array of UV coordinates
   #
   # @return [Array<Number>] uvs
+  ###
   generateUVs: ->
     [
       0, 1,
@@ -52,22 +58,30 @@ class ARERectangleActor extends ARERawActor
       0, 1
     ]
 
+  ###
   # Get stored width
   #
   # @return [Number] width
+  ###
   getWidth: -> @width
 
+  ###
   # Get stored height
   #
   # @return [Number] height
+  ###
   getHeight: -> @height
 
+  ###
   # Set width, causes a vert refresh
   #
   # @param [Number] width
+  ###
   setWidth: (@width) -> @updateVertBuffer @generateVertices()
 
+  ###
   # Set height, causes a vert refresh
   #
   # @param [Number] height
+  ###
   setHeight: (@height) -> @updateVertBuffer @generateVertices()

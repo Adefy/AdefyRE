@@ -749,6 +749,7 @@ class ARERawActor
   #   3 == Stroke + Fill
   #
   # @paran [Number] mode
+  # @return [self]
   ###
   setRenderMode: (mode) ->
     @_renderMode = param.required mode, [1, 2, 3]
@@ -759,6 +760,7 @@ class ARERawActor
   # exists
   #
   # @param [Object] position x, y
+  # @return [self]
   ###
   setPosition: (position) ->
     param.required position
@@ -779,6 +781,7 @@ class ARERawActor
   #
   # @param [Number] rotation angle
   # @param [Number] radians true if angle is in radians
+  # @return [self]
   ###
   setRotation: (rotation, radians) ->
     param.required rotation
@@ -796,6 +799,12 @@ class ARERawActor
 
     @
 
+  ###
+  # Sets the character outline/stroke width
+  #
+  # @param [Number] width
+  # @return [self]
+  ###
   setStrokeWidth: (width) ->
     @_strokeWidth = Number(width)
     @
@@ -813,6 +822,7 @@ class ARERawActor
   #   @param [Integer] r red component
   #   @param [Integer] g green component
   #   @param [Integer] b blue component
+  # @return [self]
   ###
   setColor_ext: (target, colOrR, g, b) ->
     param.required colOrR
@@ -843,6 +853,7 @@ class ARERawActor
   #   @param [Integer] r red component
   #   @param [Integer] g green component
   #   @param [Integer] b blue component
+  # @return [self]
   ###
   setColor: (colOrR, g, b) ->
     param.required colOrR
@@ -871,6 +882,7 @@ class ARERawActor
   #   @param [Integer] r red component
   #   @param [Integer] g green component
   #   @param [Integer] b blue component
+  # @return [self]
   ###
   setStrokeColor: (colOrR, g, b) ->
     param.required colOrR
@@ -890,8 +902,11 @@ class ARERawActor
   ###
   # Set the visible state of the actor
   # @param [Boolean] visible
+  # @return [self]
   ###
-  setVisible: (_visible) -> @visible = _visible
+  setVisible: (_visible) ->
+    @visible = _visible
+    @
 
   ###
   # Returns the actor position as an object with x and y properties

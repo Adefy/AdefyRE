@@ -8,6 +8,7 @@
 # arbitrary side counts, and for manipulation by radius and segment count
 class AREPolygonActor extends ARERawActor
 
+  ###
   # Sets us up with the supplied radius and segment count, generating our
   # vertex sets.
   #
@@ -15,6 +16,7 @@ class AREPolygonActor extends ARERawActor
   #
   # @param [Number] radius
   # @param [Number] segments
+  ###
   constructor: (@radius, @segments) ->
     param.required radius
 
@@ -53,11 +55,13 @@ class AREPolygonActor extends ARERawActor
 
     @setRenderMode 2
 
+  ###
   # @private
   # Private method that rebuilds our vertex array.
   #
   # @param [Object] options optional generation options
   # @options options [Boolean] mode generation mode (normal, or for physics)
+  ###
   generateVertices: (options) ->
     options = param.optional options, {}
 
@@ -104,9 +108,11 @@ class AREPolygonActor extends ARERawActor
 
     verts
 
+  ###
   # Generate UV array from a vertex set, using our current radius
   #
   # @return [Array<Number>] uvs
+  ###
   generateUVs: (vertices) ->
     param.required vertices
 
@@ -116,8 +122,10 @@ class AREPolygonActor extends ARERawActor
 
     uvs
 
+  ###
   # Preforms a full vert refresh (vertices, physics vertics, and UVs)
   # @private
+  ###
   fullVertRefresh: ->
     verts = @generateVertices()
     psyxVerts = @generateVertices mode: "physics"
@@ -126,26 +134,34 @@ class AREPolygonActor extends ARERawActor
     @updateVertices verts, uvs
     @setPhysicsVertices psyxVerts
 
+  ###
   # Get stored radius
   #
   # @return [Number] radius
+  ###
   getRadius: -> @radius
 
+  ###
   # Get stored segment count
   #
   # @return [Number] segments
+  ###
   getSegments: -> @segments
 
+  ###
   # Set radius, causes a full vert refresh
   #
   # @param [Number] radius
+  ###
   setRadius: (@radius) ->
     if radius <= 0 then throw new Error "Invalid radius: #{radius}"
     @fullVertRefresh()
 
+  ###
   # Set segment count, causes a full vert refresh
   #
   # @param [Number] segments
+  ###
   setSegments: (@segments) ->
     if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
     @fullVertRefresh()

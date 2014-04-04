@@ -8,12 +8,14 @@
 # for vertex manipulation by radius
 class ARECircleActor extends AREPolygonActor
 
+  ###
   # Sets us up with the supplied radius and segment count, generating our
   # vertex sets.
   #
   # NOTE: Texture support is not available! No UVs! ;(
   #
   # @param [Number] radius
+  ###
   constructor: (@radius) ->
 
     super radius, 32
