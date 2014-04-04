@@ -43,7 +43,7 @@ class AREEngine
     # Holds a handle on the render loop interval
     @_renderIntervalId = null
 
-    @benchmark: false
+    @benchmark = false
 
     # Framerate for renderer, defaults to 60FPS
     @setFPS(60)
