@@ -152,7 +152,8 @@ class ARERenderer
     @_pickRenderRequested = false   # When true, triggers a pick render
 
     # Pick render parameters
-    @_pickRenderBuff = null
+    @_pickRenderBuff = null          # used for WGL renderer
+    @_pickRenderSelectionRect = null # used for canvas renderer
     @_pickRenderCB = null
 
     # defined if there was an error during initialization
@@ -522,7 +523,7 @@ class ARERenderer
   # @param [FrameBuffer] buffer
   # @param [Method] cb cb to call post-render
   ###
-  requestPickingRender: (buffer, cb) ->
+  requestPickingRenderWGL: (buffer, cb) ->
     param.required buffer
     param.required cb
 
@@ -531,8 +532,33 @@ class ARERenderer
       return
 
     @_pickRenderBuff = buffer
+    @_pickRenderSelectionRect = null
     @_pickRenderCB = cb
     @_pickRenderRequested = true
+
+  ###
+  # Request a frame to be rendered for scene picking.
+  #
+  # @param [Object] selectionRect
+  #   @property [Number] x
+  #   @property [Number] y
+  #   @property [Number] width
+  #   @property [Number] height
+  # @param [Method] cb cb to call post-render
+  ###
+  requestPickingRenderCanvas: (selectionRect, cb) ->
+    param.required selectionRect
+    param.required cb
+
+    if @_pickRenderRequested
+      ARELog.warn "Pick render already requested! No request queue"
+      return
+
+    @_pickRenderBuff = null
+    @_pickRenderSelectionRect = selectionRect
+    @_pickRenderCB = cb
+    @_pickRenderRequested = true
+
   ###
   # Draws a using WebGL frame
   # @return [Void]
@@ -611,9 +637,7 @@ class ARERenderer
   # @return [Void]
   ###
   cvRender: ->
-
     ctx = @_ctx
-
     if ctx == undefined or ctx == null then return
 
     if @_clearColor
@@ -629,11 +653,9 @@ class ARERenderer
     ctx.scale 1, -1
 
     for a in ARERenderer.actors
-
       ctx.save()
 
       if @_pickRenderRequested
-
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
         _savedColor = a.getColor()
@@ -649,17 +671,32 @@ class ARERenderer
         a.setColor _savedColor
 
       else
-
         a = a.updateAttachment()
 
-        if a.getMaterial() != ARERenderer._currentMaterial
-          @switchMaterial a.getMaterial()
+        if (material = a.getMaterial()) != ARERenderer._currentMaterial
+          @switchMaterial material
 
         a.cvDraw ctx
 
       ctx.restore()
 
     ctx.restore()
+
+    # Switch back to a normal rendering mode, and immediately re-render to the
+    # actual screen
+    if @_pickRenderRequested
+
+      # Call cb
+      r = @_pickRenderSelectionRect
+      @_pickRenderCB ctx.getImageData(r.x, r.y, r.width, r.height)
+
+      # Unset vars
+      @_pickRenderRequested = false
+      @_pickRenderBuff = null
+      @_pickRenderSelectionRect = null
+      @_pickRenderCB = null
+
+      @render()
 
   ###
   # "No render" function
@@ -672,7 +709,7 @@ class ARERenderer
     if ctx == undefined or ctx == null then return
 
     if @_clearColor
-      ctx.fillStyle = "rgb(#{@_clearColor})"
+      ctx.fillStyle = "rgb#{@_clearColor}"
       ctx.fillRect 0, 0, @_canvas.width, @_canvas.height
     else
       ctx.clearRect 0, 0, @_canvas.width, @_canvas.height
@@ -690,12 +727,41 @@ class ARERenderer
   ###
   render: ->
 
-    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_NULL
-      @nullRender()
-    else if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_CANVAS
-      @cvRender()
-    else if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
-      @wglRender()
+    switch ARERenderer.activeRendererMode
+      when ARERenderer.RENDERER_MODE_NULL
+        @nullRender()
+      when ARERenderer.RENDERER_MODE_CANVAS
+        @cvRender()
+      when ARERenderer.RENDERER_MODE_WGL
+        @wglRender()
+
+  ###
+  # Returns the currently active renderer mode
+  # @return [Number] rendererMode
+  ###
+  getActiveRendererMode: ->
+    ARERenderer.activeRendererMode
+
+  ###
+  # Is the WebGL renderer active?
+  # @return [Boolean] is_active
+  ###
+  isWGLRendererActive: ->
+    @getActiveRendererMode == ARERenderer.RENDERER_MODE_WGL
+
+  ###
+  # Is the canvas renderer active?
+  # @return [Boolean] is_active
+  ###
+  isCanvasRendererActive: ->
+    @getActiveRendererMode == ARERenderer.RENDERER_MODE_CANVAS
+
+  ###
+  # Is the null renderer active?
+  # @return [Boolean] is_active
+  ###
+  isNullRendererActive: ->
+    @getActiveRendererMode == ARERenderer.RENDERER_MODE_NULL
 
   ###
   # Returns a unique id, used by actors

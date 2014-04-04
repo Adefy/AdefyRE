@@ -134,15 +134,37 @@ class AREEngine
     else
       @_renderer.getHeight()
 
+  ###
   # Request a pick render, passed straight to the renderer
   #
   # @param [FrameBuffer] buffer
   # @param [Method] cb cb to call post-render
-  requestPickingRender: (buffer, cb) ->
+  ###
+  requestPickingRenderWGL: (buffer, cb) ->
     if @_renderer == null or @_renderer == undefined
       ARELog.warn "Can't request a pick render, renderer not instantiated!"
     else
-      @_renderer.requestPickingRender buffer, cb
+      if @_renderer.isWGLRendererActive()
+        @_renderer.requestPickingRenderWGL buffer, cb
+      else
+        ARELog.warn "Can't request a WGL pick render, " + \
+                    "not using WGL renderer"
+
+  ###
+  # Request a pick render, passed straight to the renderer
+  #
+  # -param [FrameBuffer] buffer
+  # @param [Method] cb cb to call post-render
+  ###
+  requestPickingRenderCanvas: (selectionRect, cb) ->
+    if @_renderer == null or @_renderer == undefined
+      ARELog.warn "Can't request a pick render, renderer not instantiated!"
+    else
+      if @_renderer.isCanvasRendererActive()
+        @_renderer.requestPickingRenderCanvas selectionRect, cb
+      else
+        ARELog.warn "Can't request a canvas pick render, " + \
+                    "not using canvas renderer"
 
   # Get our renderer's gl object
   #
