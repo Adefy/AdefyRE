@@ -110,6 +110,8 @@ class ARERenderer
   @RENDERER_MODE_CANVAS: 1
   @RENDERER_MODE_WGL: 2
 
+  @rendererModes: [0, 1, 2]
+
   ###
   # This denote the rendererMode that is wanted by the user
   # @type [Number]

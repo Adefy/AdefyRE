@@ -752,7 +752,7 @@ class ARERawActor
   # @return [self]
   ###
   setRenderMode: (mode) ->
-    @_renderMode = param.required mode, [1, 2, 3]
+    @_renderMode = param.required mode, ARERenderer.rendererModes
     @
 
   ###
