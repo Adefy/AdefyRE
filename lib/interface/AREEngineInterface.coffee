@@ -116,6 +116,28 @@ class AREEngineInterface
   getCameraPosition: -> JSON.stringify ARERenderer.camPos
 
   ###
+  # Return our engine's width
+  #
+  # @return [Number] width
+  ###
+  getWidth: ->
+    if @_engine == null or @_engine == undefined
+      -1
+    else
+      @_engine.getWidth()
+
+  ###
+  # Return our engine's height
+  #
+  # @return [Number] height
+  ###
+  getHeight: ->
+    if @_engine == null or @_engine == undefined
+      -1
+    else
+      @_engine.getHeight()
+
+  ###
   # Enable/disable benchmarking
   #
   # @param [Boolean] benchmark
