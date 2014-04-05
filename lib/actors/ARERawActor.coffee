@@ -74,7 +74,7 @@ class ARERawActor
     @_opacity = 1.0
 
     @lit = false
-    @visible = true
+    @_visible = true
     @layer = 0
     @_physicsLayer = ~0
 
@@ -166,7 +166,6 @@ class ARERawActor
 
     if not ARERenderer.hasTexture name
       throw new Error "No such texture loaded: #{name}"
-      return
 
     @_texture = ARERenderer.getTexture name
     @setShader ARERenderer.getMe().getTextureShader()
@@ -470,7 +469,6 @@ class ARERawActor
     # Sanity check
     if not ARERenderer.hasTexture texture
       throw new Error "No such texture loaded: #{texture}"
-      return
 
     # If we already have an attachment, discard it
     if @_attachedTexture != null then @removeAttachment()
@@ -512,12 +510,14 @@ class ARERawActor
 
     if @_attachedTexture == null then return false
 
-    @_attachedTexture.visible = visible
+    @_attachedTexture._visible = visible
     true
 
+  ###
   # Checks to see if we have an attached texture
   #
   # @return [Boolean] hasAttachment
+  ###
   hasAttachment: -> @_attachedTexture != null
 
   ###
@@ -535,7 +535,7 @@ class ARERawActor
   updateAttachment: ->
     # Check if we have a visible attached texture.
     # If so, set properties and draw
-    if @hasAttachment() and @getAttachment().visible
+    if @hasAttachment() and @getAttachment()._visible
 
       # Get physics updates
       @updatePosition()
@@ -599,7 +599,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    return false if !@visible
+    return false if !@_visible
 
     @updatePosition()
 
@@ -910,7 +910,7 @@ class ARERawActor
   # @return [self]
   ###
   setVisible: (_visible) ->
-    @visible = _visible
+    @_visible = _visible
     @
 
   ###
@@ -957,4 +957,4 @@ class ARERawActor
   ###
   # @return [Boolean] visible
   ###
-  getVisible: -> @visible
+  getVisible: -> @_visible
