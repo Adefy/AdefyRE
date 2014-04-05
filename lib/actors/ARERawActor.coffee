@@ -599,7 +599,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    return false if !@_visible
+    return false unless @_visible
 
     @updatePosition()
 
@@ -674,7 +674,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    return false if !@visible
+    return false unless @_visible
 
     @updatePosition()
 
@@ -731,7 +731,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    if not @visible then return
+    return false unless @_visible
 
     @updatePosition()
 
