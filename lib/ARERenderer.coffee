@@ -568,7 +568,6 @@ class ARERenderer
         a.setColor _savedColor
 
       else
-
         a = a.updateAttachment()
 
         if a.getMaterial() != ARERenderer._currentMaterial
@@ -803,10 +802,9 @@ class ARERenderer
         gl.useProgram @_defaultShader.getProgram()
 
         handles = @_defaultShader.getHandles()
-        gl.uniformMatrix4fv handles["uProjection"], false, ortho
+        gl.uniformMatrix4fv handles.uProjection, false, ortho
 
-        gl.enableVertexAttribArray handles["aPosition"]
-        gl.enableVertexAttribArray handles["uColor"]
+        gl.enableVertexAttribArray handles.aPosition
 
         ARERenderer._currentMaterial = "flat"
 
@@ -814,9 +812,10 @@ class ARERenderer
         gl.useProgram @_texShader.getProgram()
 
         handles = @_texShader.getHandles()
-        gl.uniformMatrix4fv handles["uProjection"], false, ortho
-        gl.enableVertexAttribArray handles["aPosition"]
-        gl.enableVertexAttribArray handles["aTexCoord"]
+        gl.uniformMatrix4fv handles.uProjection, false, ortho
+        gl.enableVertexAttribArray handles.aPosition
+        gl.enableVertexAttribArray handles.aTexCoord
+        #gl.enableVertexAttribArray handles.aUVScale
 
         ARERenderer._currentMaterial = "texture"
 

@@ -2,6 +2,10 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
+###
+# Calculates the next power of 2 number from (x)
+# @param [Number] x
+###
 nextHighestPowerOfTwo = (x) ->
   --x
   i = 1
@@ -174,7 +178,7 @@ class AREEngineInterface
             scaleY = img.height / canvas.height
 
             ctx = canvas.getContext "2d"
-            ctx.drawImage img, 0, 0, img.width, img.height
+            ctx.drawImage img, 0, 0, canvas.width, canvas.height
 
             img = canvas
 

@@ -580,8 +580,9 @@ class ARERawActor
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
       gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-      gl.vertexAttrib2f @_sh_handles.aUVScale,
-        @_texture.scaleX, @_texture.scaleY
+      #gl.vertexAttrib2f @_sh_handles.aUVScale,
+      #  @_texture.scaleX, @_texture.scaleY
+      gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
 
       gl.activeTexture gl.TEXTURE0
       gl.bindTexture gl.TEXTURE_2D, @_texture.texture
@@ -619,10 +620,12 @@ class ARERawActor
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
 
     gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
+
     gl.uniformMatrix4fv @_sh_handles.uModelView, false, flatMV
 
     gl.uniform4f @_sh_handles.uColor,
       @_colArray[0], @_colArray[1], @_colArray[2], 1.0
+
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
     @wglBindTexture gl
