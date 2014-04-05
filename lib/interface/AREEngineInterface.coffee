@@ -53,14 +53,16 @@ class AREEngineInterface
       ad are
     , log, id
 
+
   ###
   # Set global render mode
-  #   @see ARERenderer.RENDER_MODE_*
+  #   @see ARERenderer.RENDERER_MODE_*
   # This is a special method only we implement; as such, any libraries
   # interfacing with us should check for the existence of the method before
   # calling it!
   ###
-  setRenderMode: (mode) -> ARERenderer.rendererMode = mode
+  getRendererMode: -> ARERenderer.rendererMode
+  setRendererMode: (mode) -> ARERenderer.rendererMode = mode
 
   ###
   # Set engine clear color

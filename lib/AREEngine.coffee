@@ -37,6 +37,7 @@ class AREEngine
     param.required width
     param.required height
     param.required cb
+
     ARELog.level = param.optional logLevel, 4
     canvas = param.optional canvas, ""
 

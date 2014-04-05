@@ -107,24 +107,51 @@ class ARERenderer
   #    All rendering will be done using the 2d Context
   # 2: wgl
   #    All rendering will be done using WebGL
+  # @enum
   ###
   @RENDERER_MODE_NULL: 0
   @RENDERER_MODE_CANVAS: 1
   @RENDERER_MODE_WGL: 2
 
+  ###
+  # @type [Array<Number>]
+  ###
   @rendererModes: [0, 1, 2]
 
   ###
   # Render Modes
+  # This affects the method GL will use to render a WGL element
+  # @enum
   ###
-  @RENDER_MODE_FILL: 1
-  @RENDER_MODE_STROKE: 2
-  @RENDER_MODE_FILL_AND_STROKE: 3
+  @RENDER_MODE_LINE_LOOP: 0
+  @RENDER_MODE_TRIANGLE_FAN: 1
+  @RENDER_MODE_TRIANGLE_STRIP: 2
 
   ###
   # @type [Array<Number>]
   ###
-  @renderModes: [1, 2, 3]
+  @renderModes: [0, 1, 2]
+
+  ###
+  # Render Style
+  # A render style determines how a canvas element is drawn, this can
+  # also be used for WebGL elements as well, as they fine tune the drawing
+  # process.
+  # STROKE will work with all RENDER_MODE*.
+  # FILL will work with RENDER_MODE_TRIANGLE_FAN and
+  # RENDER_MODE_TRIANGLE_STRIP only.
+  # FILL_AND_STROKE will work with all current render modes, however
+  # RENDER_MODE_LINE_LOOP will only use STROKE
+  # @enum
+  ###
+  @RENDER_STYLE_STROKE: 0
+  @RENDER_STYLE_FILL: 1
+  @RENDER_STYLE_FILL_AND_STROKE: 2
+
+  ###
+  # @type [Array<Number>]
+  ###
+  @renderStyles: [0, 1, 2]
 
   ###
   # This denote the rendererMode that is wanted by the user
@@ -819,7 +846,10 @@ class ARERenderer
 
         ARERenderer._currentMaterial = "texture"
 
-      else throw new Error "Unknown material #{material}"
+      else
+        throw new Error "Unknown material #{material}"
+
+    ARELog.info "ARERenderer Switched material #{ARERenderer._currentMaterial}"
 
   ###
   # Checks if we have a texture loaded
