@@ -205,7 +205,7 @@ class AREEngine
   #
   # @return [Number]
   ###
-  getActiveRendererMode: -> ARERenderer.getActiveRendererMode()
+  getActiveRendererMode: -> ARERenderer.activeRendererMode
 
 # Break out an interface. Use responsibly.
 # All we need, is the awesome
