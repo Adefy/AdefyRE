@@ -749,21 +749,21 @@ class ARERenderer
   # @return [Boolean] is_active
   ###
   isWGLRendererActive: ->
-    @getActiveRendererMode == ARERenderer.RENDERER_MODE_WGL
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
 
   ###
   # Is the canvas renderer active?
   # @return [Boolean] is_active
   ###
   isCanvasRendererActive: ->
-    @getActiveRendererMode == ARERenderer.RENDERER_MODE_CANVAS
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_CANVAS
 
   ###
   # Is the null renderer active?
   # @return [Boolean] is_active
   ###
   isNullRendererActive: ->
-    @getActiveRendererMode == ARERenderer.RENDERER_MODE_NULL
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
 
   ###
   # Returns a unique id, used by actors
