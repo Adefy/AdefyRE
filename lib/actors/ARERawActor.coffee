@@ -788,7 +788,7 @@ class ARERawActor
   # exists
   #
   # @param [Number] rotation angle
-  # @param [Number] radians true if angle is in radians
+  # @param [Boolean] radians true if angle is in radians
   # @return [self]
   ###
   setRotation: (rotation, radians) ->
