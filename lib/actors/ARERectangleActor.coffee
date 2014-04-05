@@ -19,8 +19,8 @@ class ARERectangleActor extends ARERawActor
     param.required width
     param.required height
 
-    if width <=0 then throw new Error "Invalid width: #{width}"
-    if height <=0 then throw new Error "Invalid width: #{height}"
+    if width <= 0 then throw new Error "Invalid width: #{width}"
+    if height <= 0 then throw new Error "Invalid height: #{height}"
 
     verts = @generateVertices()
     uvs = @generateUVs()
