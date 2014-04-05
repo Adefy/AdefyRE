@@ -800,7 +800,7 @@ class ARERawActor
     @_rotation = rotation
 
     if @_body != null
-      @_body.SetAngle @_rotation
+      @_body.setAngle @_rotation
     else if @_shape != null
       @destroyPhysicsBody()
       @createPhysicsBody @_mass, @_friction, @_elasticity
