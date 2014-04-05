@@ -141,6 +141,7 @@ class AREEngineInterface
     ##       backwards compatibilty, we check for a textures array
 
     if manifest.textures != undefined then manifest = manifest.textures
+    else return cb()
 
     count = 0
 
