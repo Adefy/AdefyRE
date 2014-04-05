@@ -334,7 +334,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setRenderMode: (mode, id) ->
-    mode = param.required mode, [1, 2, 3]
+    mode = param.required mode, ARERenderer.renderModes
     param.required id
 
     if (a = @_findActor(id)) != null

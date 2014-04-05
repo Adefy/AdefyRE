@@ -37,12 +37,14 @@
     var width = window.innerWidth;
     var height = window.innerHeight;
 
-    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
+    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
+    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS;
 
     window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
       window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
 
-        window.engine.setClearColor(255, 255, 255);
+        //window.engine.setClearColor(255, 255, 255);
+        window.engine.setClearColor(0, 128, 128);
 
         var ground = new ARERectangleActor(width, height * 0.05);
         ground.setPosition({ x: width / 2, y: height * 0.025 })
@@ -51,8 +53,8 @@
         .createPhysicsBody(0, 0.7, 0.6);
 
         new ARECircleActor(128)
-        .setPosition({ x: width / 2, y: height / 2 })
         .setTexture("roundThing")
+        .setPosition({ x: width / 2, y: height / 2 })
         .createPhysicsBody(100, 0.8, 0.7);
 
         var createBall = function() {
@@ -66,10 +68,10 @@
           var ball = new ARECircleActor(Math.round(Math.random() * 32) + 5)
           .setPosition({ x: x, y: y })
           .setTexture("roundThing")
-          .createPhysicsBody(mass, friction, elasticity)
           .setStrokeColor(0, 0, 0)
           .setStrokeWidth(4)
-          .setRenderMode(2);
+          .setRenderMode(2)
+          .createPhysicsBody(mass, friction, elasticity);
         };
 
         var scheduleBallTimeout = function() {

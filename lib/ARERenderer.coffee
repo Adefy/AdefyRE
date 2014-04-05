@@ -6,6 +6,7 @@
 #
 # @depend objects/AREColor3.coffee
 # @depend objects/AREShader.coffee
+# @depend shaders.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the
 # necessary functionality from the AdefyLib renderer
@@ -98,6 +99,7 @@ class ARERenderer
     y: 0
 
   ###
+  # Renderer Modes
   # 0: null
   #    The null renderer is the same as the canvas renderer, however
   #    it will only clear the screen each tick.
@@ -111,6 +113,18 @@ class ARERenderer
   @RENDERER_MODE_WGL: 2
 
   @rendererModes: [0, 1, 2]
+
+  ###
+  # Render Modes
+  ###
+  @RENDER_MODE_FILL: 1
+  @RENDER_MODE_STROKE: 2
+  @RENDER_MODE_FILL_AND_STROKE: 3
+
+  ###
+  # @type [Array<Number>]
+  ###
+  @renderModes: [1, 2, 3]
 
   ###
   # This denote the rendererMode that is wanted by the user
@@ -294,89 +308,33 @@ class ARERenderer
 
     ARELog.info "Renderer initialized"
 
-    vertSrc_Wire = """
-      attribute vec2 Position;
+    shaders = AREShader.shaders
+    wireShader = shaders.wire
+    solidShader = shaders.solid
+    textureShader = shaders.texture
 
-      uniform mat4 Projection;
-      uniform mat4 ModelView;
-
-      void main() {
-        gl_Position = Projection * ModelView * vec4(Position, 1, 1);
-      }
-    """
-
-    fragSrc_Wire = """
-      #ifdef GL_ES
-      precision mediump float;
-      #endif
-      void main() {
-        gl_FragColor = vec4(0.4, 0.4, 0.4, 1.0);
-      }
-    """
-
-    ## Shaders for shapes with solid colors
-    vertSrc_Solid = """
-      attribute vec2 Position;
-
-      uniform mat4 Projection;
-      uniform mat4 ModelView;
-
-      void main() {
-        gl_Position = Projection * ModelView * vec4(Position, 1, 1);
-      }
-
-    """
-
-    fragSrc_Solid = """
-      precision mediump float;
-      uniform vec4 Color;
-
-      void main() {
-        gl_FragColor = Color;
-      }
-    """
-
-    ## Shaders for textured objects
-    vertSrc_Tex = """
-      attribute vec2 Position;
-      attribute vec2 aTexCoord;
-      attribute vec2 aUVscale;
-
-      uniform mat4 Projection;
-      uniform mat4 ModelView;
-
-      varying highp vec2 vTexCoord;
-      varying highp vec2 vUVScale;
-
-      void main() {
-        gl_Position = Projection * ModelView * vec4(Position, 1, 1);
-        vTexCoord = aTexCoord;
-        vUVScale = aUVscale;
-      }
-    """
-
-    fragSrc_Tex = """
-      precision highp float;
-
-      varying highp vec2 vTexCoord;
-      uniform sampler2D uSampler;
-      varying highp vec2 vUVScale;
-
-      void main() {
-        vec4 baseColor = texture2D(uSampler, vTexCoord * vUVScale);
-        if(baseColor.rgb == vec3(1.0, 0.0, 1.0))
-          discard;
-        gl_FragColor = baseColor;
-      }
-    """
-
-    @_defaultShader = new AREShader vertSrc_Solid, fragSrc_Solid, gl, true
+    @_defaultShader = new AREShader(
+      solidShader.vertex,
+      solidShader.fragment,
+      gl,
+      true
+    )
     @_defaultShader.generateHandles()
 
-    @_wireShader = new AREShader vertSrc_Wire, fragSrc_Wire, gl, true
+    @_wireShader = new AREShader(
+      wireShader.vertex,
+      wireShader.fragment,
+      gl,
+      true
+    )
     @_wireShader.generateHandles()
 
-    @_texShader = new AREShader vertSrc_Tex, fragSrc_Tex, gl, true
+    @_texShader = new AREShader(
+      textureShader.vertex,
+      textureShader.fragment,
+      gl,
+      true
+    )
     @_texShader.generateHandles()
 
     ARELog.info "Initialized shaders"
@@ -610,7 +568,6 @@ class ARERenderer
         a.setColor _savedColor
 
       else
-
         a = a.updateAttachment()
 
         if a.getMaterial() != ARERenderer._currentMaterial
@@ -838,30 +795,31 @@ class ARERenderer
 
     gl = ARERenderer._gl
 
-    if material == ARERenderer._currentMaterial then return
-    else if material == "flat"
-      gl.useProgram @_defaultShader.getProgram()
+    return if material == ARERenderer._currentMaterial
 
-      handles = @_defaultShader.getHandles()
-      gl.uniformMatrix4fv handles["Projection"], false, ortho
+    switch material
+      when "flat"
+        gl.useProgram @_defaultShader.getProgram()
 
-      gl.enableVertexAttribArray handles["Position"]
-      gl.enableVertexAttribArray handles["Color"]
+        handles = @_defaultShader.getHandles()
+        gl.uniformMatrix4fv handles.uProjection, false, ortho
 
-      ARERenderer._currentMaterial = "flat"
+        gl.enableVertexAttribArray handles.aPosition
 
-    else if material == "texture"
-      gl.useProgram @_texShader.getProgram()
+        ARERenderer._currentMaterial = "flat"
 
-      handles = @_texShader.getHandles()
-      gl.uniformMatrix4fv handles["Projection"], false, ortho
+      when "texture"
+        gl.useProgram @_texShader.getProgram()
 
-      gl.enableVertexAttribArray handles["Position"]
-      gl.enableVertexAttribArray handles["aTexCoord"]
+        handles = @_texShader.getHandles()
+        gl.uniformMatrix4fv handles.uProjection, false, ortho
+        gl.enableVertexAttribArray handles.aPosition
+        gl.enableVertexAttribArray handles.aTexCoord
+        #gl.enableVertexAttribArray handles.aUVScale
 
-      ARERenderer._currentMaterial = "texture"
+        ARERenderer._currentMaterial = "texture"
 
-    else throw new Error "Unknown material #{material}"
+      else throw new Error "Unknown material #{material}"
 
   ###
   # Checks if we have a texture loaded

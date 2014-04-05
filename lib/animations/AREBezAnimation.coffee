@@ -9,6 +9,7 @@
 # each component only individually for the composite properties!
 class AREBezAnimation
 
+  ###
   # For all animateable properties the options param passes in the end value,
   # an array of [time, value] control points, the duration of the animation
   # and the property to be affected by these options.
@@ -28,6 +29,7 @@ class AREBezAnimation
   # @option options [Method] cbEnd callback to call after animating
   # @option options [Method] cbStep callback to call after each update
   # @param [Boolean] dryRun sets up for preCalculate only! Actor optional.
+  ###
   constructor: (@actor, options, dryRun) ->
     dryRun = param.optional dryRun, false
     @options = param.required options
@@ -85,6 +87,7 @@ class AREBezAnimation
         else if @_property[1] == "b"
           @bezOpt.startPos = @actor.getColor().getB()
 
+  ###
   # Updates the animation for a certain value t, between 0 and 1
   #
   # @param [Number] t animation state, 0.0-1.0
@@ -92,6 +95,7 @@ class AREBezAnimation
   #
   # @return [Number] val new value
   # @private
+  ###
   _update: (t, apply) ->
     param.required t
     apply = param.optional apply, true
@@ -143,10 +147,12 @@ class AREBezAnimation
 
     val
 
+  ###
   # Calculate value for each step, return an object with "values" and
   # "stepTime" keys
   #
   # @return [Object] bezValues
+  ###
   preCalculate: ->
     t = 0
     bezValues = { stepTime: @_duration * @tIncr }
@@ -162,10 +168,12 @@ class AREBezAnimation
 
     bezValues
 
+  ###
   # Apply value to our actor
   #
   # @param [Number] val
   # @private
+  ###
   _applyValue: (val) ->
     if @_property == "rotation" then @actor.setRotation val
 
@@ -194,8 +202,10 @@ class AREBezAnimation
         _b = val
         @actor.setColor _r, _g, _b
 
+  ###
   # Called after construction of the animation object
   # to actually begin the animation
+  ###
   animate: ->
     if @_animated then return else @_animated = true
     if @options.cbStart != undefined then @options.cbStart()

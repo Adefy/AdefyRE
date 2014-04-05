@@ -71,8 +71,10 @@ class ARERawActor
     @_strokeWidth = 1
     @_colArray = null
 
+    @_opacity = 1.0
+
     @lit = false
-    @visible = true
+    @_visible = true
     @layer = 0
     @_physicsLayer = ~0
 
@@ -107,10 +109,7 @@ class ARERawActor
 
     # Shader handles, for now there are only three
     # TODO: Make this dynamic
-    @_sh_modelview = null
-    @_sh_position = null
-    @_sh_color = null
-    @_sh_uvscale = null
+    @_sh_handles = {}
 
     # Render modes decide how the vertices are treated.
     #   1 == Stroked
@@ -167,7 +166,6 @@ class ARERawActor
 
     if not ARERenderer.hasTexture name
       throw new Error "No such texture loaded: #{name}"
-      return
 
     @_texture = ARERenderer.getTexture name
     @setShader ARERenderer.getMe().getTextureShader()
@@ -210,14 +208,7 @@ class ARERawActor
 
       handles = shader.getHandles()
 
-      @_sh_modelview = handles["ModelView"]
-      @_sh_position = handles["Position"]
-      @_sh_color = handles["Color"]
-      @_sh_texture = handles["aTexCoord"]
-      @_sh_sampler = handles["uSampler"]
-
-      if handles["aUVscale"] != undefined
-        @_sh_uvscale = handles["aUVscale"]
+      @_sh_handles = handles
 
     else
       #ARELog.info "Shader's are not supported with this render mode"
@@ -406,10 +397,9 @@ class ARERawActor
   # @param [Array<Number>] vertices
   ###
   updateUVBuffer: (@_texVerts) ->
-    @_origTexVerts = @_texVerts
-    @_texVBufferFloats = new Float32Array(@_texVerts)
-
     if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
+      @_origTexVerts = @_texVerts
+      @_texVBufferFloats = new Float32Array(@_texVerts)
       @_texBuffer = @_gl.createBuffer()
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
       @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
@@ -479,7 +469,6 @@ class ARERawActor
     # Sanity check
     if not ARERenderer.hasTexture texture
       throw new Error "No such texture loaded: #{texture}"
-      return
 
     # If we already have an attachment, discard it
     if @_attachedTexture != null then @removeAttachment()
@@ -521,12 +510,14 @@ class ARERawActor
 
     if @_attachedTexture == null then return false
 
-    @_attachedTexture.visible = visible
+    @_attachedTexture._visible = visible
     true
 
+  ###
   # Checks to see if we have an attached texture
   #
   # @return [Boolean] hasAttachment
+  ###
   hasAttachment: -> @_attachedTexture != null
 
   ###
@@ -544,7 +535,7 @@ class ARERawActor
   updateAttachment: ->
     # Check if we have a visible attached texture.
     # If so, set properties and draw
-    if @hasAttachment() and @getAttachment().visible
+    if @hasAttachment() and @getAttachment()._visible
 
       # Get physics updates
       @updatePosition()
@@ -587,13 +578,15 @@ class ARERawActor
     # Texture rendering, if needed
     if @_material == "texture"
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
-      gl.vertexAttribPointer @_sh_texture, 2, gl.FLOAT, false, 0, 0
 
-      gl.vertexAttrib2f @_sh_uvscale, @_texture.scaleX, @_texture.scaleY
+      gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
+      #gl.vertexAttrib2f @_sh_handles.aUVScale,
+      #  @_texture.scaleX, @_texture.scaleY
+      gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
 
       gl.activeTexture gl.TEXTURE0
       gl.bindTexture gl.TEXTURE_2D, @_texture.texture
-      gl.uniform1i @_sh_sampler, 0
+      gl.uniform1i @_sh_handles.uSampler, 0
 
     @
 
@@ -607,7 +600,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    return false if !@visible
+    return false unless @_visible
 
     @updatePosition()
 
@@ -625,10 +618,15 @@ class ARERawActor
     flatMV = @_modelM.flatten()
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
-    gl.vertexAttribPointer @_sh_position, 2, gl.FLOAT, false, 0, 0
 
-    gl.uniform4f @_sh_color, @_colArray[0], @_colArray[1], @_colArray[2], 1
-    gl.uniformMatrix4fv @_sh_modelview, false, flatMV
+    gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
+
+    gl.uniformMatrix4fv @_sh_handles.uModelView, false, flatMV
+
+    gl.uniform4f @_sh_handles.uColor,
+      @_colArray[0], @_colArray[1], @_colArray[2], 1.0
+
+    gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
     @wglBindTexture gl
 
@@ -679,7 +677,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    return false if !@visible
+    return false unless @_visible
 
     @updatePosition()
 
@@ -736,7 +734,7 @@ class ARERawActor
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    if not @visible then return
+    return false unless @_visible
 
     @updatePosition()
 
@@ -752,11 +750,21 @@ class ARERawActor
   # @return [self]
   ###
   setRenderMode: (mode) ->
-    @_renderMode = param.required mode, ARERenderer.rendererModes
+    @_renderMode = param.required mode, ARERenderer.renderModes
     @
 
   ###
-  # Set actor position, effects either the actor or the body directly if one
+  # Set actor opacity
+  #
+  # @param [Number] opacity
+  # @return [self]
+  ###
+  setOpacity: (@_opacity) ->
+    param.required @_opacity
+    @
+
+  ###
+  # Set actor position, affects either the actor or the body directly if one
   # exists
   #
   # @param [Object] position x, y
@@ -905,7 +913,7 @@ class ARERawActor
   # @return [self]
   ###
   setVisible: (_visible) ->
-    @visible = _visible
+    @_visible = _visible
     @
 
   ###
@@ -952,4 +960,4 @@ class ARERawActor
   ###
   # @return [Boolean] visible
   ###
-  getVisible: -> @visible
+  getVisible: -> @_visible
