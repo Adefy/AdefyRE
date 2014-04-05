@@ -209,4 +209,4 @@ class AREEngine
 
 # Break out an interface. Use responsibly.
 # All we need, is the awesome
-window.AdefyRE = new AREInterface
+window.AdefyGLI = window.AdefyRE = new AREInterface
