@@ -81,41 +81,57 @@ class ARERawActor
     @_id = -1
     @_position = new cp.v 0, 0
     @_rotation = 0 # Radians, but set in degrees by default
+
     ## size calculated by from verticies
     @_size =
       x: 0
       y: 0
 
+    ###
     # Chipmunk-js values
+    ###
     @_shape = null
     @_body = null
     @_friction = null
     @_mass = null
     @_elasticity = null
 
+    ###
     # Our actual vertex lists. Note that we will optionally use a different
     # set of vertices for the physical body!
+    ###
     @_vertices = []
     @_psyxVertices = []
     @_texVerts = []
 
+    ###
     # If we modify our UVs (scaling, translation), we always do so relative
     # to the original UVs in this array (updated on true UV update)
+    ###
     @_origTexVerts = []
 
+    ###
     # Vertice containers
+    ###
     @_vertBuffer = null
     @_vertBufferFloats = null # Float32Array
 
+    ###
     # Shader handles, for now there are only three
-    # TODO: Make this dynamic
+    ###
     @_sh_handles = {}
 
+    ###
     # Render modes decide how the vertices are treated.
-    #   1 == Stroked
-    #   2 == Filled
-    #   3 == Stroked | Filled
-    @_renderMode = 2
+    # @see AREREnderer.RENDER_MODE_*
+    ###
+    @_renderMode = ARERenderer.RENDER_MODE_TRIANGLE_FAN
+
+    ###
+    # Render styles decide how the object is filled/stroked
+    # @see AREREnderer.RENDER_STYLE_*
+    ###
+    @_renderStyle = ARERenderer.RENDER_STYLE_FILL
 
     @_texture = null
 
@@ -630,13 +646,20 @@ class ARERawActor
 
     @wglBindTexture gl
 
-    if @_renderMode == 1
-      gl.drawArrays gl.LINE_LOOP, 0, @_vertices.length / 2
-    else if @_renderMode == 2
-      gl.drawArrays gl.TRIANGLE_FAN, 0, @_vertices.length / 2
-    else if @_renderMode == 3 # wireframe
-      gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
-    else throw new Error "Invalid render mode! #{@_renderMode}"
+    ###
+    # @TODO, actually apply the RENDER_STYLE_*
+    ###
+    switch @_renderMode
+      when ARERenderer.RENDER_MODE_LINE_LOOP
+        gl.drawArrays gl.LINE_LOOP, 0, @_vertices.length / 2
+
+      when ARERenderer.RENDER_MODE_TRIANGLE_FAN
+        gl.drawArrays gl.TRIANGLE_FAN, 0, @_vertices.length / 2
+
+      when ARERenderer.RENDER_MODE_TRIANGLE_STRIP
+        gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
+
+      else throw new Error "Invalid render mode! #{@_renderMode}"
 
     @
 
@@ -700,26 +723,29 @@ class ARERawActor
 
     @cvSetupStyle context
 
-    if @_renderMode == 1 # stroke
-      context.stroke()
-    else if @_renderMode == 2 # fill
-      if @_material == "texture"
-        context.clip()
-        context.scale 1, -1
-        context.drawImage @_texture.texture,
-                          -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+    switch @_renderMode
+      when ARERenderer.RENDER_MODE_LINE_LOOP # stroke
+        # regardless of your current renderStyle, this will forever outline.
+        context.stroke()
+
+      # canvas doesn't really know what a strip or a fan is...
+      when ARERenderer.RENDER_MODE_TRIANGLE_STRIP, \
+           ARERenderer.RENDER_MODE_TRIANGLE_FAN # fill
+
+        if @_renderStyle & ARERenderer.RENDER_STYLE_STROKE > 0
+          context.stroke()
+
+        if @_renderStyle & ARERenderer.RENDER_STYLE_FILL > 0
+          if @_material == "texture"
+            context.clip()
+            context.scale 1, -1
+            context.drawImage @_texture.texture,
+                              -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+          else
+            context.fill()
+
       else
-        context.fill()
-    else if @_renderMode == 3 # stroke + fill
-      context.stroke()
-      if @_material == "texture"
-        context.clip()
-        context.scale 1, -1
-        context.drawImage @_texture.texture,
-                          -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
-      else
-        context.fill()
-    else throw new Error "Invalid render mode! #{@_renderMode}"
+        throw new Error "Invalid render mode! #{@_renderMode}"
 
     @
 
@@ -742,15 +768,24 @@ class ARERawActor
 
   ###
   # Set actor render mode, decides how the vertices are perceived
-  #   1 == Stroke
-  #   2 == Fill
-  #   3 == Stroke + Fill
+  # @see ARERenderer.RENDER_MODE_*
   #
   # @paran [Number] mode
   # @return [self]
   ###
   setRenderMode: (mode) ->
     @_renderMode = param.required mode, ARERenderer.renderModes
+    @
+
+  ###
+  # Set actor render style, decides how the object is filled/stroked
+  # @see ARERenderer.RENDER_STYLE_*
+  #
+  # @paran [Number] mode
+  # @return [self]
+  ###
+  setRenderStyle: (mode) ->
+    @_renderStyle = param.required mode, ARERenderer.renderStyles
     @
 
   ###
@@ -788,7 +823,7 @@ class ARERawActor
   # exists
   #
   # @param [Number] rotation angle
-  # @param [Number] radians true if angle is in radians
+  # @param [Boolean] radians true if angle is in radians
   # @return [self]
   ###
   setRotation: (rotation, radians) ->

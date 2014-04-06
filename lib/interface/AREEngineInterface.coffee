@@ -53,14 +53,16 @@ class AREEngineInterface
       ad are
     , log, id
 
+
   ###
   # Set global render mode
-  #   @see ARERenderer.RENDER_MODE_*
+  #   @see ARERenderer.RENDERER_MODE_*
   # This is a special method only we implement; as such, any libraries
   # interfacing with us should check for the existence of the method before
   # calling it!
   ###
-  setRenderMode: (mode) -> ARERenderer.rendererMode = mode
+  getRendererMode: -> ARERenderer.rendererMode
+  setRendererMode: (mode) -> ARERenderer.rendererMode = mode
 
   ###
   # Set engine clear color
@@ -116,6 +118,28 @@ class AREEngineInterface
   getCameraPosition: -> JSON.stringify ARERenderer.camPos
 
   ###
+  # Return our engine's width
+  #
+  # @return [Number] width
+  ###
+  getWidth: ->
+    if @_engine == null or @_engine == undefined
+      -1
+    else
+      @_engine.getWidth()
+
+  ###
+  # Return our engine's height
+  #
+  # @return [Number] height
+  ###
+  getHeight: ->
+    if @_engine == null or @_engine == undefined
+      -1
+    else
+      @_engine.getHeight()
+
+  ###
   # Enable/disable benchmarking
   #
   # @param [Boolean] benchmark
@@ -141,6 +165,7 @@ class AREEngineInterface
     ##       backwards compatibilty, we check for a textures array
 
     if manifest.textures != undefined then manifest = manifest.textures
+    else return cb()
 
     count = 0
 
