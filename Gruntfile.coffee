@@ -10,23 +10,21 @@ module.exports = (grunt) ->
   libDir = "lib"
   testDir = "test"
   devDir = "dev"
-  docDir = "doc"
-  cdnDir = "../www/are"
   production = "#{buildDir}/#{productionName}"
   productionFull = "#{buildDir}/#{productionNameFull}"
 
   productionConcatFull = [
-    "#{devDir}/js/underscore.min.js"
-    "#{devDir}/js/cp.min.js"
+    "#{devDir}/components/underscore/underscore.js"
+    "#{devDir}/components/chipmunk/cp.min.js"
     "#{devDir}/js/EWGL_math.js"
     "#{devDir}/js/inkyEWGL.js"
-    "#{devDir}/js/are.js"
+    "#{devDir}/are.js"
   ]
 
   # Intermediate vars
   __areOut = {}
   __areOut["#{buildDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
-  __areOut["#{devDir}/js/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
+  __areOut["#{devDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
 
   __coffeeConcatFiles = {}
 
@@ -34,7 +32,7 @@ module.exports = (grunt) ->
   __coffeeConcatFiles["#{buildDir}/#{libName}"] = "#{buildDir}/are-concat.coffee";
 
   # Dev concat output, used for browser testing
-  __coffeeConcatFiles["#{devDir}/js/#{libName}"] = "#{buildDir}/are-concat.coffee";
+  __coffeeConcatFiles["#{devDir}/#{libName}"] = "#{buildDir}/are-concat.coffee";
 
   # 1 to 1 compiled files, for unit tests
   __coffeeFiles = [
@@ -144,23 +142,9 @@ module.exports = (grunt) ->
           src: [ "**" ]
           dest: "#{buildDir}/#{testDir}"
         ]
-      cdn:
-        files: [
-          expand: true
-          cwd: docDir
-          src: [ "**" ]
-          dest: "#{cdnDir}/doc"
-        ,
-          src: "#{buildDir}/are-prod.min.js"
-          dest: "#{cdnDir}/are.js"
-        ,
-          src: "#{buildDir}/are-prod-full.min.js"
-          dest: "#{cdnDir}/are-full.js"
-        ]
 
     clean: [
       buildDir
-      docDir
     ]
 
     # Production concat
@@ -189,16 +173,14 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks "grunt-contrib-uglify"
   grunt.loadNpmTasks "grunt-mocha"
 
-  #grunt.registerTask "codo", "build html documentation", ->
-  #  done = this.async()
-  #  require("child_process").exec "codo", (err, stdout) ->
-  #    grunt.log.write stdout
-  #    done err
-
-  # Perform a full build
   grunt.registerTask "default", ["concat_in_order", "coffee", "mocha"]
-  #grunt.registerTask "full", ["clean", "codo", "copy:test_page", "concat_in_order", "coffee", "mocha"]
-  grunt.registerTask "full", ["clean", "copy:test_page", "concat_in_order", "coffee", "mocha"]
+  grunt.registerTask "full", [
+    "clean"
+    "copy:test_page"
+    "concat_in_order"
+    "coffee"
+    "mocha"
+    "concat"
+    "uglify"
+  ]
   grunt.registerTask "dev", ["connect", "copy:test_page", "watch"]
-  grunt.registerTask "deploy", [ "concat", "uglify" ]
-  grunt.registerTask "cdn", [ "full", "deploy", "copy:cdn" ]

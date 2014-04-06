@@ -1,7 +1,6 @@
-build/*
-doc/*
 node_modules
-dev/js/are.js
-dev/js/are.js.map
-dev/js/are-concat.coffee
+dev/are.js
+dev/are.js.map
+dev/are-concat.coffee
+dev/components
 .DS_Store

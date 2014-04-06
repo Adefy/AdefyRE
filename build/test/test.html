@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <title>ARE Mocha Tests</title>
+  <link rel="stylesheet" href="css/mocha.css" type="text/css" />
+</head>
+
+<body>
+  <div id="mocha"></div>
+
+  <!-- Libs -->
+  <script type="text/javascript" src="js/mocha.js"></script>
+  <script type="text/javascript" src="js/chai.js"></script>
+  <script type="text/javascript" src="js/underscore.min.js"></script>
+  <script type="text/javascript" src="js/cp.min.js"></script>
+  <script type="text/javascript" src="js/sylvester.js"></script>
+  <script type="text/javascript" src="js/glUtils.js"></script>
+
+  <script type="text/javascript">
+    mocha.setup("bdd");
+    var expect = chai.expect;
+  </script>
+
+  <!-- ARE -->
+  <script type="text/javascript" src="../are.js"></script>
+
+  <!-- Concated tests -->
+  <script type="text/javascript" src="spec.js"></script>
+
+  <!-- If running in a real browser, manually run mcoha -->
+  <script type="text/javascript">
+    if(window.mochaPhantomJS) {
+      mochaPhantomJS.run();
+    } else {
+      mocha.run();
+    }
+  </script>
+</body>
+</html>

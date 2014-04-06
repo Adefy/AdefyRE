@@ -1,8 +1,28 @@
 {
-  "name": "are",
-  "description": "Adefy Rendering Engine platform",
-  "author": "Cris Mihalache <cris.mihalache@spectrumit.eu>",
-  "version": "0.0.1",
+  "name": "AdefyRE",
+  "description": "Adefy Rendering Engine",
+  "author": "Spectrum IT Solutions GmbH <office@spectrumit.eu>",
+  "version": "1.0.0",
+  "private": true,
+  "engine": "node >= 0.10.12",
+  "contributors": [
+    {
+      "name": "Cris Mihalache",
+      "email": "cris@adefy.com"
+    },
+    {
+      "name": "Blaž Hrastnik",
+      "email": "blaz@adefy.com"
+    },
+    {
+      "name": "Corey Powell",
+      "email": "corey@adefy.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Adefy/AdefyRE.git"
+  },
   "dependencies": {},
   "devDependencies": {
     "grunt": "~0.4.1",
@@ -20,7 +40,5 @@
   },
   "scripts": {
     "test": "mocha-phantomjs build/test/test.html"
-  },
-  "private": true,
-  "engine": "node >= 0.10.12"
+  }
 }

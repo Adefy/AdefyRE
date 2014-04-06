@@ -1,7 +1,0 @@
---name    "AdefyRenderingEngine"
---readme  Readme.md
---title   "AdefyRenderingEngine Documentation"
---quiet
---output ./doc
---undocumented
-./lib
