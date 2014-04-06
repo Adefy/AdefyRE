@@ -164,13 +164,13 @@ class AREEngineInterface
     ## NOTE: The manifest only contains textures now, but for the sake of
     ##       backwards compatibilty, we check for a textures array
 
-    if manifest.textures != undefined then manifest = manifest.textures
-    else return cb()
+    manifest = manifest.textures if manifest.textures != undefined
 
     count = 0
 
     # Loads a texture, and adds it to our renderer
     loadTexture = (name, path) ->
+      ARELog.info "Loading texture: #{name}, #{path}"
 
       # Create texture and image
       img = new Image()
