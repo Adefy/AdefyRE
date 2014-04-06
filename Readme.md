@@ -11,8 +11,6 @@ Development Setup
 * ???
 * PROFIT
 
-To fix this (and enable unit tests), go into node_modules/grunt-lib-phantomjs and change the version of phantomjs in package.json to ~1.8.1-1. Then go into grunt-lib-phantomjs's node_modules folder and delete phantomjs/. Finally, run `npm install` inside of grunt-lib-phantomjs's root directory. This will pull down phantomjs 1.8.1-1 and tests will work.
-
 Testing
 =======
 Mocha and Chai are used for unit testing within PhantomJS. To manually run the tests on the commandline, execute the mocha task with `grunt mocha`
