@@ -123,7 +123,7 @@ module.exports = (grunt) ->
       server:
         options:
           port: 8082
-          base: "./"
+          base: "./dev"
 
     mocha:
       all:
