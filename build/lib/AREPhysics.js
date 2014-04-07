@@ -7,7 +7,7 @@ AREPhysics = (function() {
 
   AREPhysics.frameTime = 1.0 / 60.0;
 
-  AREPhysics._gravity = new cp.v(0, -1);
+  AREPhysics._gravity = new cp.v(0, 1);
 
   AREPhysics._stepIntervalId = null;
 

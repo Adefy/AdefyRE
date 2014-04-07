@@ -42,7 +42,7 @@
         window.engine.setClearColor(0, 128, 128);
 
         var ground = new ARERectangleActor(width, height * 0.05);
-        ground.setPosition({ x: width / 2, y: height * 0.025 })
+        ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
         .setTexture("metalGrate")
         .setTextureRepeat(20, 0.5)
         .createPhysicsBody(0, 0.7, 0.6);
@@ -54,7 +54,7 @@
 
         var createBall = function() {
           var x = Math.random() * width;
-          var y = (Math.random() * 500) + height;
+          var y = -(Math.random() * 500);
 
           var mass = Math.random() * 100;
           var friction = Math.random();

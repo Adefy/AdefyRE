@@ -206,6 +206,9 @@ AREEngineInterface = (function() {
     if (manifest.textures !== void 0) {
       manifest = manifest.textures;
     }
+    if (_.isEmpty(manifest)) {
+      return cb();
+    }
     count = 0;
     loadTexture = function(name, path) {
       var gl, img, tex;
@@ -255,6 +258,7 @@ AREEngineInterface = (function() {
           }
         };
       } else {
+        ARELog.info("Loading Canvas Image");
         img.onload = function() {
           ARERenderer.addTexture({
             name: name,

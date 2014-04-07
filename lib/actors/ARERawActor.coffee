@@ -185,7 +185,7 @@ class ARERawActor
 
     @_texture = ARERenderer.getTexture name
     @setShader ARERenderer.getMe().getTextureShader()
-    @_material = "texture"
+    @_material = ARERenderer.MATERIAL_TEXTURE
     @
 
   ###
@@ -195,7 +195,7 @@ class ARERawActor
   clearTexture: ->
     @_texture = undefined
     @setShader ARERenderer.getMe().getDefaultShader()
-    @_material = "flat"
+    @_material = ARERenderer.MATERIAL_FLAT
     @
 
   ###
@@ -592,7 +592,7 @@ class ARERawActor
   ###
   wglBindTexture: (gl) ->
     # Texture rendering, if needed
-    if @_material == "texture"
+    if @_material == ARERenderer.MATERIAL_TEXTURE
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
       gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
@@ -623,12 +623,14 @@ class ARERawActor
     # Prep our vectors and matrices
     @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-    @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
+    @_transV.elements[1] = ARERenderer.getHeight() - \
+                            @_position.y - ARERenderer.camPos.y
+    #@_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
     #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
     @_modelM.translate(@_transV)
-    @_modelM.rotate(@_rotation, @_rotV)
+    @_modelM.rotate(-@_rotation, @_rotV)
 
     #flatMV = new Float32Array(@_modelM.flatten())
     flatMV = @_modelM.flatten()
@@ -675,16 +677,16 @@ class ARERawActor
       context.lineWidth = 1
 
     if @_strokeColor
-      context.strokeStyle = "rgb(#{@_strokeColor})"
+      context.strokeStyle = "rgb#{@_strokeColor}"
     else
       context.strokeStyle = "#FFF"
 
-    if @_material == "texture"
+    if @_material == ARERenderer.MATERIAL_TEXTURE
       #
     else
 
       if @_color
-        context.fillStyle = "rgb(#{@_color})"
+        context.fillStyle = "rgb#{@_color}"
       else
         context.fillStyle = "#FFF"
 
@@ -732,13 +734,13 @@ class ARERawActor
       when ARERenderer.RENDER_MODE_TRIANGLE_STRIP, \
            ARERenderer.RENDER_MODE_TRIANGLE_FAN # fill
 
-        if @_renderStyle & ARERenderer.RENDER_STYLE_STROKE > 0
+        if (@_renderStyle & ARERenderer.RENDER_STYLE_STROKE) > 0
           context.stroke()
 
-        if @_renderStyle & ARERenderer.RENDER_STYLE_FILL > 0
-          if @_material == "texture"
+        if (@_renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0
+          if @_material == ARERenderer.MATERIAL_TEXTURE
             context.clip()
-            context.scale 1, -1
+            #context.scale 1, -1
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
           else

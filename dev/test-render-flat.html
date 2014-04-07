@@ -38,7 +38,7 @@
         new ARERectangleActor(w, h)
         // Little fact: The scene is upside down.
         .setPosition({ x: 48 + w * Math.floor(i % cols),
-                       y: engineHeight - 48 - h * Math.floor(i / cols) })
+                       y: 48 + h * Math.floor(i / cols) })
         .setColor(reutil.rand(256), reutil.rand(256), reutil.rand(256));
       }
     };

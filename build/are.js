@@ -251,7 +251,7 @@ ARERawActor = (function() {
     }
     this._texture = ARERenderer.getTexture(name);
     this.setShader(ARERenderer.getMe().getTextureShader());
-    this._material = "texture";
+    this._material = ARERenderer.MATERIAL_TEXTURE;
     return this;
   };
 
@@ -264,7 +264,7 @@ ARERawActor = (function() {
   ARERawActor.prototype.clearTexture = function() {
     this._texture = void 0;
     this.setShader(ARERenderer.getMe().getDefaultShader());
-    this._material = "flat";
+    this._material = ARERenderer.MATERIAL_FLAT;
     return this;
   };
 
@@ -715,7 +715,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
-    if (this._material === "texture") {
+    if (this._material === ARERenderer.MATERIAL_TEXTURE) {
       gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
       gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(this._sh_handles.uUVScale, this._texture.scaleX, this._texture.scaleY);
@@ -742,9 +742,9 @@ ARERawActor = (function() {
     this.updatePosition();
     this._modelM = new Matrix4();
     this._transV.elements[0] = this._position.x - ARERenderer.camPos.x;
-    this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
+    this._transV.elements[1] = ARERenderer.getHeight() - this._position.y - ARERenderer.camPos.y;
     this._modelM.translate(this._transV);
-    this._modelM.rotate(this._rotation, this._rotV);
+    this._modelM.rotate(-this._rotation, this._rotV);
     flatMV = this._modelM.flatten();
     gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
     gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
@@ -785,15 +785,15 @@ ARERawActor = (function() {
       context.lineWidth = 1;
     }
     if (this._strokeColor) {
-      context.strokeStyle = "rgb(" + this._strokeColor + ")";
+      context.strokeStyle = "rgb" + this._strokeColor;
     } else {
       context.strokeStyle = "#FFF";
     }
-    if (this._material === "texture") {
+    if (this._material === ARERenderer.MATERIAL_TEXTURE) {
 
     } else {
       if (this._color) {
-        context.fillStyle = "rgb(" + this._color + ")";
+        context.fillStyle = "rgb" + this._color;
       } else {
         context.fillStyle = "#FFF";
       }
@@ -834,13 +834,12 @@ ARERawActor = (function() {
         break;
       case ARERenderer.RENDER_MODE_TRIANGLE_STRIP:
       case ARERenderer.RENDER_MODE_TRIANGLE_FAN:
-        if (this._renderStyle & ARERenderer.RENDER_STYLE_STROKE > 0) {
+        if ((this._renderStyle & ARERenderer.RENDER_STYLE_STROKE) > 0) {
           context.stroke();
         }
-        if (this._renderStyle & ARERenderer.RENDER_STYLE_FILL > 0) {
-          if (this._material === "texture") {
+        if ((this._renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0) {
+          if (this._material === ARERenderer.MATERIAL_TEXTURE) {
             context.clip();
-            context.scale(1, -1);
             context.drawImage(this._texture.texture, -this._size.x / 2, -this._size.y / 2, this._size.x, this._size.y);
           } else {
             context.fill();
@@ -1879,14 +1878,6 @@ ARERenderer = (function() {
 
 
   /*
-   * Signifies the current material; when this doesn't match, a material change
-   * is made (different shader program)
-   */
-
-  ARERenderer._currentMaterial = "none";
-
-
-  /*
    * @property [Object] camPos Camera position, with x and y keys
    */
 
@@ -1923,6 +1914,23 @@ ARERenderer = (function() {
 
 
   /*
+   * This denote the rendererMode that is wanted by the user
+   * @type [Number]
+   */
+
+  ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
+
+
+  /*
+   * denotes the currently chosen internal Renderer, this value may be different
+   * from the rendererMode, especially if webgl failed to load.
+   * @type [Number]
+   */
+
+  ARERenderer.activeRendererMode = null;
+
+
+  /*
    * Render Modes
    * This affects the method GL will use to render a WGL element
    * @enum
@@ -1955,35 +1963,39 @@ ARERenderer = (function() {
    * @enum
    */
 
-  ARERenderer.RENDER_STYLE_STROKE = 0;
+  ARERenderer.RENDER_STYLE_STROKE = 1;
 
-  ARERenderer.RENDER_STYLE_FILL = 1;
+  ARERenderer.RENDER_STYLE_FILL = 2;
 
-  ARERenderer.RENDER_STYLE_FILL_AND_STROKE = 2;
+  ARERenderer.RENDER_STYLE_FILL_AND_STROKE = 3;
 
 
   /*
    * @type [Array<Number>]
    */
 
-  ARERenderer.renderStyles = [0, 1, 2];
+  ARERenderer.renderStyles = [0, 1, 2, 3];
 
 
   /*
-   * This denote the rendererMode that is wanted by the user
-   * @type [Number]
+   * Render Modes
+   * This affects the method GL will use to render a WGL element
+   * @enum
    */
 
-  ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
+  ARERenderer.MATERIAL_NONE = "none";
+
+  ARERenderer.MATERIAL_FLAT = "flat";
+
+  ARERenderer.MATERIAL_TEXTURE = "texture";
 
 
   /*
-   * denotes the currently chosen internal Renderer, this value may be different
-   * from the rendererMode, especially if webgl failed to load.
-   * @type [Number]
+   * Signifies the current material; when this doesn't match, a material change
+   * is made (different shader program)
    */
 
-  ARERenderer.activeRendererMode = null;
+  ARERenderer._currentMaterial = "none";
 
 
   /*
@@ -2088,8 +2100,8 @@ ARERenderer = (function() {
         ARELog.error("Invalid Renderer " + ARERenderer.rendererMode);
     }
     ARELog.info("Using the " + ARERenderer.activeRendererMode + " renderer mode");
-    this.switchMaterial("flat");
     this.setClearColor(0, 0, 0);
+    this.switchMaterial(ARERenderer.MATERIAL_FLAT);
   }
 
 
@@ -2253,6 +2265,10 @@ ARERenderer = (function() {
     return this._width;
   };
 
+  ARERenderer.getWidth = function() {
+    return (this.me && this.me.getWidth()) || -1;
+  };
+
 
   /*
    * Returns canvas height
@@ -2262,6 +2278,10 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.getHeight = function() {
     return this._height;
+  };
+
+  ARERenderer.getHeight = function() {
+    return (this.me && this.me.getHeight()) || -1;
   };
 
 
@@ -2384,7 +2404,7 @@ ARERenderer = (function() {
         _savedColor = a.getColor();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
         _idSector = Math.floor(a.getId() / 255);
-        this.switchMaterial("flat");
+        this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.wglDraw(gl);
         a.setColor(_savedColor);
@@ -2425,8 +2445,6 @@ ARERenderer = (function() {
       ctx.clearRect(0, 0, this._width, this._height);
     }
     ctx.save();
-    ctx.translate(0, this._height);
-    ctx.scale(1, -1);
     _ref = ARERenderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
@@ -2435,7 +2453,7 @@ ARERenderer = (function() {
         _savedColor = a.getColor();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
         _idSector = Math.floor(a.getId() / 255);
-        this.switchMaterial("flat");
+        this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.cvDraw(ctx);
         a.setColor(_savedColor);
@@ -2517,12 +2535,12 @@ ARERenderer = (function() {
 
 
   /*
-   * Is the WebGL renderer active?
+   * Is the null renderer active?
    * @return [Boolean] is_active
    */
 
-  ARERenderer.prototype.isWGLRendererActive = function() {
-    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_WGL;
+  ARERenderer.prototype.isNullRendererActive = function() {
+    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_NULL;
   };
 
 
@@ -2537,12 +2555,12 @@ ARERenderer = (function() {
 
 
   /*
-   * Is the null renderer active?
+   * Is the WebGL renderer active?
    * @return [Boolean] is_active
    */
 
-  ARERenderer.prototype.isNullRendererActive = function() {
-    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_NULL;
+  ARERenderer.prototype.isWGLRendererActive = function() {
+    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_WGL;
   };
 
 
@@ -2620,34 +2638,32 @@ ARERenderer = (function() {
   ARERenderer.prototype.switchMaterial = function(material) {
     var gl, handles, ortho;
     param.required(material);
-    if (ARERenderer.activeRendererMode !== ARERenderer.RENDERER_MODE_WGL) {
-      return;
-    }
-    ortho = Matrix4.makeOrtho(0, this._width, 0, this._height, -10, 10).flatten();
-    ortho[15] = 1.0;
-    gl = ARERenderer._gl;
     if (material === ARERenderer._currentMaterial) {
-      return;
+      return false;
     }
-    switch (material) {
-      case "flat":
-        gl.useProgram(this._defaultShader.getProgram());
-        handles = this._defaultShader.getHandles();
-        gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-        gl.enableVertexAttribArray(handles.aPosition);
-        ARERenderer._currentMaterial = "flat";
-        break;
-      case "texture":
-        gl.useProgram(this._texShader.getProgram());
-        handles = this._texShader.getHandles();
-        gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-        gl.enableVertexAttribArray(handles.aPosition);
-        gl.enableVertexAttribArray(handles.aTexCoord);
-        ARERenderer._currentMaterial = "texture";
-        break;
-      default:
-        throw new Error("Unknown material " + material);
+    if (this.isWGLRendererActive()) {
+      ortho = Matrix4.makeOrtho(0, this._width, 0, this._height, -10, 10).flatten();
+      ortho[15] = 1.0;
+      gl = ARERenderer._gl;
+      switch (material) {
+        case ARERenderer.MATERIAL_FLAT:
+          gl.useProgram(this._defaultShader.getProgram());
+          handles = this._defaultShader.getHandles();
+          gl.uniformMatrix4fv(handles.uProjection, false, ortho);
+          gl.enableVertexAttribArray(handles.aPosition);
+          break;
+        case ARERenderer.MATERIAL_TEXTURE:
+          gl.useProgram(this._texShader.getProgram());
+          handles = this._texShader.getHandles();
+          gl.uniformMatrix4fv(handles.uProjection, false, ortho);
+          gl.enableVertexAttribArray(handles.aPosition);
+          gl.enableVertexAttribArray(handles.aTexCoord);
+          break;
+        default:
+          throw new Error("Unknown material " + material);
+      }
     }
+    ARERenderer._currentMaterial = material;
     return ARELog.info("ARERenderer Switched material " + ARERenderer._currentMaterial);
   };
 
@@ -2735,7 +2751,7 @@ AREPhysics = (function() {
 
   AREPhysics.frameTime = 1.0 / 60.0;
 
-  AREPhysics._gravity = new cp.v(0, -1);
+  AREPhysics._gravity = new cp.v(0, 1);
 
   AREPhysics._stepIntervalId = null;
 
@@ -4263,6 +4279,9 @@ AREEngineInterface = (function() {
     if (manifest.textures !== void 0) {
       manifest = manifest.textures;
     }
+    if (_.isEmpty(manifest)) {
+      return cb();
+    }
     count = 0;
     loadTexture = function(name, path) {
       var gl, img, tex;
@@ -4312,6 +4331,7 @@ AREEngineInterface = (function() {
           }
         };
       } else {
+        ARELog.info("Loading Canvas Image");
         img.onload = function() {
           ARERenderer.addTexture({
             name: name,

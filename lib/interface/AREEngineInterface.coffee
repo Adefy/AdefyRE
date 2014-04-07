@@ -165,6 +165,8 @@ class AREEngineInterface
     ##       backwards compatibilty, we check for a textures array
 
     manifest = manifest.textures if manifest.textures != undefined
+    if _.isEmpty(manifest)
+      return cb()
 
     count = 0
 
@@ -239,6 +241,8 @@ class AREEngineInterface
           if count == manifest.length then cb()
 
       else
+
+        ARELog.info "Loading Canvas Image"
 
         img.onload = ->
 

@@ -186,7 +186,7 @@ ARERawActor = (function() {
     }
     this._texture = ARERenderer.getTexture(name);
     this.setShader(ARERenderer.getMe().getTextureShader());
-    this._material = "texture";
+    this._material = ARERenderer.MATERIAL_TEXTURE;
     return this;
   };
 
@@ -199,7 +199,7 @@ ARERawActor = (function() {
   ARERawActor.prototype.clearTexture = function() {
     this._texture = void 0;
     this.setShader(ARERenderer.getMe().getDefaultShader());
-    this._material = "flat";
+    this._material = ARERenderer.MATERIAL_FLAT;
     return this;
   };
 
@@ -650,7 +650,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
-    if (this._material === "texture") {
+    if (this._material === ARERenderer.MATERIAL_TEXTURE) {
       gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
       gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(this._sh_handles.uUVScale, this._texture.scaleX, this._texture.scaleY);
@@ -677,9 +677,9 @@ ARERawActor = (function() {
     this.updatePosition();
     this._modelM = new Matrix4();
     this._transV.elements[0] = this._position.x - ARERenderer.camPos.x;
-    this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
+    this._transV.elements[1] = ARERenderer.getHeight() - this._position.y - ARERenderer.camPos.y;
     this._modelM.translate(this._transV);
-    this._modelM.rotate(this._rotation, this._rotV);
+    this._modelM.rotate(-this._rotation, this._rotV);
     flatMV = this._modelM.flatten();
     gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
     gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
@@ -720,15 +720,15 @@ ARERawActor = (function() {
       context.lineWidth = 1;
     }
     if (this._strokeColor) {
-      context.strokeStyle = "rgb(" + this._strokeColor + ")";
+      context.strokeStyle = "rgb" + this._strokeColor;
     } else {
       context.strokeStyle = "#FFF";
     }
-    if (this._material === "texture") {
+    if (this._material === ARERenderer.MATERIAL_TEXTURE) {
 
     } else {
       if (this._color) {
-        context.fillStyle = "rgb(" + this._color + ")";
+        context.fillStyle = "rgb" + this._color;
       } else {
         context.fillStyle = "#FFF";
       }
@@ -769,13 +769,12 @@ ARERawActor = (function() {
         break;
       case ARERenderer.RENDER_MODE_TRIANGLE_STRIP:
       case ARERenderer.RENDER_MODE_TRIANGLE_FAN:
-        if (this._renderStyle & ARERenderer.RENDER_STYLE_STROKE > 0) {
+        if ((this._renderStyle & ARERenderer.RENDER_STYLE_STROKE) > 0) {
           context.stroke();
         }
-        if (this._renderStyle & ARERenderer.RENDER_STYLE_FILL > 0) {
-          if (this._material === "texture") {
+        if ((this._renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0) {
+          if (this._material === ARERenderer.MATERIAL_TEXTURE) {
             context.clip();
-            context.scale(1, -1);
             context.drawImage(this._texture.texture, -this._size.x / 2, -this._size.y / 2, this._size.x, this._size.y);
           } else {
             context.fill();

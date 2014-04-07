@@ -250,7 +250,7 @@ class ARERawActor
 
     @_texture = ARERenderer.getTexture name
     @setShader ARERenderer.getMe().getTextureShader()
-    @_material = "texture"
+    @_material = ARERenderer.MATERIAL_TEXTURE
     @
 
   ###
@@ -260,7 +260,7 @@ class ARERawActor
   clearTexture: ->
     @_texture = undefined
     @setShader ARERenderer.getMe().getDefaultShader()
-    @_material = "flat"
+    @_material = ARERenderer.MATERIAL_FLAT
     @
 
   ###
@@ -657,7 +657,7 @@ class ARERawActor
   ###
   wglBindTexture: (gl) ->
     # Texture rendering, if needed
-    if @_material == "texture"
+    if @_material == ARERenderer.MATERIAL_TEXTURE
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
       gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
@@ -688,12 +688,14 @@ class ARERawActor
     # Prep our vectors and matrices
     @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-    @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
+    @_transV.elements[1] = ARERenderer.getHeight() - \
+                            @_position.y - ARERenderer.camPos.y
+    #@_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
     #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
     @_modelM.translate(@_transV)
-    @_modelM.rotate(@_rotation, @_rotV)
+    @_modelM.rotate(-@_rotation, @_rotV)
 
     #flatMV = new Float32Array(@_modelM.flatten())
     flatMV = @_modelM.flatten()
@@ -740,16 +742,16 @@ class ARERawActor
       context.lineWidth = 1
 
     if @_strokeColor
-      context.strokeStyle = "rgb(#{@_strokeColor})"
+      context.strokeStyle = "rgb#{@_strokeColor}"
     else
       context.strokeStyle = "#FFF"
 
-    if @_material == "texture"
+    if @_material == ARERenderer.MATERIAL_TEXTURE
       #
     else
 
       if @_color
-        context.fillStyle = "rgb(#{@_color})"
+        context.fillStyle = "rgb#{@_color}"
       else
         context.fillStyle = "#FFF"
 
@@ -797,13 +799,13 @@ class ARERawActor
       when ARERenderer.RENDER_MODE_TRIANGLE_STRIP, \
            ARERenderer.RENDER_MODE_TRIANGLE_FAN # fill
 
-        if @_renderStyle & ARERenderer.RENDER_STYLE_STROKE > 0
+        if (@_renderStyle & ARERenderer.RENDER_STYLE_STROKE) > 0
           context.stroke()
 
-        if @_renderStyle & ARERenderer.RENDER_STYLE_FILL > 0
-          if @_material == "texture"
+        if (@_renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0
+          if @_material == ARERenderer.MATERIAL_TEXTURE
             context.clip()
-            context.scale 1, -1
+            #context.scale 1, -1
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
           else
@@ -1788,12 +1790,6 @@ class ARERenderer
   @me: null
 
   ###
-  # Signifies the current material; when this doesn't match, a material change
-  # is made (different shader program)
-  ###
-  @_currentMaterial: "none"
-
-  ###
   # @property [Object] camPos Camera position, with x and y keys
   ###
   @camPos:
@@ -1821,6 +1817,19 @@ class ARERenderer
   @rendererModes: [0, 1, 2]
 
   ###
+  # This denote the rendererMode that is wanted by the user
+  # @type [Number]
+  ###
+  @rendererMode: @RENDERER_MODE_WGL
+
+  ###
+  # denotes the currently chosen internal Renderer, this value may be different
+  # from the rendererMode, especially if webgl failed to load.
+  # @type [Number]
+  ###
+  @activeRendererMode: null
+
+  ###
   # Render Modes
   # This affects the method GL will use to render a WGL element
   # @enum
@@ -1846,27 +1855,29 @@ class ARERenderer
   # RENDER_MODE_LINE_LOOP will only use STROKE
   # @enum
   ###
-  @RENDER_STYLE_STROKE: 0
-  @RENDER_STYLE_FILL: 1
-  @RENDER_STYLE_FILL_AND_STROKE: 2
+  @RENDER_STYLE_STROKE: 1
+  @RENDER_STYLE_FILL: 2
+  @RENDER_STYLE_FILL_AND_STROKE: 3
 
   ###
   # @type [Array<Number>]
   ###
-  @renderStyles: [0, 1, 2]
+  @renderStyles: [0, 1, 2, 3]
 
   ###
-  # This denote the rendererMode that is wanted by the user
-  # @type [Number]
+  # Render Modes
+  # This affects the method GL will use to render a WGL element
+  # @enum
   ###
-  @rendererMode: @RENDERER_MODE_WGL
+  @MATERIAL_NONE: "none"
+  @MATERIAL_FLAT: "flat"
+  @MATERIAL_TEXTURE: "texture"
 
   ###
-  # denotes the currently chosen internal Renderer, this value may be different
-  # from the rendererMode, especially if webgl failed to load.
-  # @type [Number]
+  # Signifies the current material; when this doesn't match, a material change
+  # is made (different shader program)
   ###
-  @activeRendererMode: null
+  @_currentMaterial: "none"
 
   ###
   # Should the screen be cleared every frame, or should the engine handle
@@ -1993,8 +2004,9 @@ class ARERenderer
 
     ARELog.info "Using the #{ARERenderer.activeRendererMode} renderer mode"
 
-    @switchMaterial "flat"
     @setClearColor 0, 0, 0
+
+    @switchMaterial ARERenderer.MATERIAL_FLAT
 
   ###
   # Initializes a WebGL renderer context
@@ -2157,6 +2169,7 @@ class ARERenderer
   # @return [Number] width
   ###
   getWidth: -> @_width
+  @getWidth: -> (@me && @me.getWidth()) || -1
 
   ###
   # Returns canvas height
@@ -2164,6 +2177,7 @@ class ARERenderer
   # @return [Number] height
   ###
   getHeight: -> @_height
+  @getHeight: -> (@me && @me.getHeight()) || -1
 
   ###
   # Returns the clear color
@@ -2289,7 +2303,7 @@ class ARERenderer
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
 
-        @switchMaterial "flat"
+        @switchMaterial ARERenderer.MATERIAL_FLAT
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
@@ -2337,8 +2351,8 @@ class ARERenderer
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    ctx.translate 0, @_height
-    ctx.scale 1, -1
+    #ctx.translate 0, @_height
+    #ctx.scale 1, -1
 
     for a in ARERenderer.actors
       ctx.save()
@@ -2351,7 +2365,7 @@ class ARERenderer
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
 
-        @switchMaterial "flat"
+        @switchMaterial ARERenderer.MATERIAL_FLAT
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
@@ -2431,11 +2445,11 @@ class ARERenderer
     ARERenderer.activeRendererMode
 
   ###
-  # Is the WebGL renderer active?
+  # Is the null renderer active?
   # @return [Boolean] is_active
   ###
-  isWGLRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
+  isNullRendererActive: ->
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
 
   ###
   # Is the canvas renderer active?
@@ -2445,11 +2459,11 @@ class ARERenderer
     @getActiveRendererMode() == ARERenderer.RENDERER_MODE_CANVAS
 
   ###
-  # Is the null renderer active?
+  # Is the WebGL renderer active?
   # @return [Boolean] is_active
   ###
-  isNullRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
+  isWGLRendererActive: ->
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
 
   ###
   # Returns a unique id, used by actors
@@ -2513,43 +2527,41 @@ class ARERenderer
   switchMaterial: (material) ->
     param.required material
 
-    ##
-    # Materials aren't exactly supported in the canvas renderer mode.
-    return if ARERenderer.activeRendererMode != ARERenderer.RENDERER_MODE_WGL
+    return false if material == ARERenderer._currentMaterial
 
-    ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
-    ##
-    # Its a "Gotcha" from using EWGL
-    ortho[15] = 1.0
+    if @isWGLRendererActive()
 
-    gl = ARERenderer._gl
+      ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+      ##
+      # Its a "Gotcha" from using EWGL
+      ortho[15] = 1.0
 
-    return if material == ARERenderer._currentMaterial
+      gl = ARERenderer._gl
 
-    switch material
-      when "flat"
-        gl.useProgram @_defaultShader.getProgram()
 
-        handles = @_defaultShader.getHandles()
-        gl.uniformMatrix4fv handles.uProjection, false, ortho
+      switch material
+        when ARERenderer.MATERIAL_FLAT
+          gl.useProgram @_defaultShader.getProgram()
 
-        gl.enableVertexAttribArray handles.aPosition
+          handles = @_defaultShader.getHandles()
+          gl.uniformMatrix4fv handles.uProjection, false, ortho
 
-        ARERenderer._currentMaterial = "flat"
+          gl.enableVertexAttribArray handles.aPosition
 
-      when "texture"
-        gl.useProgram @_texShader.getProgram()
+        when ARERenderer.MATERIAL_TEXTURE
 
-        handles = @_texShader.getHandles()
-        gl.uniformMatrix4fv handles.uProjection, false, ortho
-        gl.enableVertexAttribArray handles.aPosition
-        gl.enableVertexAttribArray handles.aTexCoord
-        #gl.enableVertexAttribArray handles.aUVScale
+          gl.useProgram @_texShader.getProgram()
 
-        ARERenderer._currentMaterial = "texture"
+          handles = @_texShader.getHandles()
+          gl.uniformMatrix4fv handles.uProjection, false, ortho
+          gl.enableVertexAttribArray handles.aPosition
+          gl.enableVertexAttribArray handles.aTexCoord
+          #gl.enableVertexAttribArray handles.aUVScale
 
-      else
-        throw new Error "Unknown material #{material}"
+        else
+          throw new Error "Unknown material #{material}"
+
+    ARERenderer._currentMaterial = material
 
     ARELog.info "ARERenderer Switched material #{ARERenderer._currentMaterial}"
 
@@ -2619,7 +2631,10 @@ class AREPhysics
   # @property [Number] time to step for
   @frameTime: 1.0 / 60.0
 
-  @_gravity: new cp.v 0, -1
+  # upside-down
+  #@_gravity: new cp.v 0, -1
+  @_gravity: new cp.v 0, 1
+
   @_stepIntervalId: null
   @_world: null
 
@@ -3953,6 +3968,8 @@ class AREEngineInterface
     ##       backwards compatibilty, we check for a textures array
 
     manifest = manifest.textures if manifest.textures != undefined
+    if _.isEmpty(manifest)
+      return cb()
 
     count = 0
 
@@ -4027,6 +4044,8 @@ class AREEngineInterface
           if count == manifest.length then cb()
 
       else
+
+        ARELog.info "Loading Canvas Image"
 
         img.onload = ->
 

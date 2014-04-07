@@ -86,12 +86,6 @@ class ARERenderer
   @me: null
 
   ###
-  # Signifies the current material; when this doesn't match, a material change
-  # is made (different shader program)
-  ###
-  @_currentMaterial: "none"
-
-  ###
   # @property [Object] camPos Camera position, with x and y keys
   ###
   @camPos:
@@ -119,6 +113,19 @@ class ARERenderer
   @rendererModes: [0, 1, 2]
 
   ###
+  # This denote the rendererMode that is wanted by the user
+  # @type [Number]
+  ###
+  @rendererMode: @RENDERER_MODE_WGL
+
+  ###
+  # denotes the currently chosen internal Renderer, this value may be different
+  # from the rendererMode, especially if webgl failed to load.
+  # @type [Number]
+  ###
+  @activeRendererMode: null
+
+  ###
   # Render Modes
   # This affects the method GL will use to render a WGL element
   # @enum
@@ -144,27 +151,29 @@ class ARERenderer
   # RENDER_MODE_LINE_LOOP will only use STROKE
   # @enum
   ###
-  @RENDER_STYLE_STROKE: 0
-  @RENDER_STYLE_FILL: 1
-  @RENDER_STYLE_FILL_AND_STROKE: 2
+  @RENDER_STYLE_STROKE: 1
+  @RENDER_STYLE_FILL: 2
+  @RENDER_STYLE_FILL_AND_STROKE: 3
 
   ###
   # @type [Array<Number>]
   ###
-  @renderStyles: [0, 1, 2]
+  @renderStyles: [0, 1, 2, 3]
 
   ###
-  # This denote the rendererMode that is wanted by the user
-  # @type [Number]
+  # Render Modes
+  # This affects the method GL will use to render a WGL element
+  # @enum
   ###
-  @rendererMode: @RENDERER_MODE_WGL
+  @MATERIAL_NONE: "none"
+  @MATERIAL_FLAT: "flat"
+  @MATERIAL_TEXTURE: "texture"
 
   ###
-  # denotes the currently chosen internal Renderer, this value may be different
-  # from the rendererMode, especially if webgl failed to load.
-  # @type [Number]
+  # Signifies the current material; when this doesn't match, a material change
+  # is made (different shader program)
   ###
-  @activeRendererMode: null
+  @_currentMaterial: "none"
 
   ###
   # Should the screen be cleared every frame, or should the engine handle
@@ -291,8 +300,9 @@ class ARERenderer
 
     ARELog.info "Using the #{ARERenderer.activeRendererMode} renderer mode"
 
-    @switchMaterial "flat"
     @setClearColor 0, 0, 0
+
+    @switchMaterial ARERenderer.MATERIAL_FLAT
 
   ###
   # Initializes a WebGL renderer context
@@ -455,6 +465,7 @@ class ARERenderer
   # @return [Number] width
   ###
   getWidth: -> @_width
+  @getWidth: -> (@me && @me.getWidth()) || -1
 
   ###
   # Returns canvas height
@@ -462,6 +473,7 @@ class ARERenderer
   # @return [Number] height
   ###
   getHeight: -> @_height
+  @getHeight: -> (@me && @me.getHeight()) || -1
 
   ###
   # Returns the clear color
@@ -587,7 +599,7 @@ class ARERenderer
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
 
-        @switchMaterial "flat"
+        @switchMaterial ARERenderer.MATERIAL_FLAT
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
@@ -635,8 +647,8 @@ class ARERenderer
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    ctx.translate 0, @_height
-    ctx.scale 1, -1
+    #ctx.translate 0, @_height
+    #ctx.scale 1, -1
 
     for a in ARERenderer.actors
       ctx.save()
@@ -649,7 +661,7 @@ class ARERenderer
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
 
-        @switchMaterial "flat"
+        @switchMaterial ARERenderer.MATERIAL_FLAT
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
@@ -729,11 +741,11 @@ class ARERenderer
     ARERenderer.activeRendererMode
 
   ###
-  # Is the WebGL renderer active?
+  # Is the null renderer active?
   # @return [Boolean] is_active
   ###
-  isWGLRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
+  isNullRendererActive: ->
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
 
   ###
   # Is the canvas renderer active?
@@ -743,11 +755,11 @@ class ARERenderer
     @getActiveRendererMode() == ARERenderer.RENDERER_MODE_CANVAS
 
   ###
-  # Is the null renderer active?
+  # Is the WebGL renderer active?
   # @return [Boolean] is_active
   ###
-  isNullRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
+  isWGLRendererActive: ->
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
 
   ###
   # Returns a unique id, used by actors
@@ -811,43 +823,41 @@ class ARERenderer
   switchMaterial: (material) ->
     param.required material
 
-    ##
-    # Materials aren't exactly supported in the canvas renderer mode.
-    return if ARERenderer.activeRendererMode != ARERenderer.RENDERER_MODE_WGL
+    return false if material == ARERenderer._currentMaterial
 
-    ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
-    ##
-    # Its a "Gotcha" from using EWGL
-    ortho[15] = 1.0
+    if @isWGLRendererActive()
 
-    gl = ARERenderer._gl
+      ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+      ##
+      # Its a "Gotcha" from using EWGL
+      ortho[15] = 1.0
 
-    return if material == ARERenderer._currentMaterial
+      gl = ARERenderer._gl
 
-    switch material
-      when "flat"
-        gl.useProgram @_defaultShader.getProgram()
 
-        handles = @_defaultShader.getHandles()
-        gl.uniformMatrix4fv handles.uProjection, false, ortho
+      switch material
+        when ARERenderer.MATERIAL_FLAT
+          gl.useProgram @_defaultShader.getProgram()
 
-        gl.enableVertexAttribArray handles.aPosition
+          handles = @_defaultShader.getHandles()
+          gl.uniformMatrix4fv handles.uProjection, false, ortho
 
-        ARERenderer._currentMaterial = "flat"
+          gl.enableVertexAttribArray handles.aPosition
 
-      when "texture"
-        gl.useProgram @_texShader.getProgram()
+        when ARERenderer.MATERIAL_TEXTURE
 
-        handles = @_texShader.getHandles()
-        gl.uniformMatrix4fv handles.uProjection, false, ortho
-        gl.enableVertexAttribArray handles.aPosition
-        gl.enableVertexAttribArray handles.aTexCoord
-        #gl.enableVertexAttribArray handles.aUVScale
+          gl.useProgram @_texShader.getProgram()
 
-        ARERenderer._currentMaterial = "texture"
+          handles = @_texShader.getHandles()
+          gl.uniformMatrix4fv handles.uProjection, false, ortho
+          gl.enableVertexAttribArray handles.aPosition
+          gl.enableVertexAttribArray handles.aTexCoord
+          #gl.enableVertexAttribArray handles.aUVScale
 
-      else
-        throw new Error "Unknown material #{material}"
+        else
+          throw new Error "Unknown material #{material}"
+
+    ARERenderer._currentMaterial = material
 
     ARELog.info "ARERenderer Switched material #{ARERenderer._currentMaterial}"
 

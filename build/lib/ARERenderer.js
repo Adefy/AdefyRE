@@ -103,14 +103,6 @@ ARERenderer = (function() {
 
 
   /*
-   * Signifies the current material; when this doesn't match, a material change
-   * is made (different shader program)
-   */
-
-  ARERenderer._currentMaterial = "none";
-
-
-  /*
    * @property [Object] camPos Camera position, with x and y keys
    */
 
@@ -147,6 +139,23 @@ ARERenderer = (function() {
 
 
   /*
+   * This denote the rendererMode that is wanted by the user
+   * @type [Number]
+   */
+
+  ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
+
+
+  /*
+   * denotes the currently chosen internal Renderer, this value may be different
+   * from the rendererMode, especially if webgl failed to load.
+   * @type [Number]
+   */
+
+  ARERenderer.activeRendererMode = null;
+
+
+  /*
    * Render Modes
    * This affects the method GL will use to render a WGL element
    * @enum
@@ -179,35 +188,39 @@ ARERenderer = (function() {
    * @enum
    */
 
-  ARERenderer.RENDER_STYLE_STROKE = 0;
+  ARERenderer.RENDER_STYLE_STROKE = 1;
 
-  ARERenderer.RENDER_STYLE_FILL = 1;
+  ARERenderer.RENDER_STYLE_FILL = 2;
 
-  ARERenderer.RENDER_STYLE_FILL_AND_STROKE = 2;
+  ARERenderer.RENDER_STYLE_FILL_AND_STROKE = 3;
 
 
   /*
    * @type [Array<Number>]
    */
 
-  ARERenderer.renderStyles = [0, 1, 2];
+  ARERenderer.renderStyles = [0, 1, 2, 3];
 
 
   /*
-   * This denote the rendererMode that is wanted by the user
-   * @type [Number]
+   * Render Modes
+   * This affects the method GL will use to render a WGL element
+   * @enum
    */
 
-  ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
+  ARERenderer.MATERIAL_NONE = "none";
+
+  ARERenderer.MATERIAL_FLAT = "flat";
+
+  ARERenderer.MATERIAL_TEXTURE = "texture";
 
 
   /*
-   * denotes the currently chosen internal Renderer, this value may be different
-   * from the rendererMode, especially if webgl failed to load.
-   * @type [Number]
+   * Signifies the current material; when this doesn't match, a material change
+   * is made (different shader program)
    */
 
-  ARERenderer.activeRendererMode = null;
+  ARERenderer._currentMaterial = "none";
 
 
   /*
@@ -312,8 +325,8 @@ ARERenderer = (function() {
         ARELog.error("Invalid Renderer " + ARERenderer.rendererMode);
     }
     ARELog.info("Using the " + ARERenderer.activeRendererMode + " renderer mode");
-    this.switchMaterial("flat");
     this.setClearColor(0, 0, 0);
+    this.switchMaterial(ARERenderer.MATERIAL_FLAT);
   }
 
 
@@ -477,6 +490,10 @@ ARERenderer = (function() {
     return this._width;
   };
 
+  ARERenderer.getWidth = function() {
+    return (this.me && this.me.getWidth()) || -1;
+  };
+
 
   /*
    * Returns canvas height
@@ -486,6 +503,10 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.getHeight = function() {
     return this._height;
+  };
+
+  ARERenderer.getHeight = function() {
+    return (this.me && this.me.getHeight()) || -1;
   };
 
 
@@ -608,7 +629,7 @@ ARERenderer = (function() {
         _savedColor = a.getColor();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
         _idSector = Math.floor(a.getId() / 255);
-        this.switchMaterial("flat");
+        this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.wglDraw(gl);
         a.setColor(_savedColor);
@@ -649,8 +670,6 @@ ARERenderer = (function() {
       ctx.clearRect(0, 0, this._width, this._height);
     }
     ctx.save();
-    ctx.translate(0, this._height);
-    ctx.scale(1, -1);
     _ref = ARERenderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
@@ -659,7 +678,7 @@ ARERenderer = (function() {
         _savedColor = a.getColor();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
         _idSector = Math.floor(a.getId() / 255);
-        this.switchMaterial("flat");
+        this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.cvDraw(ctx);
         a.setColor(_savedColor);
@@ -741,12 +760,12 @@ ARERenderer = (function() {
 
 
   /*
-   * Is the WebGL renderer active?
+   * Is the null renderer active?
    * @return [Boolean] is_active
    */
 
-  ARERenderer.prototype.isWGLRendererActive = function() {
-    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_WGL;
+  ARERenderer.prototype.isNullRendererActive = function() {
+    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_NULL;
   };
 
 
@@ -761,12 +780,12 @@ ARERenderer = (function() {
 
 
   /*
-   * Is the null renderer active?
+   * Is the WebGL renderer active?
    * @return [Boolean] is_active
    */
 
-  ARERenderer.prototype.isNullRendererActive = function() {
-    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_NULL;
+  ARERenderer.prototype.isWGLRendererActive = function() {
+    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_WGL;
   };
 
 
@@ -844,34 +863,32 @@ ARERenderer = (function() {
   ARERenderer.prototype.switchMaterial = function(material) {
     var gl, handles, ortho;
     param.required(material);
-    if (ARERenderer.activeRendererMode !== ARERenderer.RENDERER_MODE_WGL) {
-      return;
-    }
-    ortho = Matrix4.makeOrtho(0, this._width, 0, this._height, -10, 10).flatten();
-    ortho[15] = 1.0;
-    gl = ARERenderer._gl;
     if (material === ARERenderer._currentMaterial) {
-      return;
+      return false;
     }
-    switch (material) {
-      case "flat":
-        gl.useProgram(this._defaultShader.getProgram());
-        handles = this._defaultShader.getHandles();
-        gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-        gl.enableVertexAttribArray(handles.aPosition);
-        ARERenderer._currentMaterial = "flat";
-        break;
-      case "texture":
-        gl.useProgram(this._texShader.getProgram());
-        handles = this._texShader.getHandles();
-        gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-        gl.enableVertexAttribArray(handles.aPosition);
-        gl.enableVertexAttribArray(handles.aTexCoord);
-        ARERenderer._currentMaterial = "texture";
-        break;
-      default:
-        throw new Error("Unknown material " + material);
+    if (this.isWGLRendererActive()) {
+      ortho = Matrix4.makeOrtho(0, this._width, 0, this._height, -10, 10).flatten();
+      ortho[15] = 1.0;
+      gl = ARERenderer._gl;
+      switch (material) {
+        case ARERenderer.MATERIAL_FLAT:
+          gl.useProgram(this._defaultShader.getProgram());
+          handles = this._defaultShader.getHandles();
+          gl.uniformMatrix4fv(handles.uProjection, false, ortho);
+          gl.enableVertexAttribArray(handles.aPosition);
+          break;
+        case ARERenderer.MATERIAL_TEXTURE:
+          gl.useProgram(this._texShader.getProgram());
+          handles = this._texShader.getHandles();
+          gl.uniformMatrix4fv(handles.uProjection, false, ortho);
+          gl.enableVertexAttribArray(handles.aPosition);
+          gl.enableVertexAttribArray(handles.aTexCoord);
+          break;
+        default:
+          throw new Error("Unknown material " + material);
+      }
     }
+    ARERenderer._currentMaterial = material;
     return ARELog.info("ARERenderer Switched material " + ARERenderer._currentMaterial);
   };
 
