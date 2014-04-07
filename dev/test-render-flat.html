@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AdefyWebGL Rendering Test</title>
+  <title>AdefyRE flat Material Test</title>
 
   <script type="text/javascript" src="./components/underscore/underscore.js"></script>
   <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
   <script type="text/javascript" src="./js/EWGL_math.js"></script>
   <script type="text/javascript" src="./js/inkyEWGL.js"></script>
+  <script type="text/javascript" src="./js/reutil.js"></script>
   <script type="text/javascript" src="./are.js"></script>
 
   <link type="text/css" rel="stylesheet" href="./css/main.css"/>
@@ -19,10 +20,6 @@
     <span id="ActorCount"></span>
   </div>
   <script>
-
-    rand = function(n) {
-      return Math.floor(Math.random() * n);
-    };
 
     onManifestLoad = function() {
       // FINALLY WE CAN START!
@@ -42,7 +39,7 @@
         // Little fact: The scene is upside down.
         .setPosition({ x: 48 + w * Math.floor(i % cols),
                        y: engineHeight - 48 - h * Math.floor(i / cols) })
-        .setColor(rand(256), rand(256), rand(256));
+        .setColor(reutil.rand(256), reutil.rand(256), reutil.rand(256));
       }
     };
 

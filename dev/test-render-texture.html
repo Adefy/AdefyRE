@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AdefyWebGL Rendering Test</title>
+  <title>AdefyRE Texture Rendering Test</title>
 
   <script type="text/javascript" src="./components/underscore/underscore.js"></script>
   <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
   <script type="text/javascript" src="./js/EWGL_math.js"></script>
   <script type="text/javascript" src="./js/inkyEWGL.js"></script>
+  <script type="text/javascript" src="./js/reutil.js"></script>
   <script type="text/javascript" src="./are.js"></script>
 
   <link type="text/css" rel="stylesheet" href="./css/main.css"/>
@@ -19,10 +20,6 @@
     <span id="ActorCount"></span>
   </div>
   <script>
-
-    Array.prototype.sample = function() {
-      return this[Math.floor(Math.random() * this.length)];
-    }
 
     onManifestLoad = function() {
       // FINALLY WE CAN START!
@@ -41,7 +38,7 @@
         // Little fact: The scene is upside down.
         .setPosition({ x: 48 + 96 * Math.floor(i % cols),
                        y: engineHeight - 48 - 96 * Math.floor(i / cols) })
-        .setTexture(texs.sample());
+        .setTexture(reutil.sample(texs));
       }
     };
 

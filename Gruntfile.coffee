@@ -117,7 +117,7 @@ module.exports = (grunt) ->
           "#{testDir}/*.coffee"
         ]
         #tasks: ["concat_in_order", "coffeelint", "coffee", "mocha"]
-        tasks: ["concat_in_order", "coffee", "mocha"]
+        tasks: ["concat_in_order", "coffee", "mocha", "concat"]
 
     connect:
       server:
