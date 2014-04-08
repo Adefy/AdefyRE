@@ -218,6 +218,7 @@ ARERenderer = (function() {
   /*
    * Signifies the current material; when this doesn't match, a material change
    * is made (different shader program)
+   * @type [MATERIAL_*]
    */
 
   ARERenderer._currentMaterial = "none";

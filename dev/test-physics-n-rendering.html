@@ -39,7 +39,7 @@
       window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
 
         //window.engine.setClearColor(255, 255, 255);
-        window.engine.setClearColor(0, 128, 128);
+        window.AdefyRE.Engine().setClearColor(0, 128, 128);
 
         var ground = new ARERectangleActor(width, height * 0.05);
         ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })

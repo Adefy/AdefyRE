@@ -2,13 +2,13 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend ARERenderer.coffee
-# @depend AREPhysics.coffee
-# @depend util/ARELog.coffee
-# @depend animations/AREBezAnimation.coffee
-# @depend animations/AREVertAnimation.coffee
-# @depend animations/AREPsyxAnimation.coffee
-# @depend interface/AREInterface.coffee
+# @depend renderer.coffee
+# @depend physics.coffee
+# @depend util/log.coffee
+# @depend animations/bez_animation.coffee
+# @depend animations/vert_animation.coffee
+# @depend animations/psyx_animation.coffee
+# @depend interface/interface.coffee
 
 # Requires Underscore.js fromhttp://documentcloud.github.io/underscore
 # Requires Chipmunk-js https://github.com/josephg/Chipmunk-js

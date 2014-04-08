@@ -2,7 +2,7 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend ARERawActor.coffee
+# @depend raw_actor.coffee
 
 # Simple rectangle actor; allows for creation using a width and height, and
 # manipulation of that width/height

@@ -624,7 +624,7 @@ class ARERawActor
     @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
     @_transV.elements[1] = ARERenderer.getHeight() - \
-                            @_position.y - ARERenderer.camPos.y
+                            @_position.y + ARERenderer.camPos.y
     #@_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))

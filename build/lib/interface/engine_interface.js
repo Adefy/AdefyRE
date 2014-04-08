@@ -45,6 +45,12 @@ AREEngineInterface = (function() {
       x: 0,
       y: 0
     };
+
+    /*
+     * Should WGL textures be flipped by their Y axis?
+     * NOTE. This does not affect existing textures.
+     */
+    this.wglFlipTextureY = true;
     AREPhysics.stopStepping();
     return new AREEngine(width, height, (function(_this) {
       return function(are) {
@@ -237,7 +243,7 @@ AREEngineInterface = (function() {
             img = canvas;
           }
           gl.bindTexture(gl.TEXTURE_2D, tex);
-          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.wglFlipTextureY);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);

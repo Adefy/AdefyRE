@@ -8,8 +8,8 @@
 # dependency-aware manner. Deps are described at the top of each file, with
 # this essentially serving as the root node in the dep tree.
 #
-# @depend util/AREUtilParam.coffee
-# @depend actors/ARERectangleActor.coffee
-# @depend actors/ARECircleActor.coffee
-# @depend actors/AREPolygonActor.coffee
-# @depend AREEngine.coffee
+# @depend util/util_param.coffee
+# @depend actors/rectangle_actor.coffee
+# @depend actors/circle_actor.coffee
+# @depend actors/polygon_actor.coffee
+# @depend engine.coffee

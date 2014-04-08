@@ -43,6 +43,12 @@ class AREEngineInterface
     ARERenderer._currentMaterial = "none"
     ARERenderer.camPos = x: 0, y: 0
 
+    ###
+    # Should WGL textures be flipped by their Y axis?
+    # NOTE. This does not affect existing textures.
+    ###
+    @wglFlipTextureY = true
+
     # Clear out physics world
     AREPhysics.stopStepping()
 
@@ -211,7 +217,7 @@ class AREEngineInterface
 
           # Set up GL texture
           gl.bindTexture gl.TEXTURE_2D, tex
-          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, true
+          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, @wglFlipTextureY
           gl.texImage2D gl.TEXTURE_2D, 0,
                         gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 

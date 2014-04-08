@@ -4,9 +4,9 @@
 
 # Engine interface, used by the ads themselves, serves as an API
 #
-# @depend AREActorInterface.coffee
-# @depend AREEngineInterface.coffee
-# @depend AREAnimationInterface.coffee
+# @depend actor_interface.coffee
+# @depend engine_interface.coffee
+# @depend animation_interface.coffee
 class AREInterface
 
   # Instantiates sub-interfaces

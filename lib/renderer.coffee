@@ -4,8 +4,8 @@
 
 # ARERenderer
 #
-# @depend objects/AREColor3.coffee
-# @depend objects/AREShader.coffee
+# @depend objects/color3.coffee
+# @depend objects/shader.coffee
 # @depend shaders.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the
@@ -172,6 +172,7 @@ class ARERenderer
   ###
   # Signifies the current material; when this doesn't match, a material change
   # is made (different shader program)
+  # @type [MATERIAL_*]
   ###
   @_currentMaterial: "none"
 

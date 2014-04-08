@@ -2,7 +2,7 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend ARERawActor.coffee
+# @depend raw_actor.coffee
 
 # Polygon Actor implementation; allows for the creation of polygons with
 # arbitrary side counts, and for manipulation by radius and segment count
