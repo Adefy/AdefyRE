@@ -623,9 +623,11 @@ class ARERawActor
     # Prep our vectors and matrices
     @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-    @_transV.elements[1] = ARERenderer.getHeight() - \
-                            @_position.y + ARERenderer.camPos.y
-    #@_transV.elements[1] = @_position.y - ARERenderer.camPos.y
+    if ARERenderer.force_pos0_0
+      @_transV.elements[1] = ARERenderer.getHeight() - \
+                              @_position.y + ARERenderer.camPos.y
+    else
+      @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
     #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))

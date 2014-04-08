@@ -177,6 +177,11 @@ class ARERenderer
   @_currentMaterial: "none"
 
   ###
+  # Should 0, 0 always be the top left position?
+  ###
+  @force_pos0_0: false
+
+  ###
   # Should the screen be cleared every frame, or should the engine handle
   # screen clearing. This option is only valid with the WGL renderer mode.
   # @type [Boolean]
@@ -648,8 +653,9 @@ class ARERenderer
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    #ctx.translate 0, @_height
-    #ctx.scale 1, -1
+    unless ARERenderer.force_pos0_0
+      ctx.translate 0, @_height
+      ctx.scale 1, -1
 
     for a in ARERenderer.actors
       ctx.save()

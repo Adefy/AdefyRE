@@ -688,9 +688,11 @@ class ARERawActor
     # Prep our vectors and matrices
     @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-    @_transV.elements[1] = ARERenderer.getHeight() - \
-                            @_position.y + ARERenderer.camPos.y
-    #@_transV.elements[1] = @_position.y - ARERenderer.camPos.y
+    if ARERenderer.force_pos0_0
+      @_transV.elements[1] = ARERenderer.getHeight() - \
+                              @_position.y + ARERenderer.camPos.y
+    else
+      @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
     #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
@@ -1246,9 +1248,9 @@ class AREPolygonActor extends ARERawActor
     verts.push verts[0]
     verts.push verts[1]
 
-    # Reverse winding!
     _tv = []
     for i in [0...verts.length] by 2
+      # Reverse winding!
       _tv.push verts[verts.length - 2 - i]
       _tv.push verts[verts.length - 1 - i]
 
@@ -1881,6 +1883,11 @@ class ARERenderer
   @_currentMaterial: "none"
 
   ###
+  # Should 0, 0 always be the top left position?
+  ###
+  @force_pos0_0: false
+
+  ###
   # Should the screen be cleared every frame, or should the engine handle
   # screen clearing. This option is only valid with the WGL renderer mode.
   # @type [Boolean]
@@ -2352,8 +2359,9 @@ class ARERenderer
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    #ctx.translate 0, @_height
-    #ctx.scale 1, -1
+    unless ARERenderer.force_pos0_0
+      ctx.translate 0, @_height
+      ctx.scale 1, -1
 
     for a in ARERenderer.actors
       ctx.save()
@@ -2632,9 +2640,10 @@ class AREPhysics
   # @property [Number] time to step for
   @frameTime: 1.0 / 60.0
 
-  # upside-down
-  #@_gravity: new cp.v 0, -1
-  @_gravity: new cp.v 0, 1
+  # acting upwards
+  @_gravity: new cp.v 0, -1
+  # 0, 0 acting downwards
+  #@_gravity: new cp.v 0, 1
 
   @_stepIntervalId: null
   @_world: null
@@ -3851,7 +3860,7 @@ class AREEngineInterface
     # Should WGL textures be flipped by their Y axis?
     # NOTE. This does not affect existing textures.
     ###
-    @wglFlipTextureY = true
+    @wglFlipTextureY = false
 
     # Clear out physics world
     AREPhysics.stopStepping()
@@ -3980,6 +3989,8 @@ class AREEngineInterface
 
     count = 0
 
+    flipTexture = @wglFlipTextureY
+
     # Loads a texture, and adds it to our renderer
     loadTexture = (name, path) ->
       ARELog.info "Loading texture: #{name}, #{path}"
@@ -4021,7 +4032,7 @@ class AREEngineInterface
 
           # Set up GL texture
           gl.bindTexture gl.TEXTURE_2D, tex
-          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, @wglFlipTextureY
+          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, flipTexture
           gl.texImage2D gl.TEXTURE_2D, 0,
                         gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 

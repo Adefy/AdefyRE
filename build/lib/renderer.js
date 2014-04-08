@@ -225,6 +225,13 @@ ARERenderer = (function() {
 
 
   /*
+   * Should 0, 0 always be the top left position?
+   */
+
+  ARERenderer.force_pos0_0 = false;
+
+
+  /*
    * Should the screen be cleared every frame, or should the engine handle
    * screen clearing. This option is only valid with the WGL renderer mode.
    * @type [Boolean]
@@ -671,6 +678,10 @@ ARERenderer = (function() {
       ctx.clearRect(0, 0, this._width, this._height);
     }
     ctx.save();
+    if (!ARERenderer.force_pos0_0) {
+      ctx.translate(0, this._height);
+      ctx.scale(1, -1);
+    }
     _ref = ARERenderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];

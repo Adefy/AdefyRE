@@ -677,7 +677,11 @@ ARERawActor = (function() {
     this.updatePosition();
     this._modelM = new Matrix4();
     this._transV.elements[0] = this._position.x - ARERenderer.camPos.x;
-    this._transV.elements[1] = ARERenderer.getHeight() - this._position.y + ARERenderer.camPos.y;
+    if (ARERenderer.force_pos0_0) {
+      this._transV.elements[1] = ARERenderer.getHeight() - this._position.y + ARERenderer.camPos.y;
+    } else {
+      this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
+    }
     this._modelM.translate(this._transV);
     this._modelM.rotate(-this._rotation, this._rotV);
     flatMV = this._modelM.flatten();

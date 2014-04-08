@@ -47,7 +47,7 @@ class AREEngineInterface
     # Should WGL textures be flipped by their Y axis?
     # NOTE. This does not affect existing textures.
     ###
-    @wglFlipTextureY = true
+    @wglFlipTextureY = false
 
     # Clear out physics world
     AREPhysics.stopStepping()
@@ -176,6 +176,8 @@ class AREEngineInterface
 
     count = 0
 
+    flipTexture = @wglFlipTextureY
+
     # Loads a texture, and adds it to our renderer
     loadTexture = (name, path) ->
       ARELog.info "Loading texture: #{name}, #{path}"
@@ -217,7 +219,7 @@ class AREEngineInterface
 
           # Set up GL texture
           gl.bindTexture gl.TEXTURE_2D, tex
-          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, @wglFlipTextureY
+          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, flipTexture
           gl.texImage2D gl.TEXTURE_2D, 0,
                         gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 

@@ -50,7 +50,7 @@ AREEngineInterface = (function() {
      * Should WGL textures be flipped by their Y axis?
      * NOTE. This does not affect existing textures.
      */
-    this.wglFlipTextureY = true;
+    this.wglFlipTextureY = false;
     AREPhysics.stopStepping();
     return new AREEngine(width, height, (function(_this) {
       return function(are) {
@@ -206,7 +206,7 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.loadManifest = function(json, cb) {
-    var count, loadTexture, manifest, tex, _i, _len, _results;
+    var count, flipTexture, loadTexture, manifest, tex, _i, _len, _results;
     param.required(json);
     manifest = JSON.parse(json);
     if (manifest.textures !== void 0) {
@@ -216,6 +216,7 @@ AREEngineInterface = (function() {
       return cb();
     }
     count = 0;
+    flipTexture = this.wglFlipTextureY;
     loadTexture = function(name, path) {
       var gl, img, tex;
       ARELog.info("Loading texture: " + name + ", " + path);
@@ -243,7 +244,7 @@ AREEngineInterface = (function() {
             img = canvas;
           }
           gl.bindTexture(gl.TEXTURE_2D, tex);
-          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, this.wglFlipTextureY);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipTexture);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);

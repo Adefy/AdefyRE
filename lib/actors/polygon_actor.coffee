@@ -92,9 +92,9 @@ class AREPolygonActor extends ARERawActor
     verts.push verts[0]
     verts.push verts[1]
 
-    # Reverse winding!
     _tv = []
     for i in [0...verts.length] by 2
+      # Reverse winding!
       _tv.push verts[verts.length - 2 - i]
       _tv.push verts[verts.length - 1 - i]
 
