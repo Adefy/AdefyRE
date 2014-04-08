@@ -1,4 +1,4 @@
-var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPhysics, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, AREUtilParam, AREVertAnimation, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
+var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPhysics, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, AREUtilParam, AREVersion, AREVertAnimation, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -4763,5 +4763,13 @@ AREEngine = (function() {
 })();
 
 window.AdefyGLI = window.AdefyRE = new AREInterface;
+
+AREVersion = {
+  MAJOR: 1,
+  MINOR: 0,
+  PATCH: 1,
+  BUILD: null,
+  STRING: "1.0.1"
+};
 
 //# sourceMappingURL=are.js.map

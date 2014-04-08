@@ -4514,3 +4514,10 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 # @depend actors/circle_actor.coffee
 # @depend actors/polygon_actor.coffee
 # @depend engine.coffee
+
+AREVersion =
+  MAJOR: 1
+  MINOR: 0
+  PATCH: 1
+  BUILD: null
+  STRING: "1.0.1"
