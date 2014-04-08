@@ -736,6 +736,9 @@ class ARERawActor
 
     @cvSetupStyle context
 
+    unless ARERenderer.force_pos0_0
+      context.scale 1, -1
+
     switch @_renderMode
       when ARERenderer.RENDER_MODE_LINE_LOOP # stroke
         # regardless of your current renderStyle, this will forever outline.
@@ -751,7 +754,6 @@ class ARERawActor
         if (@_renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0
           if @_material == ARERenderer.MATERIAL_TEXTURE
             context.clip()
-            #context.scale 1, -1
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
           else

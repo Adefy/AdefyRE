@@ -32,8 +32,9 @@
     var width = window.innerWidth;
     var height = window.innerHeight;
 
+    //ARERenderer.force_pos0_0 = false
     ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
-    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS;
+    //#ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS;
 
     window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
       window.AdefyRE.Engine().wglFlipTextureY = true;
@@ -43,8 +44,8 @@
         window.AdefyRE.Engine().setClearColor(0, 128, 128);
 
         var ground = new ARERectangleActor(width, height * 0.05);
-        //ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
-        ground.setPosition({ x: width / 2, y: ground.getHeight() / 2 })
+        ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
+        //ground.setPosition({ x: width / 2, y: ground.getHeight() / 2 })
           .setTexture("metalGrate")
           .setTextureRepeat(20, 0.5)
           .createPhysicsBody(0, 0.7, 0.6);
@@ -56,8 +57,8 @@
 
         var createBall = function() {
           var x = Math.random() * width;
-          //var y = -(Math.random() * 500);
-          var y = window.AdefyRE.Engine().getHeight() + (Math.random() * 500);
+          var y = -(Math.random() * 500);
+          //var y = window.AdefyRE.Engine().getHeight() + (Math.random() * 500);
 
           var mass = Math.random() * 100;
           var friction = Math.random();

@@ -15,9 +15,9 @@ class AREPhysics
   @frameTime: 1.0 / 60.0
 
   # acting upwards
-  @_gravity: new cp.v 0, -1
+  #@_gravity: new cp.v 0, -1
   # 0, 0 acting downwards
-  #@_gravity: new cp.v 0, 1
+  @_gravity: new cp.v 0, 1
 
   @_stepIntervalId: null
   @_world: null

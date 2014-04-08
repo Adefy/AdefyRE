@@ -766,6 +766,9 @@ ARERawActor = (function() {
     }
     context.closePath();
     this.cvSetupStyle(context);
+    if (!ARERenderer.force_pos0_0) {
+      context.scale(1, -1);
+    }
     switch (this._renderMode) {
       case ARERenderer.RENDER_MODE_LINE_LOOP:
         context.stroke();

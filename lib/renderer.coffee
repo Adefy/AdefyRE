@@ -179,7 +179,7 @@ class ARERenderer
   ###
   # Should 0, 0 always be the top left position?
   ###
-  @force_pos0_0: false
+  @force_pos0_0: true
 
   ###
   # Should the screen be cleared every frame, or should the engine handle

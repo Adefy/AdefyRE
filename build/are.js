@@ -831,6 +831,9 @@ ARERawActor = (function() {
     }
     context.closePath();
     this.cvSetupStyle(context);
+    if (!ARERenderer.force_pos0_0) {
+      context.scale(1, -1);
+    }
     switch (this._renderMode) {
       case ARERenderer.RENDER_MODE_LINE_LOOP:
         context.stroke();
@@ -2006,7 +2009,7 @@ ARERenderer = (function() {
    * Should 0, 0 always be the top left position?
    */
 
-  ARERenderer.force_pos0_0 = false;
+  ARERenderer.force_pos0_0 = true;
 
 
   /*
@@ -2766,7 +2769,7 @@ AREPhysics = (function() {
 
   AREPhysics.frameTime = 1.0 / 60.0;
 
-  AREPhysics._gravity = new cp.v(0, -1);
+  AREPhysics._gravity = new cp.v(0, 1);
 
   AREPhysics._stepIntervalId = null;
 

@@ -801,6 +801,9 @@ class ARERawActor
 
     @cvSetupStyle context
 
+    unless ARERenderer.force_pos0_0
+      context.scale 1, -1
+
     switch @_renderMode
       when ARERenderer.RENDER_MODE_LINE_LOOP # stroke
         # regardless of your current renderStyle, this will forever outline.
@@ -816,7 +819,6 @@ class ARERawActor
         if (@_renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0
           if @_material == ARERenderer.MATERIAL_TEXTURE
             context.clip()
-            #context.scale 1, -1
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
           else
@@ -1898,7 +1900,7 @@ class ARERenderer
   ###
   # Should 0, 0 always be the top left position?
   ###
-  @force_pos0_0: false
+  @force_pos0_0: true
 
   ###
   # Should the screen be cleared every frame, or should the engine handle
@@ -2654,9 +2656,9 @@ class AREPhysics
   @frameTime: 1.0 / 60.0
 
   # acting upwards
-  @_gravity: new cp.v 0, -1
+  #@_gravity: new cp.v 0, -1
   # 0, 0 acting downwards
-  #@_gravity: new cp.v 0, 1
+  @_gravity: new cp.v 0, 1
 
   @_stepIntervalId: null
   @_world: null

@@ -228,7 +228,7 @@ ARERenderer = (function() {
    * Should 0, 0 always be the top left position?
    */
 
-  ARERenderer.force_pos0_0 = false;
+  ARERenderer.force_pos0_0 = true;
 
 
   /*
