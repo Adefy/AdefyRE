@@ -127,10 +127,14 @@ ARERawActor = (function() {
      */
     this._renderStyle = ARERenderer.RENDER_STYLE_FILL;
     this._texture = null;
+    this._clipRect = [0.0, 0.0, 1.0, 1.0];
     this._attachedTexture = null;
     return this.attachedTextureAnchor = {
+      clipRect: [0.0, 0.0, 1.0, 1.0],
       x: 0,
       y: 0,
+      width: 0,
+      height: 0,
       angle: 0
     };
   };
@@ -528,13 +532,15 @@ ARERawActor = (function() {
     param.required(texture);
     param.required(width);
     param.required(height);
+    this.attachedTextureAnchor.width = width;
+    this.attachedTextureAnchor.height = height;
     this.attachedTextureAnchor.x = param.optional(offx, 0);
     this.attachedTextureAnchor.y = param.optional(offy, 0);
     this.attachedTextureAnchor.angle = param.optional(angle, 0);
     if (!ARERenderer.hasTexture(texture)) {
       throw new Error("No such texture loaded: " + texture);
     }
-    if (this._attachedTexture !== null) {
+    if (this._attachedTexture) {
       this.removeAttachment();
     }
     this._attachedTexture = new ARERectangleActor(width, height);
@@ -550,21 +556,12 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.removeAttachment = function() {
-    var a, i, _i, _len, _ref;
-    if (this._attachedTexture === null) {
+    if (!this._attachedTexture) {
       return false;
     }
-    _ref = ARERenderer.actors;
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      a = _ref[i];
-      if (a.getId() === this._attachedTexture.getId()) {
-        a.destroyPhysicsBody();
-        ARERenderer.actors.splice(i, 1);
-        this._attachedTexture = null;
-        return true;
-      }
-    }
-    return false;
+    ARERenderer.removeActor(this._attachedTexture);
+    this._attachedTexture = null;
+    return true;
   };
 
 
@@ -623,8 +620,8 @@ ARERawActor = (function() {
       pos.y += this.attachedTextureAnchor.y;
       rot += this.attachedTextureAnchor.angle;
       a = this.getAttachment();
-      this.setPosition(pos);
-      this.setRotation(rot);
+      a.setPosition(pos);
+      a.setRotation(rot);
       return a;
     }
     return this;
@@ -653,7 +650,6 @@ ARERawActor = (function() {
     if (this._material === ARERenderer.MATERIAL_TEXTURE) {
       gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
       gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-      gl.uniform2f(this._sh_handles.uUVScale, this._texture.scaleX, this._texture.scaleY);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
       gl.uniform1i(this._sh_handles.uSampler, 0);
@@ -683,12 +679,15 @@ ARERawActor = (function() {
       this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
     }
     this._modelM.translate(this._transV);
-    this._modelM.rotate(-this._rotation, this._rotV);
+    this._modelM.rotate(this._rotation, this._rotV);
     flatMV = this._modelM.flatten();
     gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
     gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
     gl.uniformMatrix4fv(this._sh_handles.uModelView, false, flatMV);
     gl.uniform4f(this._sh_handles.uColor, this._colArray[0], this._colArray[1], this._colArray[2], 1.0);
+    if (this._sh_handles.uClipRect) {
+      gl.uniform4fv(this._sh_handles.uClipRect, this._clipRect);
+    }
     gl.uniform1f(this._sh_handles.uOpacity, this._opacity);
     this.wglBindTexture(gl);
 

@@ -200,12 +200,17 @@ class ARERawActor
 
     @_texture = null
 
+    @_clipRect = [0.0, 0.0, 1.0, 1.0]
+
     # No attached texture; when one exists, we render that texture (actor)
     # instead of ourselves!
     @_attachedTexture = null
     @attachedTextureAnchor =
+      clipRect: [0.0, 0.0, 1.0, 1.0]
       x: 0
       y: 0
+      width: 0
+      height: 0
       angle: 0
 
   ###
@@ -543,6 +548,8 @@ class ARERawActor
     param.required texture
     param.required width
     param.required height
+    @attachedTextureAnchor.width = width
+    @attachedTextureAnchor.height = height
     @attachedTextureAnchor.x = param.optional offx, 0
     @attachedTextureAnchor.y = param.optional offy, 0
     @attachedTextureAnchor.angle = param.optional angle, 0
@@ -552,16 +559,19 @@ class ARERawActor
       throw new Error "No such texture loaded: #{texture}"
 
     # If we already have an attachment, discard it
-    if @_attachedTexture != null then @removeAttachment()
+    if @_attachedTexture
+      @removeAttachment()
 
-    # Create actor
+    # this will force the actor to render with attachment parameters
     @_attachedTexture = new ARERectangleActor width, height
-
-    # Set texture
     @_attachedTexture.setTexture texture
-
-    # Ship eeet
     @_attachedTexture
+
+    # Now we replace the active texture, with the attached one
+    #@_attachedTexture = texture
+    #@setTexture texture
+    #@
+
 
   ###
   # Remove attached texture, if we have one
@@ -569,16 +579,11 @@ class ARERawActor
   # @return [Boolean] success fails if we have no attached texture
   ###
   removeAttachment: ->
-    if @_attachedTexture == null then return false
+    return false unless @_attachedTexture
 
-    for a, i in ARERenderer.actors
-      if a.getId() == @_attachedTexture.getId()
-        a.destroyPhysicsBody()
-        ARERenderer.actors.splice i, 1
-        @_attachedTexture = null
-        return true
-
-    false
+    ARERenderer.removeActor @_attachedTexture
+    @_attachedTexture = null
+    true
 
   ###
   # Set attachment visiblity. Fails if we don't have an attached texture
@@ -633,8 +638,8 @@ class ARERawActor
       a = @getAttachment()
 
       # Apply state update
-      @setPosition pos
-      @setRotation rot
+      a.setPosition pos
+      a.setRotation rot
 
       return a
 
@@ -663,7 +668,8 @@ class ARERawActor
       gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
       #gl.vertexAttrib2f @_sh_handles.aUVScale,
       #  @_texture.scaleX, @_texture.scaleY
-      gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+      # We apparently don't need uUVScale in webgl
+      #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
 
       gl.activeTexture gl.TEXTURE0
       gl.bindTexture gl.TEXTURE_2D, @_texture.texture
@@ -697,7 +703,7 @@ class ARERawActor
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
     #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
     @_modelM.translate(@_transV)
-    @_modelM.rotate(-@_rotation, @_rotV)
+    @_modelM.rotate(@_rotation, @_rotV)
 
     #flatMV = new Float32Array(@_modelM.flatten())
     flatMV = @_modelM.flatten()
@@ -710,6 +716,9 @@ class ARERawActor
 
     gl.uniform4f @_sh_handles.uColor,
       @_colArray[0], @_colArray[1], @_colArray[2], 1.0
+
+    if @_sh_handles.uClipRect
+      gl.uniform4fv @_sh_handles.uClipRect, @_clipRect
 
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
@@ -1688,13 +1697,17 @@ AREShader.shaders.texture.fragment = """
 uniform sampler2D uSampler;
 uniform vec4 uColor;
 uniform float uOpacity;
-uniform #{varying_precision} vec2 uUVScale;
+/* uniform #{varying_precision} vec2 uUVScale; */
+uniform vec4 uClipRect;
 
 varying #{varying_precision} vec2 vTexCoord;
 /* varying #{varying_precision} vec2 vUVScale; */
 
 void main() {
-  vec4 baseColor = texture2D(uSampler, vTexCoord * uUVScale);
+  vec4 baseColor = texture2D(uSampler,
+                             uClipRect.xy +
+                             vTexCoord * uClipRect.zw);
+                             //vTexCoord * uClipRect.zw * uUVScale);
   baseColor *= uColor;
 
   if(baseColor.rgb == vec3(1.0, 0.0, 1.0))

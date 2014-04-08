@@ -27,17 +27,19 @@
       // Don't ask, too lazy to convert these values to ints...
       // Proves that setClearColor works
       window.AdefyRE.Engine().setClearColor(0xb2, 0xd9, 0xbe);
+      var cellW = 96;
+      var cellH = 96;
       var engineWidth = window.AdefyRE.Engine().getWidth();
       var engineHeight = window.AdefyRE.Engine().getHeight();
       var texs = ["red_block", "green_block", "blue_block", "yellow_block"];
-      var cols = Math.floor(engineWidth / 96);
-      var rows = Math.floor(engineHeight / 96);
+      var cols = Math.floor(engineWidth / cellW);
+      var rows = Math.floor(engineHeight / cellH);
       var totalblocks = Math.floor(cols * rows);
       for (var i = 0; i < totalblocks; i++) {
-        new ARERectangleActor(96, 96)
+        new ARERectangleActor(cellW, cellH)
         // Little fact: The scene is upside down.
-        .setPosition({ x: 48 + 96 * Math.floor(i % cols),
-                       y: 48 + 96 * Math.floor(i / cols) })
+        .setPosition({ x: cellW / 2 + cellW * Math.floor(i % cols),
+                       y: cellH / 2 + cellH * Math.floor(i / cols) })
         .setTexture(reutil.sample(texs));
       }
     };
