@@ -34,7 +34,7 @@
 
     //ARERenderer.force_pos0_0 = false
     ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
-    //#ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS;
+    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS;
 
     window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
       window.AdefyRE.Engine().wglFlipTextureY = true;
@@ -43,7 +43,7 @@
         //window.engine.setClearColor(255, 255, 255);
         window.AdefyRE.Engine().setClearColor(0, 128, 128);
 
-        var ground = new ARERectangleActor(width, height * 0.05);
+        var ground = window.ground = new ARERectangleActor(width, height * 0.05);
         ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
         //ground.setPosition({ x: width / 2, y: ground.getHeight() / 2 })
           .setTexture("metalGrate")

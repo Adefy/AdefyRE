@@ -202,6 +202,8 @@ ARERawActor = (function() {
 
   ARERawActor.prototype.clearTexture = function() {
     this._texture = void 0;
+    this._texRepeatX = 1;
+    this._texRepeatY = 1;
     this.setShader(ARERenderer.getMe().getDefaultShader());
     this._material = ARERenderer.MATERIAL_FLAT;
     return this;
@@ -482,9 +484,11 @@ ARERawActor = (function() {
     y = param.optional(y, 1);
     uvs = [];
     for (i = _i = 0, _ref = this._origTexVerts.length; _i < _ref; i = _i += 2) {
-      uvs.push(this._origTexVerts[i] * y);
-      uvs.push(this._origTexVerts[i + 1] * x);
+      uvs.push((this._origTexVerts[i] / this._texRepeatX) * x);
+      uvs.push((this._origTexVerts[i + 1] / this._texRepeatY) * y);
     }
+    this._texRepeatX = x;
+    this._texRepeatY = y;
     this.updateUVBuffer(uvs);
     return this;
   };
@@ -679,7 +683,7 @@ ARERawActor = (function() {
       this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
     }
     this._modelM.translate(this._transV);
-    this._modelM.rotate(this._rotation, this._rotV);
+    this._modelM.rotate(-this._rotation, this._rotV);
     flatMV = this._modelM.flatten();
     gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
     gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);

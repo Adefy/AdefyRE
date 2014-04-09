@@ -199,6 +199,10 @@ class ARERawActor
   ###
   clearTexture: ->
     @_texture = undefined
+
+    @_texRepeatX = 1
+    @_texRepeatY = 1
+
     @setShader ARERenderer.getMe().getDefaultShader()
     @_material = ARERenderer.MATERIAL_FLAT
     @
@@ -439,8 +443,11 @@ class ARERawActor
     uvs = []
 
     for i in [0...@_origTexVerts.length] by 2
-      uvs.push @_origTexVerts[i] * y
-      uvs.push @_origTexVerts[i + 1] * x
+      uvs.push (@_origTexVerts[i] / @_texRepeatX) * x
+      uvs.push (@_origTexVerts[i + 1] / @_texRepeatY) * y
+
+    @_texRepeatX = x
+    @_texRepeatY = y
 
     @updateUVBuffer uvs
     @
@@ -638,7 +645,7 @@ class ARERawActor
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
     #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
     @_modelM.translate(@_transV)
-    @_modelM.rotate(@_rotation, @_rotV)
+    @_modelM.rotate(-@_rotation, @_rotV)
 
     #flatMV = new Float32Array(@_modelM.flatten())
     flatMV = @_modelM.flatten()
