@@ -15,10 +15,18 @@
 </head>
 
 <body>
-  <div id="SceneInfo" style="background-color: #33b5e5">
-    <span id="RendererMode"></span>
-    <span id="ActorCount"></span>
-  </div>
+  <header>
+    <div id="header-decorator"></div>
+    <ul>
+      <li>
+        Mode: <span id="RendererMode"></span>
+      </li>
+      <li>
+        Actor Count: <span id="ActorCount"></span>
+      </li>
+    </ul>
+  </header>
+
   <script>
 
     var manifest = [{
@@ -30,7 +38,7 @@
     }];
 
     var width = window.innerWidth;
-    var height = window.innerHeight;
+    var height = window.innerHeight - 30;
 
     //ARERenderer.force_pos0_0 = false
     ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
@@ -75,7 +83,7 @@
         var scheduleBallTimeout = function() {
           setTimeout(function() {
             createBall();
-            document.getElementById("ActorCount").innerHTML = "Actor Count: " + String(ARERenderer.actors.length);
+            document.getElementById("ActorCount").innerHTML = ARERenderer.actors.length;
             scheduleBallTimeout();
           }, Math.random() * 500);
         };
@@ -106,7 +114,7 @@
         else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
           modestr = "Canvas"
 
-        document.getElementById("RendererMode").innerHTML = "Renderer Mode: " + modestr;
+        document.getElementById("RendererMode").innerHTML = modestr;
 
       });
     });
