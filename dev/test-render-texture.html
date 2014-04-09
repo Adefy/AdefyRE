@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AdefyRE flat Material Test</title>
+  <title>AdefyRE Texture Rendering Test</title>
 
   <script type="text/javascript" src="./components/underscore/underscore.js"></script>
   <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
@@ -26,26 +26,44 @@
       // So after the manifests have loaded, we can finally get started (I hope)
       // Don't ask, too lazy to convert these values to ints...
       // Proves that setClearColor works
-      window.AdefyRE.Engine().setClearColor(0x0, 0x0, 0x0);
+      window.AdefyRE.Engine().setClearColor(0xb2, 0xd9, 0xbe);
+      var cellW = 96;
+      var cellH = 96;
       var engineWidth = window.AdefyRE.Engine().getWidth();
       var engineHeight = window.AdefyRE.Engine().getHeight();
-      var w = 96;
-      var h = 96;
-      var cols = Math.floor(engineWidth / w);
-      var rows = Math.floor(engineHeight / h);
+      var texs = ["red_block", "green_block", "blue_block", "yellow_block"];
+      var cols = Math.floor(engineWidth / cellW);
+      var rows = Math.floor(engineHeight / cellH);
       var totalblocks = Math.floor(cols * rows);
       for (var i = 0; i < totalblocks; i++) {
-        new ARERectangleActor(w, h)
+        new ARERectangleActor(cellW, cellH)
         // Little fact: The scene is upside down.
-        .setPosition({ x: 48 + w * Math.floor(i % cols),
-                       y: 48 + h * Math.floor(i / cols) })
-        .setColor(reutil.rand(256), reutil.rand(256), reutil.rand(256));
+        .setPosition({ x: cellW / 2 + cellW * Math.floor(i % cols),
+                       y: cellH / 2 + cellH * Math.floor(i / cols) })
+        .setTexture(reutil.sample(texs));
       }
     };
 
     onEngineInit = function() {
       // So lets load some blocks into the Texture cache
       var manifest = {
+        "textures": [{
+          "type": "image",
+          "name": "red_block",
+          "path": "images/block_0000.png"
+        },{
+          "type": "image",
+          "name": "green_block",
+          "path": "images/block_0001.png"
+        },{
+          "type": "image",
+          "name": "blue_block",
+          "path": "images/block_0002.png"
+        },{
+          "type": "image",
+          "name": "yellow_block",
+          "path": "images/block_0003.png"
+        }]
       };
 
       window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {

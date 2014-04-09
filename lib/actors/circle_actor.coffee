@@ -2,7 +2,7 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend AREPolygonActor.coffee
+# @depend polygon_actor.coffee
 
 # Circle helper, wraps the polygon actor and creates one with 32 sides. Allows
 # for vertex manipulation by radius

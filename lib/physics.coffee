@@ -14,7 +14,11 @@ class AREPhysics
   # @property [Number] time to step for
   @frameTime: 1.0 / 60.0
 
-  @_gravity: new cp.v 0, -1
+  # acting upwards
+  #@_gravity: new cp.v 0, -1
+  # 0, 0 acting downwards
+  @_gravity: new cp.v 0, 1
+
   @_stepIntervalId: null
   @_world: null
 

@@ -200,12 +200,17 @@ class ARERawActor
 
     @_texture = null
 
+    @_clipRect = [0.0, 0.0, 1.0, 1.0]
+
     # No attached texture; when one exists, we render that texture (actor)
     # instead of ourselves!
     @_attachedTexture = null
     @attachedTextureAnchor =
+      clipRect: [0.0, 0.0, 1.0, 1.0]
       x: 0
       y: 0
+      width: 0
+      height: 0
       angle: 0
 
   ###
@@ -250,7 +255,7 @@ class ARERawActor
 
     @_texture = ARERenderer.getTexture name
     @setShader ARERenderer.getMe().getTextureShader()
-    @_material = "texture"
+    @_material = ARERenderer.MATERIAL_TEXTURE
     @
 
   ###
@@ -259,8 +264,12 @@ class ARERawActor
   ###
   clearTexture: ->
     @_texture = undefined
+
+    @_texRepeatX = 1
+    @_texRepeatY = 1
+
     @setShader ARERenderer.getMe().getDefaultShader()
-    @_material = "flat"
+    @_material = ARERenderer.MATERIAL_FLAT
     @
 
   ###
@@ -499,8 +508,11 @@ class ARERawActor
     uvs = []
 
     for i in [0...@_origTexVerts.length] by 2
-      uvs.push @_origTexVerts[i] * y
-      uvs.push @_origTexVerts[i + 1] * x
+      uvs.push (@_origTexVerts[i] / @_texRepeatX) * x
+      uvs.push (@_origTexVerts[i + 1] / @_texRepeatY) * y
+
+    @_texRepeatX = x
+    @_texRepeatY = y
 
     @updateUVBuffer uvs
     @
@@ -543,6 +555,8 @@ class ARERawActor
     param.required texture
     param.required width
     param.required height
+    @attachedTextureAnchor.width = width
+    @attachedTextureAnchor.height = height
     @attachedTextureAnchor.x = param.optional offx, 0
     @attachedTextureAnchor.y = param.optional offy, 0
     @attachedTextureAnchor.angle = param.optional angle, 0
@@ -552,16 +566,19 @@ class ARERawActor
       throw new Error "No such texture loaded: #{texture}"
 
     # If we already have an attachment, discard it
-    if @_attachedTexture != null then @removeAttachment()
+    if @_attachedTexture
+      @removeAttachment()
 
-    # Create actor
+    # this will force the actor to render with attachment parameters
     @_attachedTexture = new ARERectangleActor width, height
-
-    # Set texture
     @_attachedTexture.setTexture texture
-
-    # Ship eeet
     @_attachedTexture
+
+    # Now we replace the active texture, with the attached one
+    #@_attachedTexture = texture
+    #@setTexture texture
+    #@
+
 
   ###
   # Remove attached texture, if we have one
@@ -569,16 +586,11 @@ class ARERawActor
   # @return [Boolean] success fails if we have no attached texture
   ###
   removeAttachment: ->
-    if @_attachedTexture == null then return false
+    return false unless @_attachedTexture
 
-    for a, i in ARERenderer.actors
-      if a.getId() == @_attachedTexture.getId()
-        a.destroyPhysicsBody()
-        ARERenderer.actors.splice i, 1
-        @_attachedTexture = null
-        return true
-
-    false
+    ARERenderer.removeActor @_attachedTexture
+    @_attachedTexture = null
+    true
 
   ###
   # Set attachment visiblity. Fails if we don't have an attached texture
@@ -633,8 +645,8 @@ class ARERawActor
       a = @getAttachment()
 
       # Apply state update
-      @setPosition pos
-      @setRotation rot
+      a.setPosition pos
+      a.setRotation rot
 
       return a
 
@@ -657,13 +669,14 @@ class ARERawActor
   ###
   wglBindTexture: (gl) ->
     # Texture rendering, if needed
-    if @_material == "texture"
+    if @_material == ARERenderer.MATERIAL_TEXTURE
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
       gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
       #gl.vertexAttrib2f @_sh_handles.aUVScale,
       #  @_texture.scaleX, @_texture.scaleY
-      gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+      # We apparently don't need uUVScale in webgl
+      #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
 
       gl.activeTexture gl.TEXTURE0
       gl.bindTexture gl.TEXTURE_2D, @_texture.texture
@@ -688,12 +701,16 @@ class ARERawActor
     # Prep our vectors and matrices
     @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-    @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
+    if ARERenderer.force_pos0_0
+      @_transV.elements[1] = ARERenderer.getHeight() - \
+                              @_position.y + ARERenderer.camPos.y
+    else
+      @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
     #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
     #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
     @_modelM.translate(@_transV)
-    @_modelM.rotate(@_rotation, @_rotV)
+    @_modelM.rotate(-@_rotation, @_rotV)
 
     #flatMV = new Float32Array(@_modelM.flatten())
     flatMV = @_modelM.flatten()
@@ -706,6 +723,9 @@ class ARERawActor
 
     gl.uniform4f @_sh_handles.uColor,
       @_colArray[0], @_colArray[1], @_colArray[2], 1.0
+
+    if @_sh_handles.uClipRect
+      gl.uniform4fv @_sh_handles.uClipRect, @_clipRect
 
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
@@ -740,16 +760,16 @@ class ARERawActor
       context.lineWidth = 1
 
     if @_strokeColor
-      context.strokeStyle = "rgb(#{@_strokeColor})"
+      context.strokeStyle = "rgb#{@_strokeColor}"
     else
       context.strokeStyle = "#FFF"
 
-    if @_material == "texture"
+    if @_material == ARERenderer.MATERIAL_TEXTURE
       #
     else
 
       if @_color
-        context.fillStyle = "rgb(#{@_color})"
+        context.fillStyle = "rgb#{@_color}"
       else
         context.fillStyle = "#FFF"
 
@@ -788,6 +808,9 @@ class ARERawActor
 
     @cvSetupStyle context
 
+    unless ARERenderer.force_pos0_0
+      context.scale 1, -1
+
     switch @_renderMode
       when ARERenderer.RENDER_MODE_LINE_LOOP # stroke
         # regardless of your current renderStyle, this will forever outline.
@@ -797,13 +820,12 @@ class ARERawActor
       when ARERenderer.RENDER_MODE_TRIANGLE_STRIP, \
            ARERenderer.RENDER_MODE_TRIANGLE_FAN # fill
 
-        if @_renderStyle & ARERenderer.RENDER_STYLE_STROKE > 0
+        if (@_renderStyle & ARERenderer.RENDER_STYLE_STROKE) > 0
           context.stroke()
 
-        if @_renderStyle & ARERenderer.RENDER_STYLE_FILL > 0
-          if @_material == "texture"
+        if (@_renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0
+          if @_material == ARERenderer.MATERIAL_TEXTURE
             context.clip()
-            context.scale 1, -1
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
           else
@@ -1066,7 +1088,7 @@ class ARERawActor
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend ARERawActor.coffee
+# @depend raw_actor.coffee
 
 # Simple rectangle actor; allows for creation using a width and height, and
 # manipulation of that width/height
@@ -1154,7 +1176,7 @@ class ARERectangleActor extends ARERawActor
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend ARERawActor.coffee
+# @depend raw_actor.coffee
 
 # Polygon Actor implementation; allows for the creation of polygons with
 # arbitrary side counts, and for manipulation by radius and segment count
@@ -1244,9 +1266,9 @@ class AREPolygonActor extends ARERawActor
     verts.push verts[0]
     verts.push verts[1]
 
-    # Reverse winding!
     _tv = []
     for i in [0...verts.length] by 2
+      # Reverse winding!
       _tv.push verts[verts.length - 2 - i]
       _tv.push verts[verts.length - 1 - i]
 
@@ -1322,7 +1344,7 @@ class AREPolygonActor extends ARERawActor
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend AREPolygonActor.coffee
+# @depend polygon_actor.coffee
 
 # Circle helper, wraps the polygon actor and creates one with 32 sides. Allows
 # for vertex manipulation by radius
@@ -1684,13 +1706,17 @@ AREShader.shaders.texture.fragment = """
 uniform sampler2D uSampler;
 uniform vec4 uColor;
 uniform float uOpacity;
-uniform #{varying_precision} vec2 uUVScale;
+/* uniform #{varying_precision} vec2 uUVScale; */
+uniform vec4 uClipRect;
 
 varying #{varying_precision} vec2 vTexCoord;
 /* varying #{varying_precision} vec2 vUVScale; */
 
 void main() {
-  vec4 baseColor = texture2D(uSampler, vTexCoord * uUVScale);
+  vec4 baseColor = texture2D(uSampler,
+                             uClipRect.xy +
+                             vTexCoord * uClipRect.zw);
+                             //vTexCoord * uClipRect.zw * uUVScale);
   baseColor *= uColor;
 
   if(baseColor.rgb == vec3(1.0, 0.0, 1.0))
@@ -1706,8 +1732,8 @@ void main() {
 
 # ARERenderer
 #
-# @depend objects/AREColor3.coffee
-# @depend objects/AREShader.coffee
+# @depend objects/color3.coffee
+# @depend objects/shader.coffee
 # @depend shaders.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the
@@ -1788,12 +1814,6 @@ class ARERenderer
   @me: null
 
   ###
-  # Signifies the current material; when this doesn't match, a material change
-  # is made (different shader program)
-  ###
-  @_currentMaterial: "none"
-
-  ###
   # @property [Object] camPos Camera position, with x and y keys
   ###
   @camPos:
@@ -1821,6 +1841,19 @@ class ARERenderer
   @rendererModes: [0, 1, 2]
 
   ###
+  # This denote the rendererMode that is wanted by the user
+  # @type [Number]
+  ###
+  @rendererMode: @RENDERER_MODE_WGL
+
+  ###
+  # denotes the currently chosen internal Renderer, this value may be different
+  # from the rendererMode, especially if webgl failed to load.
+  # @type [Number]
+  ###
+  @activeRendererMode: null
+
+  ###
   # Render Modes
   # This affects the method GL will use to render a WGL element
   # @enum
@@ -1846,27 +1879,35 @@ class ARERenderer
   # RENDER_MODE_LINE_LOOP will only use STROKE
   # @enum
   ###
-  @RENDER_STYLE_STROKE: 0
-  @RENDER_STYLE_FILL: 1
-  @RENDER_STYLE_FILL_AND_STROKE: 2
+  @RENDER_STYLE_STROKE: 1
+  @RENDER_STYLE_FILL: 2
+  @RENDER_STYLE_FILL_AND_STROKE: 3
 
   ###
   # @type [Array<Number>]
   ###
-  @renderStyles: [0, 1, 2]
+  @renderStyles: [0, 1, 2, 3]
 
   ###
-  # This denote the rendererMode that is wanted by the user
-  # @type [Number]
+  # Render Modes
+  # This affects the method GL will use to render a WGL element
+  # @enum
   ###
-  @rendererMode: @RENDERER_MODE_WGL
+  @MATERIAL_NONE: "none"
+  @MATERIAL_FLAT: "flat"
+  @MATERIAL_TEXTURE: "texture"
 
   ###
-  # denotes the currently chosen internal Renderer, this value may be different
-  # from the rendererMode, especially if webgl failed to load.
-  # @type [Number]
+  # Signifies the current material; when this doesn't match, a material change
+  # is made (different shader program)
+  # @type [MATERIAL_*]
   ###
-  @activeRendererMode: null
+  @_currentMaterial: "none"
+
+  ###
+  # Should 0, 0 always be the top left position?
+  ###
+  @force_pos0_0: true
 
   ###
   # Should the screen be cleared every frame, or should the engine handle
@@ -1993,8 +2034,9 @@ class ARERenderer
 
     ARELog.info "Using the #{ARERenderer.activeRendererMode} renderer mode"
 
-    @switchMaterial "flat"
     @setClearColor 0, 0, 0
+
+    @switchMaterial ARERenderer.MATERIAL_FLAT
 
   ###
   # Initializes a WebGL renderer context
@@ -2157,6 +2199,7 @@ class ARERenderer
   # @return [Number] width
   ###
   getWidth: -> @_width
+  @getWidth: -> (@me && @me.getWidth()) || -1
 
   ###
   # Returns canvas height
@@ -2164,6 +2207,7 @@ class ARERenderer
   # @return [Number] height
   ###
   getHeight: -> @_height
+  @getHeight: -> (@me && @me.getHeight()) || -1
 
   ###
   # Returns the clear color
@@ -2289,7 +2333,7 @@ class ARERenderer
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
 
-        @switchMaterial "flat"
+        @switchMaterial ARERenderer.MATERIAL_FLAT
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
@@ -2337,8 +2381,9 @@ class ARERenderer
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    ctx.translate 0, @_height
-    ctx.scale 1, -1
+    unless ARERenderer.force_pos0_0
+      ctx.translate 0, @_height
+      ctx.scale 1, -1
 
     for a in ARERenderer.actors
       ctx.save()
@@ -2351,7 +2396,7 @@ class ARERenderer
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
 
-        @switchMaterial "flat"
+        @switchMaterial ARERenderer.MATERIAL_FLAT
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
@@ -2431,11 +2476,11 @@ class ARERenderer
     ARERenderer.activeRendererMode
 
   ###
-  # Is the WebGL renderer active?
+  # Is the null renderer active?
   # @return [Boolean] is_active
   ###
-  isWGLRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
+  isNullRendererActive: ->
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
 
   ###
   # Is the canvas renderer active?
@@ -2445,11 +2490,11 @@ class ARERenderer
     @getActiveRendererMode() == ARERenderer.RENDERER_MODE_CANVAS
 
   ###
-  # Is the null renderer active?
+  # Is the WebGL renderer active?
   # @return [Boolean] is_active
   ###
-  isNullRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
+  isWGLRendererActive: ->
+    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
 
   ###
   # Returns a unique id, used by actors
@@ -2513,43 +2558,41 @@ class ARERenderer
   switchMaterial: (material) ->
     param.required material
 
-    ##
-    # Materials aren't exactly supported in the canvas renderer mode.
-    return if ARERenderer.activeRendererMode != ARERenderer.RENDERER_MODE_WGL
+    return false if material == ARERenderer._currentMaterial
 
-    ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
-    ##
-    # Its a "Gotcha" from using EWGL
-    ortho[15] = 1.0
+    if @isWGLRendererActive()
 
-    gl = ARERenderer._gl
+      ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+      ##
+      # Its a "Gotcha" from using EWGL
+      ortho[15] = 1.0
 
-    return if material == ARERenderer._currentMaterial
+      gl = ARERenderer._gl
 
-    switch material
-      when "flat"
-        gl.useProgram @_defaultShader.getProgram()
 
-        handles = @_defaultShader.getHandles()
-        gl.uniformMatrix4fv handles.uProjection, false, ortho
+      switch material
+        when ARERenderer.MATERIAL_FLAT
+          gl.useProgram @_defaultShader.getProgram()
 
-        gl.enableVertexAttribArray handles.aPosition
+          handles = @_defaultShader.getHandles()
+          gl.uniformMatrix4fv handles.uProjection, false, ortho
 
-        ARERenderer._currentMaterial = "flat"
+          gl.enableVertexAttribArray handles.aPosition
 
-      when "texture"
-        gl.useProgram @_texShader.getProgram()
+        when ARERenderer.MATERIAL_TEXTURE
 
-        handles = @_texShader.getHandles()
-        gl.uniformMatrix4fv handles.uProjection, false, ortho
-        gl.enableVertexAttribArray handles.aPosition
-        gl.enableVertexAttribArray handles.aTexCoord
-        #gl.enableVertexAttribArray handles.aUVScale
+          gl.useProgram @_texShader.getProgram()
 
-        ARERenderer._currentMaterial = "texture"
+          handles = @_texShader.getHandles()
+          gl.uniformMatrix4fv handles.uProjection, false, ortho
+          gl.enableVertexAttribArray handles.aPosition
+          gl.enableVertexAttribArray handles.aTexCoord
+          #gl.enableVertexAttribArray handles.aUVScale
 
-      else
-        throw new Error "Unknown material #{material}"
+        else
+          throw new Error "Unknown material #{material}"
+
+    ARERenderer._currentMaterial = material
 
     ARELog.info "ARERenderer Switched material #{ARERenderer._currentMaterial}"
 
@@ -2619,7 +2662,11 @@ class AREPhysics
   # @property [Number] time to step for
   @frameTime: 1.0 / 60.0
 
-  @_gravity: new cp.v 0, -1
+  # acting upwards
+  #@_gravity: new cp.v 0, -1
+  # 0, 0 acting downwards
+  @_gravity: new cp.v 0, 1
+
   @_stepIntervalId: null
   @_world: null
 
@@ -3831,6 +3878,12 @@ class AREEngineInterface
     ARERenderer._currentMaterial = "none"
     ARERenderer.camPos = x: 0, y: 0
 
+    ###
+    # Should WGL textures be flipped by their Y axis?
+    # NOTE. This does not affect existing textures.
+    ###
+    @wglFlipTextureY = false
+
     # Clear out physics world
     AREPhysics.stopStepping()
 
@@ -3953,8 +4006,12 @@ class AREEngineInterface
     ##       backwards compatibilty, we check for a textures array
 
     manifest = manifest.textures if manifest.textures != undefined
+    if _.isEmpty(manifest)
+      return cb()
 
     count = 0
+
+    flipTexture = @wglFlipTextureY
 
     # Loads a texture, and adds it to our renderer
     loadTexture = (name, path) ->
@@ -3997,7 +4054,7 @@ class AREEngineInterface
 
           # Set up GL texture
           gl.bindTexture gl.TEXTURE_2D, tex
-          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, true
+          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, flipTexture
           gl.texImage2D gl.TEXTURE_2D, 0,
                         gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 
@@ -4027,6 +4084,8 @@ class AREEngineInterface
           if count == manifest.length then cb()
 
       else
+
+        ARELog.info "Loading Canvas Image"
 
         img.onload = ->
 
@@ -4210,9 +4269,9 @@ class AREAnimationInterface
 
 # Engine interface, used by the ads themselves, serves as an API
 #
-# @depend AREActorInterface.coffee
-# @depend AREEngineInterface.coffee
-# @depend AREAnimationInterface.coffee
+# @depend actor_interface.coffee
+# @depend engine_interface.coffee
+# @depend animation_interface.coffee
 class AREInterface
 
   # Instantiates sub-interfaces
@@ -4239,13 +4298,13 @@ class AREInterface
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend ARERenderer.coffee
-# @depend AREPhysics.coffee
-# @depend util/ARELog.coffee
-# @depend animations/AREBezAnimation.coffee
-# @depend animations/AREVertAnimation.coffee
-# @depend animations/AREPsyxAnimation.coffee
-# @depend interface/AREInterface.coffee
+# @depend renderer.coffee
+# @depend physics.coffee
+# @depend util/log.coffee
+# @depend animations/bez_animation.coffee
+# @depend animations/vert_animation.coffee
+# @depend animations/psyx_animation.coffee
+# @depend interface/interface.coffee
 
 # Requires Underscore.js fromhttp://documentcloud.github.io/underscore
 # Requires Chipmunk-js https://github.com/josephg/Chipmunk-js
@@ -4459,8 +4518,15 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 # dependency-aware manner. Deps are described at the top of each file, with
 # this essentially serving as the root node in the dep tree.
 #
-# @depend util/AREUtilParam.coffee
-# @depend actors/ARERectangleActor.coffee
-# @depend actors/ARECircleActor.coffee
-# @depend actors/AREPolygonActor.coffee
-# @depend AREEngine.coffee
+# @depend util/util_param.coffee
+# @depend actors/rectangle_actor.coffee
+# @depend actors/circle_actor.coffee
+# @depend actors/polygon_actor.coffee
+# @depend engine.coffee
+
+AREVersion =
+  MAJOR: 1
+  MINOR: 0
+  PATCH: 1
+  BUILD: null
+  STRING: "1.0.1"

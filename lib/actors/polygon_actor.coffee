@@ -2,7 +2,7 @@
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
-# @depend ARERawActor.coffee
+# @depend raw_actor.coffee
 
 # Polygon Actor implementation; allows for the creation of polygons with
 # arbitrary side counts, and for manipulation by radius and segment count
@@ -92,9 +92,9 @@ class AREPolygonActor extends ARERawActor
     verts.push verts[0]
     verts.push verts[1]
 
-    # Reverse winding!
     _tv = []
     for i in [0...verts.length] by 2
+      # Reverse winding!
       _tv.push verts[verts.length - 2 - i]
       _tv.push verts[verts.length - 1 - i]
 

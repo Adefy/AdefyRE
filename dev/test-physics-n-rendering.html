@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AdefyWebGL Physics + Rendering Test</title>
+  <title>AdefyRE Physics + Rendering Test</title>
 
   <script type="text/javascript" src="./components/underscore/underscore.js"></script>
   <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
   <script type="text/javascript" src="./js/EWGL_math.js"></script>
   <script type="text/javascript" src="./js/inkyEWGL.js"></script>
+  <script type="text/javascript" src="./js/reutil.js"></script>
   <script type="text/javascript" src="./are.js"></script>
 
   <link type="text/css" rel="stylesheet" href="./css/main.css"/>
@@ -31,40 +32,44 @@
     var width = window.innerWidth;
     var height = window.innerHeight;
 
+    //ARERenderer.force_pos0_0 = false
     ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
     //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS;
 
     window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
+      window.AdefyRE.Engine().wglFlipTextureY = true;
       window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
 
         //window.engine.setClearColor(255, 255, 255);
-        window.engine.setClearColor(0, 128, 128);
+        window.AdefyRE.Engine().setClearColor(0, 128, 128);
 
-        var ground = new ARERectangleActor(width, height * 0.05);
-        ground.setPosition({ x: width / 2, y: height * 0.025 })
-        .setTexture("metalGrate")
-        .setTextureRepeat(20, 0.5)
-        .createPhysicsBody(0, 0.7, 0.6);
+        var ground = window.ground = new ARERectangleActor(width, height * 0.05);
+        ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
+        //ground.setPosition({ x: width / 2, y: ground.getHeight() / 2 })
+          .setTexture("metalGrate")
+          .setTextureRepeat(20, 0.5)
+          .createPhysicsBody(0, 0.7, 0.6);
 
         new ARECircleActor(128)
-        .setTexture("roundThing")
-        .setPosition({ x: width / 2, y: height / 2 })
-        .createPhysicsBody(100, 0.8, 0.7);
+          .setTexture("roundThing")
+          .setPosition({ x: width / 2, y: height / 2 })
+          .createPhysicsBody(100, 0.8, 0.7);
 
         var createBall = function() {
           var x = Math.random() * width;
-          var y = (Math.random() * 500) + height;
+          var y = -(Math.random() * 500);
+          //var y = window.AdefyRE.Engine().getHeight() + (Math.random() * 500);
 
           var mass = Math.random() * 100;
           var friction = Math.random();
           var elasticity = Math.random() * 1.2;
 
           var ball = new ARECircleActor(Math.round(Math.random() * 32) + 5)
-          .setPosition({ x: x, y: y })
-          .setTexture("roundThing")
-          .setStrokeColor(0, 0, 0)
-          .setStrokeWidth(4)
-          .createPhysicsBody(mass, friction, elasticity);
+            .setPosition({ x: x, y: y })
+            .setTexture("roundThing")
+            .setStrokeColor(0, 0, 0)
+            .setStrokeWidth(4)
+            .createPhysicsBody(mass, friction, elasticity);
         };
 
         var scheduleBallTimeout = function() {

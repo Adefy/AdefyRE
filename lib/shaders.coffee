@@ -77,13 +77,17 @@ AREShader.shaders.texture.fragment = """
 uniform sampler2D uSampler;
 uniform vec4 uColor;
 uniform float uOpacity;
-uniform #{varying_precision} vec2 uUVScale;
+/* uniform #{varying_precision} vec2 uUVScale; */
+uniform vec4 uClipRect;
 
 varying #{varying_precision} vec2 vTexCoord;
 /* varying #{varying_precision} vec2 vUVScale; */
 
 void main() {
-  vec4 baseColor = texture2D(uSampler, vTexCoord * uUVScale);
+  vec4 baseColor = texture2D(uSampler,
+                             uClipRect.xy +
+                             vTexCoord * uClipRect.zw);
+                             //vTexCoord * uClipRect.zw * uUVScale);
   baseColor *= uColor;
 
   if(baseColor.rgb == vec3(1.0, 0.0, 1.0))

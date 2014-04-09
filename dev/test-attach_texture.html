@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AdefyWebGL Rendering Test</title>
+  <title>AdefyRE attachTexture Test</title>
 
   <script type="text/javascript" src="./components/underscore/underscore.js"></script>
   <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
   <script type="text/javascript" src="./js/EWGL_math.js"></script>
   <script type="text/javascript" src="./js/inkyEWGL.js"></script>
+  <script type="text/javascript" src="./js/reutil.js"></script>
   <script type="text/javascript" src="./are.js"></script>
 
   <link type="text/css" rel="stylesheet" href="./css/main.css"/>
@@ -20,33 +21,23 @@
   </div>
   <script>
 
-    Array.prototype.sample = function() {
-      return this[Math.floor(Math.random() * this.length)];
-    }
-
     onManifestLoad = function() {
       // FINALLY WE CAN START!
       // So after the manifests have loaded, we can finally get started (I hope)
       // Don't ask, too lazy to convert these values to ints...
       // Proves that setClearColor works
-      window.AdefyRE.Engine().setClearColor(0xb2, 0xd9, 0xbe);
-      var engineWidth = window.AdefyRE.Engine().getWidth();
-      var engineHeight = window.AdefyRE.Engine().getHeight();
-      var texs = ["red_block", "green_block", "blue_block", "yellow_block"];
-      var cols = Math.floor(engineWidth / 96);
-      var rows = Math.floor(engineHeight / 96);
-      var totalblocks = Math.floor(cols * rows);
-      for (var i = 0; i < totalblocks; i++) {
-        new ARERectangleActor(96, 96)
-        // Little fact: The scene is upside down.
-        .setPosition({ x: 48 + 96 * Math.floor(i % cols),
-                       y: engineHeight - 48 - 96 * Math.floor(i / cols) })
-        .setTexture(texs.sample());
-      }
+      window.AdefyRE.Engine().setClearColor(0, 0, 0);
+      // Little fact: The scene is upside down.
+      new ARERectangleActor(48, 48)
+        .attachTexture("red_block", 48, 48)
+        .setPosition({ x: 24, y: 24 });
+      new ARECircleActor(24)
+        .attachTexture("red_block", 48, 48)
+        .setPosition({ x: 24, y: 24 + 48 });
     };
 
     onEngineInit = function() {
-      // So lets load some blocks into the Texture cache
+            // So lets load some blocks into the Texture cache
       var manifest = {
         "textures": [{
           "type": "image",
@@ -76,8 +67,8 @@
     // Actually just choose a renderer mode, you can choose from
     // the NULL renderer, the WGL renderer, or the CANVAS renderer; modes
     //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_NULL
-    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS
-    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
+    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS
+    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
 
     var width = window.innerWidth;
     var height = window.innerHeight;

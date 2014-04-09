@@ -23,8 +23,8 @@ module.exports = (grunt) ->
 
   # Intermediate vars
   __areOut = {}
-  __areOut["#{buildDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
-  __areOut["#{devDir}/are-concat.coffee"] = [ "#{libDir}/ARE.coffee" ]
+  __areOut["#{buildDir}/are-concat.coffee"] = [ "#{libDir}/are.coffee" ]
+  __areOut["#{devDir}/are-concat.coffee"] = [ "#{libDir}/are.coffee" ]
 
   __coffeeConcatFiles = {}
 
@@ -117,7 +117,7 @@ module.exports = (grunt) ->
           "#{testDir}/*.coffee"
         ]
         #tasks: ["concat_in_order", "coffeelint", "coffee", "mocha"]
-        tasks: ["concat_in_order", "coffee", "mocha"]
+        tasks: ["concat_in_order", "coffee", "mocha", "concat"]
 
     connect:
       server:
