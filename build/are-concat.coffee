@@ -2345,6 +2345,7 @@ class ARERenderer
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
         _savedColor = a.getColor()
+        _savedOpacity = a.getOpacity()
 
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
@@ -2353,8 +2354,10 @@ class ARERenderer
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
+        a.setOpacity 1.0
         a.wglDraw gl
         a.setColor _savedColor
+        a.setOpacity _savedOpacity
 
       else
         a = a.updateAttachment()
@@ -2408,6 +2411,7 @@ class ARERenderer
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
         _savedColor = a.getColor()
+        _savedOpacity = a.getOpacity()
 
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
@@ -2416,8 +2420,10 @@ class ARERenderer
 
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
+        a.setOpacity 1.0
         a.cvDraw ctx
         a.setColor _savedColor
+        a.setOpacity _savedOpacity
 
       else
         a = a.updateAttachment()
