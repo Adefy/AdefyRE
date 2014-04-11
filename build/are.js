@@ -2424,7 +2424,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.wglRender = function() {
-    var a, gl, _i, _id, _idSector, _len, _ref, _savedColor;
+    var a, gl, _i, _id, _idSector, _len, _ref, _savedColor, _savedOpacity;
     gl = ARERenderer._gl;
     if (gl === void 0 || gl === null) {
       return;
@@ -2440,12 +2440,15 @@ ARERenderer = (function() {
       a = _ref[_i];
       if (this._pickRenderRequested) {
         _savedColor = a.getColor();
+        _savedOpacity = a.getOpacity();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
         _idSector = Math.floor(a.getId() / 255);
         this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
+        a.setOpacity(1.0);
         a.wglDraw(gl);
         a.setColor(_savedColor);
+        a.setOpacity(_savedOpacity);
       } else {
         a = a.updateAttachment();
         if (a.getMaterial() !== ARERenderer._currentMaterial) {
@@ -2471,7 +2474,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.cvRender = function() {
-    var a, ctx, material, r, _i, _id, _idSector, _len, _ref, _savedColor;
+    var a, ctx, material, r, _i, _id, _idSector, _len, _ref, _savedColor, _savedOpacity;
     ctx = this._ctx;
     if (ctx === void 0 || ctx === null) {
       return;
@@ -2493,12 +2496,15 @@ ARERenderer = (function() {
       ctx.save();
       if (this._pickRenderRequested) {
         _savedColor = a.getColor();
+        _savedOpacity = a.getOpacity();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
         _idSector = Math.floor(a.getId() / 255);
         this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
+        a.setOpacity(1.0);
         a.cvDraw(ctx);
         a.setColor(_savedColor);
+        a.setOpacity(_savedOpacity);
       } else {
         a = a.updateAttachment();
         if ((material = a.getMaterial()) !== ARERenderer._currentMaterial) {
