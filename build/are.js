@@ -786,13 +786,18 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.cvSetupStyle = function(context) {
+    var a, b, g, r;
     if (this._strokeWidth !== null) {
       context.lineWidth = this._strokeWidth;
     } else {
       context.lineWidth = 1;
     }
     if (this._strokeColor) {
-      context.strokeStyle = "rgb" + this._strokeColor;
+      r = Number(this._strokeColor._r).toFixed(0);
+      g = Number(this._strokeColor._g).toFixed(0);
+      b = Number(this._strokeColor._b).toFixed(0);
+      a = Number(this._opacity).toFixed(4);
+      context.strokeStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
     } else {
       context.strokeStyle = "#FFF";
     }
@@ -800,7 +805,11 @@ ARERawActor = (function() {
 
     } else {
       if (this._color) {
-        context.fillStyle = "rgb" + this._color;
+        r = Number(this._color._r).toFixed(0);
+        g = Number(this._color._g).toFixed(0);
+        b = Number(this._color._b).toFixed(0);
+        a = Number(this._opacity).toFixed(4);
+        context.fillStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
       } else {
         context.fillStyle = "#FFF";
       }
@@ -1078,6 +1087,17 @@ ARERawActor = (function() {
   ARERawActor.prototype.setVisible = function(_visible) {
     this._visible = _visible;
     return this;
+  };
+
+
+  /*
+   * Get actor opacity
+   *
+   * @return [Number] opacity
+   */
+
+  ARERawActor.prototype.getOpacity = function() {
+    return this._opacity;
   };
 
 
@@ -3834,6 +3854,43 @@ AREActorInterface = (function() {
       return true;
     }
     return false;
+  };
+
+
+  /*
+   * Set actor opacity using handle, fails with false
+   *
+   * @param [Number opacity
+   * @param [Number] id
+   * @return [Boolean] success
+   */
+
+  AREActorInterface.prototype.setActorOpacity = function(opacity, id) {
+    var a;
+    param.required(opacity);
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      a.setOpacity(opacity);
+      return true;
+    }
+    return false;
+  };
+
+
+  /*
+   * Get actor opacity using handle, fails with null
+   *
+   * @param [Number] id
+   * @return [Number] opacity
+   */
+
+  AREActorInterface.prototype.getActorOpacity = function(id) {
+    var a;
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      return a.getOpacity();
+    }
+    return null;
   };
 
 

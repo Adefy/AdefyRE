@@ -344,6 +344,37 @@ class AREActorInterface
     false
 
   ###
+  # Set actor opacity using handle, fails with false
+  #
+  # @param [Number opacity
+  # @param [Number] id
+  # @return [Boolean] success
+  ###
+  setActorOpacity: (opacity, id) ->
+    param.required opacity
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      a.setOpacity opacity
+      return true
+
+    false
+
+  ###
+  # Get actor opacity using handle, fails with null
+  #
+  # @param [Number] id
+  # @return [Number] opacity
+  ###
+  getActorOpacity: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      return a.getOpacity()
+
+    null
+
+  ###
   # Set actor visible using handle, fails with false
   #
   # @param [Boolean] visible

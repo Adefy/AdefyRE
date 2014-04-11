@@ -721,13 +721,18 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.cvSetupStyle = function(context) {
+    var a, b, g, r;
     if (this._strokeWidth !== null) {
       context.lineWidth = this._strokeWidth;
     } else {
       context.lineWidth = 1;
     }
     if (this._strokeColor) {
-      context.strokeStyle = "rgb" + this._strokeColor;
+      r = Number(this._strokeColor._r).toFixed(0);
+      g = Number(this._strokeColor._g).toFixed(0);
+      b = Number(this._strokeColor._b).toFixed(0);
+      a = Number(this._opacity).toFixed(4);
+      context.strokeStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
     } else {
       context.strokeStyle = "#FFF";
     }
@@ -735,7 +740,11 @@ ARERawActor = (function() {
 
     } else {
       if (this._color) {
-        context.fillStyle = "rgb" + this._color;
+        r = Number(this._color._r).toFixed(0);
+        g = Number(this._color._g).toFixed(0);
+        b = Number(this._color._b).toFixed(0);
+        a = Number(this._opacity).toFixed(4);
+        context.fillStyle = "rgba(" + r + "," + g + "," + b + "," + a + ")";
       } else {
         context.fillStyle = "#FFF";
       }
@@ -1013,6 +1022,17 @@ ARERawActor = (function() {
   ARERawActor.prototype.setVisible = function(_visible) {
     this._visible = _visible;
     return this;
+  };
+
+
+  /*
+   * Get actor opacity
+   *
+   * @return [Number] opacity
+   */
+
+  ARERawActor.prototype.getOpacity = function() {
+    return this._opacity;
   };
 
 

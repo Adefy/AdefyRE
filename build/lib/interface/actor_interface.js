@@ -428,6 +428,43 @@ AREActorInterface = (function() {
 
 
   /*
+   * Set actor opacity using handle, fails with false
+   *
+   * @param [Number opacity
+   * @param [Number] id
+   * @return [Boolean] success
+   */
+
+  AREActorInterface.prototype.setActorOpacity = function(opacity, id) {
+    var a;
+    param.required(opacity);
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      a.setOpacity(opacity);
+      return true;
+    }
+    return false;
+  };
+
+
+  /*
+   * Get actor opacity using handle, fails with null
+   *
+   * @param [Number] id
+   * @return [Number] opacity
+   */
+
+  AREActorInterface.prototype.getActorOpacity = function(id) {
+    var a;
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      return a.getOpacity();
+    }
+    return null;
+  };
+
+
+  /*
    * Set actor visible using handle, fails with false
    *
    * @param [Boolean] visible

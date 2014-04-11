@@ -695,7 +695,12 @@ class ARERawActor
       context.lineWidth = 1
 
     if @_strokeColor
-      context.strokeStyle = "rgb#{@_strokeColor}"
+      # because.
+      r = Number(@_strokeColor._r).toFixed(0)
+      g = Number(@_strokeColor._g).toFixed(0)
+      b = Number(@_strokeColor._b).toFixed(0)
+      a = Number(@_opacity).toFixed(4)
+      context.strokeStyle = "rgba(#{r},#{g},#{b},#{a})"
     else
       context.strokeStyle = "#FFF"
 
@@ -704,7 +709,11 @@ class ARERawActor
     else
 
       if @_color
-        context.fillStyle = "rgb#{@_color}"
+        r = Number(@_color._r).toFixed(0)
+        g = Number(@_color._g).toFixed(0)
+        b = Number(@_color._b).toFixed(0)
+        a = Number(@_opacity).toFixed(4)
+        context.fillStyle = "rgba(#{r},#{g},#{b},#{a})"
       else
         context.fillStyle = "#FFF"
 
@@ -972,6 +981,13 @@ class ARERawActor
   setVisible: (_visible) ->
     @_visible = _visible
     @
+
+  ###
+  # Get actor opacity
+  #
+  # @return [Number] opacity
+  ###
+  getOpacity: -> @_opacity
 
   ###
   # Returns the actor position as an object with x and y properties
