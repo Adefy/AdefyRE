@@ -669,7 +669,7 @@ class ARERawActor
   ###
   wglBindTexture: (gl) ->
     # Texture rendering, if needed
-    if @_material == ARERenderer.MATERIAL_TEXTURE
+    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
       gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
       gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
@@ -769,7 +769,7 @@ class ARERawActor
     else
       context.strokeStyle = "#FFF"
 
-    if @_material == ARERenderer.MATERIAL_TEXTURE
+    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
       #
     else
 
@@ -833,7 +833,7 @@ class ARERawActor
           context.stroke()
 
         if (@_renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0
-          if @_material == ARERenderer.MATERIAL_TEXTURE
+          if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
             context.clip()
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
@@ -4580,6 +4580,6 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 1
+  PATCH: 3
   BUILD: null
-  STRING: "1.0.1"
+  STRING: "1.0.3"

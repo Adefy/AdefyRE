@@ -651,7 +651,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
-    if (this._material === ARERenderer.MATERIAL_TEXTURE) {
+    if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
       gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
       gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
       gl.activeTexture(gl.TEXTURE0);
@@ -736,7 +736,7 @@ ARERawActor = (function() {
     } else {
       context.strokeStyle = "#FFF";
     }
-    if (this._material === ARERenderer.MATERIAL_TEXTURE) {
+    if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
 
     } else {
       if (this._color) {
@@ -792,7 +792,7 @@ ARERawActor = (function() {
           context.stroke();
         }
         if ((this._renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0) {
-          if (this._material === ARERenderer.MATERIAL_TEXTURE) {
+          if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
             context.clip();
             context.drawImage(this._texture.texture, -this._size.x / 2, -this._size.y / 2, this._size.x, this._size.y);
           } else {
