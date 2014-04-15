@@ -250,6 +250,7 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.loadTexture = function(name, path, flipTexture, cb) {
     var gl, img, tex;
+    flipTexture = param.optional(flipTexture, this.wglFlipTextureY);
     ARELog.info("Loading texture: " + name + ", " + path);
     img = new Image();
     img.crossOrigin = "anonymous";

@@ -4416,6 +4416,7 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.loadTexture = function(name, path, flipTexture, cb) {
     var gl, img, tex;
+    flipTexture = param.optional(flipTexture, this.wglFlipTextureY);
     ARELog.info("Loading texture: " + name + ", " + path);
     img = new Image();
     img.crossOrigin = "anonymous";
@@ -4861,7 +4862,7 @@ AREVersion = {
   MINOR: 0,
   PATCH: 4,
   BUILD: null,
-  STRING: "1.0.4"
+  STRING: "1.0.5"
 };
 
 //# sourceMappingURL=are.js.map
