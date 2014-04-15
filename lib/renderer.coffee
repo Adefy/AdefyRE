@@ -611,12 +611,18 @@ class ARERenderer
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
         a.setOpacity 1.0
-        a.wglDraw gl
+        a.wglDraw gl, @_defaultShader
         a.setColor _savedColor
         a.setOpacity _savedOpacity
 
       else
         a = a.updateAttachment()
+
+        ##
+        ## NOTE: Keep in mind that failing to switch to the proper material
+        ##       will cause the draw to fail! Pass in a custom shader if
+        ##       switching to a different material.
+        ##
 
         if a.getMaterial() != ARERenderer._currentMaterial
           @switchMaterial a.getMaterial()

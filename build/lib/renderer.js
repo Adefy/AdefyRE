@@ -641,7 +641,7 @@ ARERenderer = (function() {
         this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.setOpacity(1.0);
-        a.wglDraw(gl);
+        a.wglDraw(gl, this._defaultShader);
         a.setColor(_savedColor);
         a.setOpacity(_savedOpacity);
       } else {

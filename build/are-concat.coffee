@@ -287,21 +287,16 @@ class ARERawActor
   # @return [this]
   ###
   setShader: (shader) ->
-    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
-      param.required shader
-      # Ensure shader is built, and generate handles if not already done
-      if shader.getProgram() == null
-        throw new Error "Shader has to be built before it can be used!"
+    return if ARERenderer.activeRendererMode != ARERenderer.RENDERER_MODE_WGL
+    param.required shader
 
-      if shader.getHandles() == null
-        shader.generateHandles()
+    # Ensure shader is built, and generate handles if not already done
+    if shader.getProgram() == null
+      throw new Error "Shader has to be built before it can be used!"
 
-      handles = shader.getHandles()
+    shader.generateHandles() if shader.getHandles() == null
 
-      @_sh_handles = handles
-
-    else
-      #ARELog.info "Shader's are not supported with this render mode"
+    @_sh_handles = shader.getHandles()
 
   ###
   # Creates the internal physics body, if one does not already exist
@@ -687,46 +682,45 @@ class ARERawActor
   ###
   # Renders the Actor using the WebGL interface, this function should only
   # be called by a ARERenderer in WGL mode
+  #
   # @param [Object] gl WebGL context
+  # @param [Shader] shader optional shader to override our own
   ###
-  wglDraw: (gl) ->
+  wglDraw: (gl, shader) ->
     param.required gl
+    param.optional shader
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
-    return false unless @_visible
+    return unless @_visible
 
     @updatePosition()
 
-    # Prep our vectors and matrices
     @_modelM = new Matrix4()
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
+
     if ARERenderer.force_pos0_0
       @_transV.elements[1] = ARERenderer.getHeight() - \
                               @_position.y + ARERenderer.camPos.y
     else
       @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
 
-    #@_modelM = @_modelM.x((new Matrix4()).translate(@_transV))
-    #@_modelM = @_modelM.x((new Matrix4()).rotate(@_rotation, @_rotV))
     @_modelM.translate(@_transV)
     @_modelM.rotate(-@_rotation, @_rotV)
 
-    #flatMV = new Float32Array(@_modelM.flatten())
     flatMV = @_modelM.flatten()
 
+    # Temporarily change handles if a shader was passed in
+    if shader
+      _sh_handles_backup = @_sh_handles
+      @_sh_handles = shader.getHandles()
+
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
-
     gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
-
     gl.uniformMatrix4fv @_sh_handles.uModelView, false, flatMV
 
-    gl.uniform4f @_sh_handles.uColor,
-      @_colArray[0], @_colArray[1], @_colArray[2], 1.0
-
-    if @_sh_handles.uClipRect
-      gl.uniform4fv @_sh_handles.uClipRect, @_clipRect
-
+    gl.uniform4f @_sh_handles.uColor, @_colArray[0], @_colArray[1], @_colArray[2], 1.0
+    gl.uniform4fv @_sh_handles.uClipRect, @_clipRect if @_sh_handles.uClipRect
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
     @wglBindTexture gl
@@ -745,6 +739,10 @@ class ARERawActor
         gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
 
       else throw new Error "Invalid render mode! #{@_renderMode}"
+
+    # Revert temporary shader change
+    if shader
+      @_sh_handles = _sh_handles_backup
 
     @
 
@@ -2355,7 +2353,7 @@ class ARERenderer
         # Recover id with (_idSector * 255) + _id
         a.setColor _id, _idSector, 248
         a.setOpacity 1.0
-        a.wglDraw gl
+        a.wglDraw gl, @_defaultShader
         a.setColor _savedColor
         a.setOpacity _savedOpacity
 
@@ -4580,6 +4578,6 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 3
+  PATCH: 4
   BUILD: null
-  STRING: "1.0.3"
+  STRING: "1.0.4"

@@ -230,20 +230,17 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setShader = function(shader) {
-    var handles;
-    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
-      param.required(shader);
-      if (shader.getProgram() === null) {
-        throw new Error("Shader has to be built before it can be used!");
-      }
-      if (shader.getHandles() === null) {
-        shader.generateHandles();
-      }
-      handles = shader.getHandles();
-      return this._sh_handles = handles;
-    } else {
-
+    if (ARERenderer.activeRendererMode !== ARERenderer.RENDERER_MODE_WGL) {
+      return;
     }
+    param.required(shader);
+    if (shader.getProgram() === null) {
+      throw new Error("Shader has to be built before it can be used!");
+    }
+    if (shader.getHandles() === null) {
+      shader.generateHandles();
+    }
+    return this._sh_handles = shader.getHandles();
   };
 
 
@@ -665,14 +662,17 @@ ARERawActor = (function() {
   /*
    * Renders the Actor using the WebGL interface, this function should only
    * be called by a ARERenderer in WGL mode
+   *
    * @param [Object] gl WebGL context
+   * @param [Shader] shader optional shader to override our own
    */
 
-  ARERawActor.prototype.wglDraw = function(gl) {
-    var flatMV;
+  ARERawActor.prototype.wglDraw = function(gl, shader) {
+    var flatMV, _sh_handles_backup;
     param.required(gl);
+    param.optional(shader);
     if (!this._visible) {
-      return false;
+      return;
     }
     this.updatePosition();
     this._modelM = new Matrix4();
@@ -685,6 +685,10 @@ ARERawActor = (function() {
     this._modelM.translate(this._transV);
     this._modelM.rotate(-this._rotation, this._rotV);
     flatMV = this._modelM.flatten();
+    if (shader) {
+      _sh_handles_backup = this._sh_handles;
+      this._sh_handles = shader.getHandles();
+    }
     gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
     gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
     gl.uniformMatrix4fv(this._sh_handles.uModelView, false, flatMV);
@@ -710,6 +714,9 @@ ARERawActor = (function() {
         break;
       default:
         throw new Error("Invalid render mode! " + this._renderMode);
+    }
+    if (shader) {
+      this._sh_handles = _sh_handles_backup;
     }
     return this;
   };
