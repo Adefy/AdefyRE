@@ -621,6 +621,7 @@ class ARERawActor
   # @return [ARERawActor]
   ###
   updateAttachment: ->
+
     # Check if we have a visible attached texture.
     # If so, set properties and draw
     if @hasAttachment() and @getAttachment()._visible
@@ -643,9 +644,9 @@ class ARERawActor
       a.setPosition pos
       a.setRotation rot
 
-      return a
-
-    return @
+      a
+    else
+      @
 
   ###
   # Update position from physics body if we have one
@@ -2360,6 +2361,12 @@ class ARERenderer
       else
         a = a.updateAttachment()
 
+        ##
+        ## NOTE: Keep in mind that failing to switch to the proper material
+        ##       will cause the draw to fail! Pass in a custom shader if
+        ##       switching to a different material.
+        ##
+
         if a.getMaterial() != ARERenderer._currentMaterial
           @switchMaterial a.getMaterial()
 
@@ -4064,96 +4071,6 @@ class AREEngineInterface
 
     flipTexture = @wglFlipTextureY
 
-    # Loads a texture, and adds it to our renderer
-    loadTexture = (name, path) ->
-      ARELog.info "Loading texture: #{name}, #{path}"
-
-      # Create texture and image
-      img = new Image()
-      img.crossOrigin = "anonymous"
-
-      gl = ARERenderer._gl
-      tex = null
-
-      if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
-
-        ARELog.info "Loading Gl Texture"
-
-        tex = gl.createTexture()
-        img.onload = ->
-
-          scaleX = 1
-          scaleY = 1
-
-          # Resize image if needed
-          w = (img.width & (img.width - 1)) != 0
-          h = (img.height & (img.height - 1)) != 0
-          if w || h
-
-            canvas = document.createElement "canvas"
-
-            canvas.width = nextHighestPowerOfTwo img.width
-            canvas.height = nextHighestPowerOfTwo img.height
-
-            scaleX = img.width / canvas.width
-            scaleY = img.height / canvas.height
-
-            ctx = canvas.getContext "2d"
-            ctx.drawImage img, 0, 0, canvas.width, canvas.height
-
-            img = canvas
-
-          # Set up GL texture
-          gl.bindTexture gl.TEXTURE_2D, tex
-          gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, flipTexture
-          gl.texImage2D gl.TEXTURE_2D, 0,
-                        gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
-
-          # if not pot
-          #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
-          #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
-
-          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
-          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
-          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
-          gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR
-
-          # gl.generateMipmap gl.TEXTURE_2D
-          gl.bindTexture gl.TEXTURE_2D, null
-
-          # Add to renderer
-          ARERenderer.addTexture
-            name: name
-            texture: tex
-            width: img.width
-            height: img.height
-            scaleX: scaleX
-            scaleY: scaleY
-
-          # Call cb once we've loaded all textures
-          count++
-          if count == manifest.length then cb()
-
-      else
-
-        ARELog.info "Loading Canvas Image"
-
-        img.onload = ->
-
-          # Add to renderer
-          ARERenderer.addTexture
-            name: name
-            texture: img
-            width: img.width
-            height: img.height
-
-          # Call cb once we've loaded all textures
-          count++
-          if count == manifest.length then cb()
-
-      # Load!
-      img.src = path
-
     # Load textures
     for tex in manifest
 
@@ -4167,7 +4084,99 @@ class AREEngineInterface
         throw new Error "Only image textures are supported!"
 
       # Gogo
-      loadTexture tex.name, tex.path
+      @loadTexture tex.name, tex.path, flipTexture, ->
+        count++
+        if count == manifest.length then cb()
+
+  ###
+  # Loads a texture, and adds it to our renderer
+  #
+  # @param [String] name
+  # @param [String] path
+  # @param [Boolean] flipTexture
+  # @param [Method] cb called when texture is loaded
+  ###
+  loadTexture: (name, path, flipTexture, cb) ->
+    ARELog.info "Loading texture: #{name}, #{path}"
+
+    # Create texture and image
+    img = new Image()
+    img.crossOrigin = "anonymous"
+
+    gl = ARERenderer._gl
+    tex = null
+
+    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
+      ARELog.info "Loading Gl Texture"
+
+      tex = gl.createTexture()
+      img.onload = ->
+
+        scaleX = 1
+        scaleY = 1
+
+        # Resize image if needed
+        w = (img.width & (img.width - 1)) != 0
+        h = (img.height & (img.height - 1)) != 0
+        if w || h
+
+          canvas = document.createElement "canvas"
+
+          canvas.width = nextHighestPowerOfTwo img.width
+          canvas.height = nextHighestPowerOfTwo img.height
+
+          scaleX = img.width / canvas.width
+          scaleY = img.height / canvas.height
+
+          ctx = canvas.getContext "2d"
+          ctx.drawImage img, 0, 0, canvas.width, canvas.height
+
+          img = canvas
+
+        # Set up GL texture
+        gl.bindTexture gl.TEXTURE_2D, tex
+        gl.pixelStorei gl.UNPACK_FLIP_Y_WEBGL, flipTexture
+        gl.texImage2D gl.TEXTURE_2D, 0,
+                      gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
+
+        # if not pot
+        #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
+        #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
+
+        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
+        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
+        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
+        gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR
+
+        # gl.generateMipmap gl.TEXTURE_2D
+        gl.bindTexture gl.TEXTURE_2D, null
+
+        # Add to renderer
+        ARERenderer.addTexture
+          name: name
+          texture: tex
+          width: img.width
+          height: img.height
+          scaleX: scaleX
+          scaleY: scaleY
+
+        cb() if cb
+
+    else
+      ARELog.info "Loading Canvas Image"
+      img.onload = ->
+
+        # Add to renderer
+        ARERenderer.addTexture
+          name: name
+          texture: img
+          width: img.width
+          height: img.height
+
+        cb() if cb
+
+    # Load!
+    img.src = path
 
   ###
   # Get renderer texture size by name

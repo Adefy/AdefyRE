@@ -689,8 +689,9 @@ ARERawActor = (function() {
       a.setPosition(pos);
       a.setRotation(rot);
       return a;
+    } else {
+      return this;
     }
-    return this;
   };
 
 
@@ -4371,7 +4372,7 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.loadManifest = function(json, cb) {
-    var count, flipTexture, loadTexture, manifest, tex, _i, _len, _results;
+    var count, flipTexture, manifest, tex, _i, _len, _results;
     param.required(json);
     manifest = JSON.parse(json);
     if (manifest.textures !== void 0) {
@@ -4382,70 +4383,6 @@ AREEngineInterface = (function() {
     }
     count = 0;
     flipTexture = this.wglFlipTextureY;
-    loadTexture = function(name, path) {
-      var gl, img, tex;
-      ARELog.info("Loading texture: " + name + ", " + path);
-      img = new Image();
-      img.crossOrigin = "anonymous";
-      gl = ARERenderer._gl;
-      tex = null;
-      if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
-        ARELog.info("Loading Gl Texture");
-        tex = gl.createTexture();
-        img.onload = function() {
-          var canvas, ctx, h, scaleX, scaleY, w;
-          scaleX = 1;
-          scaleY = 1;
-          w = (img.width & (img.width - 1)) !== 0;
-          h = (img.height & (img.height - 1)) !== 0;
-          if (w || h) {
-            canvas = document.createElement("canvas");
-            canvas.width = nextHighestPowerOfTwo(img.width);
-            canvas.height = nextHighestPowerOfTwo(img.height);
-            scaleX = img.width / canvas.width;
-            scaleY = img.height / canvas.height;
-            ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            img = canvas;
-          }
-          gl.bindTexture(gl.TEXTURE_2D, tex);
-          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipTexture);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-          gl.bindTexture(gl.TEXTURE_2D, null);
-          ARERenderer.addTexture({
-            name: name,
-            texture: tex,
-            width: img.width,
-            height: img.height,
-            scaleX: scaleX,
-            scaleY: scaleY
-          });
-          count++;
-          if (count === manifest.length) {
-            return cb();
-          }
-        };
-      } else {
-        ARELog.info("Loading Canvas Image");
-        img.onload = function() {
-          ARERenderer.addTexture({
-            name: name,
-            texture: img,
-            width: img.width,
-            height: img.height
-          });
-          count++;
-          if (count === manifest.length) {
-            return cb();
-          }
-        };
-      }
-      return img.src = path;
-    };
     _results = [];
     for (_i = 0, _len = manifest.length; _i < _len; _i++) {
       tex = manifest[_i];
@@ -4457,9 +4394,87 @@ AREEngineInterface = (function() {
         console.error(tex.type);
         throw new Error("Only image textures are supported!");
       }
-      _results.push(loadTexture(tex.name, tex.path));
+      _results.push(this.loadTexture(tex.name, tex.path, flipTexture, function() {
+        count++;
+        if (count === manifest.length) {
+          return cb();
+        }
+      }));
     }
     return _results;
+  };
+
+
+  /*
+   * Loads a texture, and adds it to our renderer
+   *
+   * @param [String] name
+   * @param [String] path
+   * @param [Boolean] flipTexture
+   * @param [Method] cb called when texture is loaded
+   */
+
+  AREEngineInterface.prototype.loadTexture = function(name, path, flipTexture, cb) {
+    var gl, img, tex;
+    ARELog.info("Loading texture: " + name + ", " + path);
+    img = new Image();
+    img.crossOrigin = "anonymous";
+    gl = ARERenderer._gl;
+    tex = null;
+    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
+      ARELog.info("Loading Gl Texture");
+      tex = gl.createTexture();
+      img.onload = function() {
+        var canvas, ctx, h, scaleX, scaleY, w;
+        scaleX = 1;
+        scaleY = 1;
+        w = (img.width & (img.width - 1)) !== 0;
+        h = (img.height & (img.height - 1)) !== 0;
+        if (w || h) {
+          canvas = document.createElement("canvas");
+          canvas.width = nextHighestPowerOfTwo(img.width);
+          canvas.height = nextHighestPowerOfTwo(img.height);
+          scaleX = img.width / canvas.width;
+          scaleY = img.height / canvas.height;
+          ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          img = canvas;
+        }
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        ARERenderer.addTexture({
+          name: name,
+          texture: tex,
+          width: img.width,
+          height: img.height,
+          scaleX: scaleX,
+          scaleY: scaleY
+        });
+        if (cb) {
+          return cb();
+        }
+      };
+    } else {
+      ARELog.info("Loading Canvas Image");
+      img.onload = function() {
+        ARERenderer.addTexture({
+          name: name,
+          texture: img,
+          width: img.width,
+          height: img.height
+        });
+        if (cb) {
+          return cb();
+        }
+      };
+    }
+    return img.src = path;
   };
 
 

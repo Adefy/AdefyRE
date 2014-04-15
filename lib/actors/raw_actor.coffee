@@ -556,6 +556,7 @@ class ARERawActor
   # @return [ARERawActor]
   ###
   updateAttachment: ->
+
     # Check if we have a visible attached texture.
     # If so, set properties and draw
     if @hasAttachment() and @getAttachment()._visible
@@ -578,9 +579,9 @@ class ARERawActor
       a.setPosition pos
       a.setRotation rot
 
-      return a
-
-    return @
+      a
+    else
+      @
 
   ###
   # Update position from physics body if we have one

@@ -624,8 +624,9 @@ ARERawActor = (function() {
       a.setPosition(pos);
       a.setRotation(rot);
       return a;
+    } else {
+      return this;
     }
-    return this;
   };
 
 
