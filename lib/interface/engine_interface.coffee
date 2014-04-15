@@ -204,6 +204,7 @@ class AREEngineInterface
   # @param [Method] cb called when texture is loaded
   ###
   loadTexture: (name, path, flipTexture, cb) ->
+    flipTexture = param.optional flipTexture, @wglFlipTextureY
     ARELog.info "Loading texture: #{name}, #{path}"
 
     # Create texture and image
