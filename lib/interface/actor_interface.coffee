@@ -76,6 +76,30 @@ class AREActorInterface
     new ARECircleActor(radius).getId()
 
   ###
+  # Get actor render layer
+  #
+  # @param [Number] id
+  # @return [Number] layer
+  ###
+  getActorLayer: (id) ->
+    if a = @_findActor(id)
+      return a.getLayer()
+
+    null
+
+  ###
+  # Get actor physics layer
+  #
+  # @param [Number] id
+  # @return [Number] physicsLayer
+  ###
+  getActorPhysicsLayer: (id) ->
+    if a = @_findActor(id)
+      return a.getPhysicsLayer()
+
+    null
+
+  ###
   # Fetch the width of the rectangle actor with the specified ID
   #
   # @param [Number] id

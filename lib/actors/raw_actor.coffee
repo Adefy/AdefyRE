@@ -164,6 +164,13 @@ class ARERawActor
   getMaterial: -> @_material
 
   ###
+  # Get actor layer
+  #
+  # @return [Number] layer
+  ###
+  getLayer: -> @layer
+
+  ###
   # Set our render layer. Higher layers render on top of lower ones
   #
   # @param [Number] layer
@@ -330,6 +337,13 @@ class ARERawActor
       AREPhysics.stopStepping()
     else if AREPhysics.bodyCount < 0
       throw new Error "Body count is negative!"
+
+  ###
+  # Get actor physics layer
+  #
+  # @return [Number] physicsLayer
+  ###
+  getPhysicsLayer: -> @_physicsLayer
 
   ###
   # Set physics layer. If we have a physics body, applies immediately. Value

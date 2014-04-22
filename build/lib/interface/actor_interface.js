@@ -85,6 +85,38 @@ AREActorInterface = (function() {
 
 
   /*
+   * Get actor render layer
+   *
+   * @param [Number] id
+   * @return [Number] layer
+   */
+
+  AREActorInterface.prototype.getActorLayer = function(id) {
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getLayer();
+    }
+    return null;
+  };
+
+
+  /*
+   * Get actor physics layer
+   *
+   * @param [Number] id
+   * @return [Number] physicsLayer
+   */
+
+  AREActorInterface.prototype.getActorPhysicsLayer = function(id) {
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getPhysicsLayer();
+    }
+    return null;
+  };
+
+
+  /*
    * Fetch the width of the rectangle actor with the specified ID
    *
    * @param [Number] id

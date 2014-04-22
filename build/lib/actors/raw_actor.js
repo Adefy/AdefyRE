@@ -163,6 +163,17 @@ ARERawActor = (function() {
 
 
   /*
+   * Get actor layer
+   *
+   * @return [Number] layer
+   */
+
+  ARERawActor.prototype.getLayer = function() {
+    return this.layer;
+  };
+
+
+  /*
    * Set our render layer. Higher layers render on top of lower ones
    *
    * @param [Number] layer
@@ -346,6 +357,17 @@ ARERawActor = (function() {
     } else if (AREPhysics.bodyCount < 0) {
       throw new Error("Body count is negative!");
     }
+  };
+
+
+  /*
+   * Get actor physics layer
+   *
+   * @return [Number] physicsLayer
+   */
+
+  ARERawActor.prototype.getPhysicsLayer = function() {
+    return this._physicsLayer;
   };
 
 

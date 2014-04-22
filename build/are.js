@@ -228,6 +228,17 @@ ARERawActor = (function() {
 
 
   /*
+   * Get actor layer
+   *
+   * @return [Number] layer
+   */
+
+  ARERawActor.prototype.getLayer = function() {
+    return this.layer;
+  };
+
+
+  /*
    * Set our render layer. Higher layers render on top of lower ones
    *
    * @param [Number] layer
@@ -411,6 +422,17 @@ ARERawActor = (function() {
     } else if (AREPhysics.bodyCount < 0) {
       throw new Error("Body count is negative!");
     }
+  };
+
+
+  /*
+   * Get actor physics layer
+   *
+   * @return [Number] physicsLayer
+   */
+
+  ARERawActor.prototype.getPhysicsLayer = function() {
+    return this._physicsLayer;
   };
 
 
@@ -3529,6 +3551,38 @@ AREActorInterface = (function() {
 
 
   /*
+   * Get actor render layer
+   *
+   * @param [Number] id
+   * @return [Number] layer
+   */
+
+  AREActorInterface.prototype.getActorLayer = function(id) {
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getLayer();
+    }
+    return null;
+  };
+
+
+  /*
+   * Get actor physics layer
+   *
+   * @param [Number] id
+   * @return [Number] physicsLayer
+   */
+
+  AREActorInterface.prototype.getActorPhysicsLayer = function(id) {
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getPhysicsLayer();
+    }
+    return null;
+  };
+
+
+  /*
    * Fetch the width of the rectangle actor with the specified ID
    *
    * @param [Number] id
@@ -4860,9 +4914,9 @@ window.AdefyGLI = window.AdefyRE = new AREInterface;
 AREVersion = {
   MAJOR: 1,
   MINOR: 0,
-  PATCH: 4,
+  PATCH: 7,
   BUILD: null,
-  STRING: "1.0.5"
+  STRING: "1.0.7"
 };
 
 //# sourceMappingURL=are.js.map

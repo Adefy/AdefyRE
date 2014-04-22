@@ -229,6 +229,13 @@ class ARERawActor
   getMaterial: -> @_material
 
   ###
+  # Get actor layer
+  #
+  # @return [Number] layer
+  ###
+  getLayer: -> @layer
+
+  ###
   # Set our render layer. Higher layers render on top of lower ones
   #
   # @param [Number] layer
@@ -395,6 +402,13 @@ class ARERawActor
       AREPhysics.stopStepping()
     else if AREPhysics.bodyCount < 0
       throw new Error "Body count is negative!"
+
+  ###
+  # Get actor physics layer
+  #
+  # @return [Number] physicsLayer
+  ###
+  getPhysicsLayer: -> @_physicsLayer
 
   ###
   # Set physics layer. If we have a physics body, applies immediately. Value
@@ -3378,6 +3392,30 @@ class AREActorInterface
     new ARECircleActor(radius).getId()
 
   ###
+  # Get actor render layer
+  #
+  # @param [Number] id
+  # @return [Number] layer
+  ###
+  getActorLayer: (id) ->
+    if a = @_findActor(id)
+      return a.getLayer()
+
+    null
+
+  ###
+  # Get actor physics layer
+  #
+  # @param [Number] id
+  # @return [Number] physicsLayer
+  ###
+  getActorPhysicsLayer: (id) ->
+    if a = @_findActor(id)
+      return a.getPhysicsLayer()
+
+    null
+
+  ###
   # Fetch the width of the rectangle actor with the specified ID
   #
   # @param [Number] id
@@ -4588,6 +4626,6 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 4
+  PATCH: 7
   BUILD: null
-  STRING: "1.0.5"
+  STRING: "1.0.7"
