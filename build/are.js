@@ -2798,8 +2798,8 @@ ARERenderer = (function() {
     param.required(name);
     if (t = this.getTexture(name)) {
       return {
-        w: t.width,
-        h: t.height
+        w: t.width * t.scaleX,
+        h: t.height * t.scaleY
       };
     }
     return null;
