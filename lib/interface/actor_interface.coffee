@@ -572,7 +572,7 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.destroyPhysicsBody()
-      true
+      return true
 
     false
 
@@ -590,7 +590,7 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.setTexture name
-      true
+      return true
 
     false
 
@@ -609,6 +609,6 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.setTextureRepeat x, y
-      true
+      return true
 
     false

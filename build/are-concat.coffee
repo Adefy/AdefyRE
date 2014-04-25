@@ -3888,7 +3888,7 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.destroyPhysicsBody()
-      true
+      return true
 
     false
 
@@ -3906,7 +3906,7 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.setTexture name
-      true
+      return true
 
     false
 
@@ -3925,7 +3925,7 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.setTextureRepeat x, y
-      true
+      return true
 
     false
 
@@ -4626,6 +4626,6 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 7
+  PATCH: 9
   BUILD: null
-  STRING: "1.0.7"
+  STRING: "1.0.9"

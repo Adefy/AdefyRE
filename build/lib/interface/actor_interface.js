@@ -701,7 +701,7 @@ AREActorInterface = (function() {
     param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.destroyPhysicsBody();
-      true;
+      return true;
     }
     return false;
   };
@@ -722,7 +722,7 @@ AREActorInterface = (function() {
     param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setTexture(name);
-      true;
+      return true;
     }
     return false;
   };
@@ -744,7 +744,7 @@ AREActorInterface = (function() {
     y = param.optional(y, 1);
     if ((a = this._findActor(id)) !== null) {
       a.setTextureRepeat(x, y);
-      true;
+      return true;
     }
     return false;
   };

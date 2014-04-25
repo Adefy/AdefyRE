@@ -17,6 +17,6 @@
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 7
+  PATCH: 9
   BUILD: null
-  STRING: "1.0.7"
+  STRING: "1.0.9"
