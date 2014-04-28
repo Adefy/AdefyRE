@@ -268,11 +268,11 @@ ARERawActor = (function() {
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
+    if (!!this._shape || !!this._body) {
+      return;
+    }
     if (AREPhysics.getWorld() === null || AREPhysics.getWorld() === void 0) {
       AREPhysics.startStepping();
-    }
-    if (this._shape === !null) {
-      return;
     }
     if (AREPhysics.bodyCount === 0) {
       AREPhysics.startStepping();
@@ -342,7 +342,7 @@ ARERawActor = (function() {
     if (AREPhysics.bodyCount === 0) {
       return;
     }
-    if (this._shape === null) {
+    if (!this._shape) {
       return;
     }
     AREPhysics.bodyCount--;

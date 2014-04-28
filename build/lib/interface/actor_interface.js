@@ -398,17 +398,12 @@ AREActorInterface = (function() {
    */
 
   AREActorInterface.prototype.destroyActor = function(id) {
-    var a, i, _i, _len, _ref;
+    var a;
     param.required(id);
-    _ref = ARERenderer.actors;
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      a = _ref[i];
-      if (a.getId() === id) {
-        a.destroyPhysicsBody();
-        ARERenderer.actors.splice(i, 1);
-        a = void 0;
-        return true;
-      }
+    if ((a = this._findActor(id)) !== null) {
+      a.destroyPhysicsBody();
+      ARERenderer.removeActor(a);
+      return true;
     }
     return false;
   };

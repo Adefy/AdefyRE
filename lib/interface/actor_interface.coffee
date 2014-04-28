@@ -319,12 +319,10 @@ class AREActorInterface
   destroyActor: (id) ->
     param.required id
 
-    for a, i in ARERenderer.actors
-      if a.getId() == id
-        a.destroyPhysicsBody()
-        ARERenderer.actors.splice i, 1
-        a = undefined
-        return true
+    if (a = @_findActor(id)) != null
+      a.destroyPhysicsBody()
+      ARERenderer.removeActor a
+      return true
 
     false
 

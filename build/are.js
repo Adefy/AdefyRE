@@ -333,11 +333,11 @@ ARERawActor = (function() {
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
+    if (!!this._shape || !!this._body) {
+      return;
+    }
     if (AREPhysics.getWorld() === null || AREPhysics.getWorld() === void 0) {
       AREPhysics.startStepping();
-    }
-    if (this._shape === !null) {
-      return;
     }
     if (AREPhysics.bodyCount === 0) {
       AREPhysics.startStepping();
@@ -407,7 +407,7 @@ ARERawActor = (function() {
     if (AREPhysics.bodyCount === 0) {
       return;
     }
-    if (this._shape === null) {
+    if (!this._shape) {
       return;
     }
     AREPhysics.bodyCount--;
@@ -3864,17 +3864,12 @@ AREActorInterface = (function() {
    */
 
   AREActorInterface.prototype.destroyActor = function(id) {
-    var a, i, _i, _len, _ref;
+    var a;
     param.required(id);
-    _ref = ARERenderer.actors;
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      a = _ref[i];
-      if (a.getId() === id) {
-        a.destroyPhysicsBody();
-        ARERenderer.actors.splice(i, 1);
-        a = void 0;
-        return true;
-      }
+    if ((a = this._findActor(id)) !== null) {
+      a.destroyPhysicsBody();
+      ARERenderer.removeActor(a);
+      return true;
     }
     return false;
   };
@@ -4914,9 +4909,9 @@ window.AdefyGLI = window.AdefyRE = new AREInterface;
 AREVersion = {
   MAJOR: 1,
   MINOR: 0,
-  PATCH: 9,
+  PATCH: 10,
   BUILD: null,
-  STRING: "1.0.9"
+  STRING: "1.0.10"
 };
 
 //# sourceMappingURL=are.js.map

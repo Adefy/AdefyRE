@@ -313,12 +313,11 @@ class ARERawActor
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
+    return if !!@_shape or !!@_body
 
     # Start the world stepping if not already doing so
     if AREPhysics.getWorld() == null or AREPhysics.getWorld() == undefined
       AREPhysics.startStepping()
-
-    if @_shape == not null then return
 
     if AREPhysics.bodyCount == 0 then AREPhysics.startStepping()
 
@@ -387,13 +386,13 @@ class ARERawActor
   # Destroys the physics body if one exists
   ###
   destroyPhysicsBody: ->
-    if AREPhysics.bodyCount == 0 then return
-    if @_shape == null then return
+    return if AREPhysics.bodyCount == 0
+    return unless @_shape
 
     AREPhysics.bodyCount--
 
     AREPhysics.getWorld().removeShape @_shape
-    if @_body then AREPhysics.getWorld().removeBody @_body
+    AREPhysics.getWorld().removeBody @_body if @_body
 
     @_shape = null
     @_body = null
@@ -3635,12 +3634,10 @@ class AREActorInterface
   destroyActor: (id) ->
     param.required id
 
-    for a, i in ARERenderer.actors
-      if a.getId() == id
-        a.destroyPhysicsBody()
-        ARERenderer.actors.splice i, 1
-        a = undefined
-        return true
+    if (a = @_findActor(id)) != null
+      a.destroyPhysicsBody()
+      ARERenderer.removeActor a
+      return true
 
     false
 
@@ -4626,6 +4623,6 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 9
+  PATCH: 10
   BUILD: null
-  STRING: "1.0.9"
+  STRING: "1.0.10"
