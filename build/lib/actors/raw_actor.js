@@ -233,6 +233,22 @@ ARERawActor = (function() {
 
 
   /*
+   * Get the actor's texture repeat
+   *
+   * @return [Object]
+   *   @option [Number] x
+   *   @option [Number] y
+   */
+
+  ARERawActor.prototype.getTextureRepeat = function() {
+    return {
+      x: this._texRepeatX,
+      y: this._texRepeatY
+    };
+  };
+
+
+  /*
    * Set shader used to draw actor. For the time being, the routine mearly
    * pulls out handles for the ModelView, Color, and Position structures
    *
@@ -499,7 +515,7 @@ ARERawActor = (function() {
 
   ARERawActor.prototype.setTextureRepeat = function(x, y) {
     var i, uvs, _i, _ref;
-    param.required(x);
+    x = param.optional(x, 1);
     y = param.optional(y, 1);
     uvs = [];
     for (i = _i = 0, _ref = this._origTexVerts.length; _i < _ref; i = _i += 2) {

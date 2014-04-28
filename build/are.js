@@ -298,6 +298,22 @@ ARERawActor = (function() {
 
 
   /*
+   * Get the actor's texture repeat
+   *
+   * @return [Object]
+   *   @option [Number] x
+   *   @option [Number] y
+   */
+
+  ARERawActor.prototype.getTextureRepeat = function() {
+    return {
+      x: this._texRepeatX,
+      y: this._texRepeatY
+    };
+  };
+
+
+  /*
    * Set shader used to draw actor. For the time being, the routine mearly
    * pulls out handles for the ModelView, Color, and Position structures
    *
@@ -564,7 +580,7 @@ ARERawActor = (function() {
 
   ARERawActor.prototype.setTextureRepeat = function(x, y) {
     var i, uvs, _i, _ref;
-    param.required(x);
+    x = param.optional(x, 1);
     y = param.optional(y, 1);
     uvs = [];
     for (i = _i = 0, _ref = this._origTexVerts.length; _i < _ref; i = _i += 2) {
@@ -3623,6 +3639,158 @@ AREActorInterface = (function() {
 
 
   /*
+   * Fetch the radius of the circle actor with the specified ID
+   *
+   * @param [Number] id
+   * @return [Number] radius
+   */
+
+  AREActorInterface.prototype.getCircleActorRadius = function(id) {
+    var a, _i, _len, _ref;
+    _ref = ARERenderer.actors;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      if (a.getId() === id && a instanceof AREPolygonActor) {
+        return a.getRadius();
+      }
+    }
+    return null;
+  };
+
+
+  /*
+   * Get actor opacity using handle, fails with null
+   *
+   * @param [Number] id
+   * @return [Number] opacity
+   */
+
+  AREActorInterface.prototype.getActorOpacity = function(id) {
+    var a;
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      return a.getOpacity();
+    }
+    return null;
+  };
+
+
+  /*
+   * Get actor visible using handle, fails with null
+   *
+   * @param [Number] id
+   * @return [Boolean] visible
+   */
+
+  AREActorInterface.prototype.getActorVisible = function(id) {
+    var a;
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      return a.getVisible();
+    }
+    return null;
+  };
+
+
+  /*
+   * Get actor position using handle, fails with null
+   * Returns position as a JSON representation of a primitive (x, y) object!
+   *
+   * @param [Number] id
+   * @return [String] position
+   */
+
+  AREActorInterface.prototype.getActorPosition = function(id) {
+    var a, pos;
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      pos = a.getPosition();
+      return JSON.stringify({
+        x: pos.x,
+        y: pos.y
+      });
+    }
+    return null;
+  };
+
+
+  /*
+   * Get actor rotation using handle, fails with 0.000001
+   *
+   * @param [Number] id
+   * @param [Boolean] radians defaults to false
+   * @return [Number] angle in degrees or radians
+   */
+
+  AREActorInterface.prototype.getActorRotation = function(id, radians) {
+    var a;
+    param.required(id);
+    radians = param.optional(radians, false);
+    if ((a = this._findActor(id)) !== null) {
+      return a.getRotation(radians);
+    }
+    return 0.000001;
+  };
+
+
+  /*
+   * Returns actor color as a JSON triple, in 0-255 range
+   * Uses id, fails with null
+   *
+   * @param [Number] id
+   * @return [String] col
+   */
+
+  AREActorInterface.prototype.getActorColor = function(id) {
+    var a, color;
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      color = a.getColor();
+      return JSON.stringify({
+        r: color.getR(),
+        g: color.getG(),
+        b: color.getB()
+      });
+    }
+    return null;
+  };
+
+
+  /*
+   * Return an Actor's texture name
+   *
+   * @param [Number] id
+   * @return [String] texture_name
+   */
+
+  AREActorInterface.prototype.getActorTexture = function(id) {
+    var a, tex;
+    if ((a = this._findActor(id)) !== null) {
+      tex = a.getTexture();
+      return tex.name;
+    }
+    return null;
+  };
+
+
+  /*
+   * Retrieve an Actor's texture repeat
+   *
+   * @param [Number] id
+   * @return [JSONString] texture_repeat
+   */
+
+  AREActorInterface.prototype.getActorTextureRepeat = function(id) {
+    var a, texRep;
+    if ((a = this._findActor(id)) !== null) {
+      texRep = a.getTextureRepeat();
+      return JSON.stringify(texRep);
+    }
+    return null;
+  };
+
+
+  /*
    * Set the height of the rectangle actor with the specified ID
    *
    * @param [Number] id
@@ -3663,26 +3831,6 @@ AREActorInterface = (function() {
       }
     }
     return false;
-  };
-
-
-  /*
-   * Fetch the radius of the circle actor with the specified ID
-   *
-   * @param [Number] id
-   * @return [Number] radius
-   */
-
-  AREActorInterface.prototype.getCircleActorRadius = function(id) {
-    var a, _i, _len, _ref;
-    _ref = ARERenderer.actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof AREPolygonActor) {
-        return a.getRadius();
-      }
-    }
-    return null;
   };
 
 
@@ -3941,23 +4089,6 @@ AREActorInterface = (function() {
 
 
   /*
-   * Get actor opacity using handle, fails with null
-   *
-   * @param [Number] id
-   * @return [Number] opacity
-   */
-
-  AREActorInterface.prototype.getActorOpacity = function(id) {
-    var a;
-    param.required(id);
-    if ((a = this._findActor(id)) !== null) {
-      return a.getOpacity();
-    }
-    return null;
-  };
-
-
-  /*
    * Set actor visible using handle, fails with false
    *
    * @param [Boolean] visible
@@ -3974,23 +4105,6 @@ AREActorInterface = (function() {
       return true;
     }
     return false;
-  };
-
-
-  /*
-   * Get actor visible using handle, fails with null
-   *
-   * @param [Number] id
-   * @return [Boolean] visible
-   */
-
-  AREActorInterface.prototype.getActorVisible = function(id) {
-    var a;
-    param.required(id);
-    if ((a = this._findActor(id)) !== null) {
-      return a.getVisible();
-    }
-    return null;
   };
 
 
@@ -4017,28 +4131,6 @@ AREActorInterface = (function() {
 
 
   /*
-   * Get actor position using handle, fails with null
-   * Returns position as a JSON representation of a primitive (x, y) object!
-   *
-   * @param [Number] id
-   * @return [String] position
-   */
-
-  AREActorInterface.prototype.getActorPosition = function(id) {
-    var a, pos;
-    param.required(id);
-    if ((a = this._findActor(id)) !== null) {
-      pos = a.getPosition();
-      return JSON.stringify({
-        x: pos.x,
-        y: pos.y
-      });
-    }
-    return null;
-  };
-
-
-  /*
    * Set actor rotation using handle, fails with false
    *
    * @param [Number] angle in degrees or radians
@@ -4061,25 +4153,6 @@ AREActorInterface = (function() {
 
 
   /*
-   * Get actor rotation using handle, fails with 0.000001
-   *
-   * @param [Number] id
-   * @param [Boolean] radians defaults to false
-   * @return [Number] angle in degrees or radians
-   */
-
-  AREActorInterface.prototype.getActorRotation = function(id, radians) {
-    var a;
-    param.required(id);
-    radians = param.optional(radians, false);
-    if ((a = this._findActor(id)) !== null) {
-      return a.getRotation(radians);
-    }
-    return 0.000001;
-  };
-
-
-  /*
    * Set actor color using handle, fails with false
    *
    * @param [Number] r red component
@@ -4097,71 +4170,6 @@ AREActorInterface = (function() {
     param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setColor(new AREColor3(r, g, b));
-      return true;
-    }
-    return false;
-  };
-
-
-  /*
-   * Returns actor color as a JSON triple, in 0-255 range
-   * Uses id, fails with null
-   *
-   * @param [Number] id
-   * @return [String] col
-   */
-
-  AREActorInterface.prototype.getActorColor = function(id) {
-    var a;
-    param.required(id);
-    if ((a = this._findActor(id)) !== null) {
-      return JSON.stringify({
-        r: a.getColor().getR(),
-        g: a.getColor().getG(),
-        b: a.getColor().getB()
-      });
-    }
-    return null;
-  };
-
-
-  /*
-   * Creates the internal physics body, if one does not already exist
-   * Fails with false
-   *
-   * @param [Number] mass 0.0 - unbound
-   * @param [Number] friction 0.0 - 1.0
-   * @param [Number] elasticity 0.0 - 1.0
-   * @param [Number] id
-   * @return [Boolean] success
-   */
-
-  AREActorInterface.prototype.enableActorPhysics = function(mass, friction, elasticity, id) {
-    var a;
-    param.required(id);
-    param.required(mass);
-    param.required(friction);
-    param.required(elasticity);
-    if ((a = this._findActor(id)) !== null) {
-      a.createPhysicsBody(mass, friction, elasticity);
-      return true;
-    }
-    return false;
-  };
-
-
-  /*
-   * Destroys the physics body if one exists, fails with false
-   *
-   * @param [Number] id
-   * @return [Boolean] success
-   */
-
-  AREActorInterface.prototype.destroyPhysicsBody = function(id) {
-    var a;
-    param.required(id);
-    if ((a = this._findActor(id)) !== null) {
-      a.destroyPhysicsBody();
       return true;
     }
     return false;
@@ -4205,6 +4213,49 @@ AREActorInterface = (function() {
     y = param.optional(y, 1);
     if ((a = this._findActor(id)) !== null) {
       a.setTextureRepeat(x, y);
+      return true;
+    }
+    return false;
+  };
+
+
+  /*
+   * Creates the internal physics body, if one does not already exist
+   * Fails with false
+   *
+   * @param [Number] mass 0.0 - unbound
+   * @param [Number] friction 0.0 - 1.0
+   * @param [Number] elasticity 0.0 - 1.0
+   * @param [Number] id
+   * @return [Boolean] success
+   */
+
+  AREActorInterface.prototype.enableActorPhysics = function(mass, friction, elasticity, id) {
+    var a;
+    param.required(id);
+    param.required(mass);
+    param.required(friction);
+    param.required(elasticity);
+    if ((a = this._findActor(id)) !== null) {
+      a.createPhysicsBody(mass, friction, elasticity);
+      return true;
+    }
+    return false;
+  };
+
+
+  /*
+   * Destroys the physics body if one exists, fails with false
+   *
+   * @param [Number] id
+   * @return [Boolean] success
+   */
+
+  AREActorInterface.prototype.destroyPhysicsBody = function(id) {
+    var a;
+    param.required(id);
+    if ((a = this._findActor(id)) !== null) {
+      a.destroyPhysicsBody();
       return true;
     }
     return false;
@@ -4909,9 +4960,9 @@ window.AdefyGLI = window.AdefyRE = new AREInterface;
 AREVersion = {
   MAJOR: 1,
   MINOR: 0,
-  PATCH: 10,
+  PATCH: 11,
   BUILD: null,
-  STRING: "1.0.10"
+  STRING: "1.0.11"
 };
 
 //# sourceMappingURL=are.js.map

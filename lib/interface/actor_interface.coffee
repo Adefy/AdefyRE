@@ -125,6 +125,130 @@ class AREActorInterface
 
     null
 
+
+  ###
+  # Fetch the radius of the circle actor with the specified ID
+  #
+  # @param [Number] id
+  # @return [Number] radius
+  ###
+  getCircleActorRadius: (id) ->
+    for a in ARERenderer.actors
+      if a.getId() == id and a instanceof AREPolygonActor
+        return a.getRadius()
+
+    null
+
+
+  ###
+  # Get actor opacity using handle, fails with null
+  #
+  # @param [Number] id
+  # @return [Number] opacity
+  ###
+  getActorOpacity: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      return a.getOpacity()
+
+    null
+
+  ###
+  # Get actor visible using handle, fails with null
+  #
+  # @param [Number] id
+  # @return [Boolean] visible
+  ###
+  getActorVisible: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      return a.getVisible()
+
+    null
+
+
+  ###
+  # Get actor position using handle, fails with null
+  # Returns position as a JSON representation of a primitive (x, y) object!
+  #
+  # @param [Number] id
+  # @return [String] position
+  ###
+  getActorPosition: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      pos = a.getPosition()
+
+      return JSON.stringify
+        x: pos.x
+        y: pos.y
+
+    null
+
+  ###
+  # Get actor rotation using handle, fails with 0.000001
+  #
+  # @param [Number] id
+  # @param [Boolean] radians defaults to false
+  # @return [Number] angle in degrees or radians
+  ###
+  getActorRotation: (id, radians) ->
+    param.required id
+    radians = param.optional radians, false
+
+    if (a = @_findActor(id)) != null
+      return a.getRotation radians
+
+    0.000001
+
+  ###
+  # Returns actor color as a JSON triple, in 0-255 range
+  # Uses id, fails with null
+  #
+  # @param [Number] id
+  # @return [String] col
+  ###
+  getActorColor: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      color = a.getColor()
+      return JSON.stringify
+        r: color.getR()
+        g: color.getG()
+        b: color.getB()
+
+    null
+
+  ###
+  # Return an Actor's texture name
+  #
+  # @param [Number] id
+  # @return [String] texture_name
+  ###
+  getActorTexture: (id) ->
+    if (a = @_findActor(id)) != null
+      tex = a.getTexture()
+      return tex.name
+
+    null
+
+  ###
+  # Retrieve an Actor's texture repeat
+  #
+  # @param [Number] id
+  # @return [JSONString] texture_repeat
+  ###
+  getActorTextureRepeat: (id) ->
+    if (a = @_findActor(id)) != null
+      texRep = a.getTextureRepeat()
+      return JSON.stringify texRep
+
+    null
+
   ###
   # Set the height of the rectangle actor with the specified ID
   #
@@ -154,19 +278,6 @@ class AREActorInterface
         return true
 
     false
-
-  ###
-  # Fetch the radius of the circle actor with the specified ID
-  #
-  # @param [Number] id
-  # @return [Number] radius
-  ###
-  getCircleActorRadius: (id) ->
-    for a in ARERenderer.actors
-      if a.getId() == id and a instanceof AREPolygonActor
-        return a.getRadius()
-
-    null
 
   ###
   # Set the radius of the circle actor with the specified ID
@@ -383,20 +494,6 @@ class AREActorInterface
     false
 
   ###
-  # Get actor opacity using handle, fails with null
-  #
-  # @param [Number] id
-  # @return [Number] opacity
-  ###
-  getActorOpacity: (id) ->
-    param.required id
-
-    if (a = @_findActor(id)) != null
-      return a.getOpacity()
-
-    null
-
-  ###
   # Set actor visible using handle, fails with false
   #
   # @param [Boolean] visible
@@ -412,20 +509,6 @@ class AREActorInterface
       return true
 
     false
-
-  ###
-  # Get actor visible using handle, fails with null
-  #
-  # @param [Number] id
-  # @return [Boolean] visible
-  ###
-  getActorVisible: (id) ->
-    param.required id
-
-    if (a = @_findActor(id)) != null
-      return a.getVisible()
-
-    null
 
   ###
   # Set actor position using handle, fails with false
@@ -447,25 +530,6 @@ class AREActorInterface
     false
 
   ###
-  # Get actor position using handle, fails with null
-  # Returns position as a JSON representation of a primitive (x, y) object!
-  #
-  # @param [Number] id
-  # @return [String] position
-  ###
-  getActorPosition: (id) ->
-    param.required id
-
-    if (a = @_findActor(id)) != null
-      pos = a.getPosition()
-
-      return JSON.stringify
-        x: pos.x
-        y: pos.y
-
-    null
-
-  ###
   # Set actor rotation using handle, fails with false
   #
   # @param [Number] angle in degrees or radians
@@ -485,20 +549,6 @@ class AREActorInterface
     false
 
   ###
-  # Get actor rotation using handle, fails with 0.000001
-  #
-  # @param [Number] id
-  # @param [Boolean] radians defaults to false
-  # @return [Number] angle in degrees or radians
-  ###
-  getActorRotation: (id, radians) ->
-    param.required id
-    radians = param.optional radians, false
-
-    if (a = @_findActor(id)) != null then return a.getRotation radians
-    0.000001
-
-  ###
   # Set actor color using handle, fails with false
   #
   # @param [Number] r red component
@@ -515,61 +565,6 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.setColor new AREColor3 r, g, b
-      return true
-
-    false
-
-  ###
-  # Returns actor color as a JSON triple, in 0-255 range
-  # Uses id, fails with null
-  #
-  # @param [Number] id
-  # @return [String] col
-  ###
-  getActorColor: (id) ->
-    param.required id
-
-    if (a = @_findActor(id)) != null
-      return JSON.stringify
-        r: a.getColor().getR()
-        g: a.getColor().getG()
-        b: a.getColor().getB()
-
-    null
-
-  ###
-  # Creates the internal physics body, if one does not already exist
-  # Fails with false
-  #
-  # @param [Number] mass 0.0 - unbound
-  # @param [Number] friction 0.0 - 1.0
-  # @param [Number] elasticity 0.0 - 1.0
-  # @param [Number] id
-  # @return [Boolean] success
-  ###
-  enableActorPhysics: (mass, friction, elasticity, id) ->
-    param.required id
-    param.required mass
-    param.required friction
-    param.required elasticity
-
-    if (a = @_findActor(id)) != null
-      a.createPhysicsBody mass, friction, elasticity
-      return true
-
-    false
-
-  ###
-  # Destroys the physics body if one exists, fails with false
-  #
-  # @param [Number] id
-  # @return [Boolean] success
-  ###
-  destroyPhysicsBody: (id) ->
-    param.required id
-
-    if (a = @_findActor(id)) != null
-      a.destroyPhysicsBody()
       return true
 
     false
@@ -607,6 +602,43 @@ class AREActorInterface
 
     if (a = @_findActor(id)) != null
       a.setTextureRepeat x, y
+      return true
+
+    false
+
+  ###
+  # Creates the internal physics body, if one does not already exist
+  # Fails with false
+  #
+  # @param [Number] mass 0.0 - unbound
+  # @param [Number] friction 0.0 - 1.0
+  # @param [Number] elasticity 0.0 - 1.0
+  # @param [Number] id
+  # @return [Boolean] success
+  ###
+  enableActorPhysics: (mass, friction, elasticity, id) ->
+    param.required id
+    param.required mass
+    param.required friction
+    param.required elasticity
+
+    if (a = @_findActor(id)) != null
+      a.createPhysicsBody mass, friction, elasticity
+      return true
+
+    false
+
+  ###
+  # Destroys the physics body if one exists, fails with false
+  #
+  # @param [Number] id
+  # @return [Boolean] success
+  ###
+  destroyPhysicsBody: (id) ->
+    param.required id
+
+    if (a = @_findActor(id)) != null
+      a.destroyPhysicsBody()
       return true
 
     false

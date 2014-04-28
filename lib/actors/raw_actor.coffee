@@ -222,6 +222,19 @@ class ARERawActor
   getTexture: -> @_texture
 
   ###
+  # Get the actor's texture repeat
+  #
+  # @return [Object]
+  #   @option [Number] x
+  #   @option [Number] y
+  ###
+  getTextureRepeat: ->
+    {
+      x: @_texRepeatX
+      y: @_texRepeatY
+    }
+
+  ###
   # Set shader used to draw actor. For the time being, the routine mearly
   # pulls out handles for the ModelView, Color, and Position structures
   #
@@ -445,7 +458,7 @@ class ARERawActor
   # @param [Number] y vertical repeat (default 1)
   ###
   setTextureRepeat: (x, y) ->
-    param.required x
+    x = param.optional x, 1
     y = param.optional y, 1
 
     uvs = []
