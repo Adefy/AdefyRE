@@ -1,4 +1,4 @@
-var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPhysics, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, AREUtilParam, AREVersion, AREVertAnimation, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
+var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPhysics, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, AREUtilParam, AREVector2, AREVersion, AREVertAnimation, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -141,10 +141,7 @@ ARERawActor = (function() {
     this._id = -1;
     this._position = new cp.v(0, 0);
     this._rotation = 0;
-    this._size = {
-      x: 0,
-      y: 0
-    };
+    this._size = new AREVector2(0, 0);
 
     /*
      * Chipmunk-js values
@@ -337,6 +334,15 @@ ARERawActor = (function() {
 
 
   /*
+   * @return [Boolean]
+   */
+
+  ARERawActor.prototype.hasPhysics = function() {
+    return !!this._shape || !!this._body;
+  };
+
+
+  /*
    * Creates the internal physics body, if one does not already exist
    *
    * @param [Number] mass 0.0 - unbound
@@ -349,7 +355,7 @@ ARERawActor = (function() {
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
-    if (!!this._shape || !!this._body) {
+    if (this.hasPhysics()) {
       return;
     }
     if (AREPhysics.getWorld() === null || AREPhysics.getWorld() === void 0) {
@@ -438,6 +444,111 @@ ARERawActor = (function() {
     } else if (AREPhysics.bodyCount < 0) {
       throw new Error("Body count is negative!");
     }
+  };
+
+
+  /*
+   * @return [self]
+   */
+
+  ARERawActor.prototype.enablePhysics = function() {
+    if (!this.hasPhysics()) {
+      this.createPhysicsBody();
+    }
+    return this;
+  };
+
+
+  /*
+   * @return [self]
+   */
+
+  ARERawActor.prototype.disablePhysics = function() {
+    if (this.hasPhysics()) {
+      this.destroyPhysicsBody;
+    }
+    return this;
+  };
+
+
+  /*
+   * @return [self]
+   */
+
+  ARERawActor.prototype.refreshPhysics = function() {
+    if (this.hasPhysics()) {
+      this.destroyPhysicsBody();
+      return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    }
+  };
+
+
+  /*
+   * @return [Number] mass
+   */
+
+  ARERawActor.prototype.getMass = function() {
+    return this._mass;
+  };
+
+
+  /*
+   * @return [Number] elasticity
+   */
+
+  ARERawActor.prototype.getElasticity = function() {
+    return this._elasticity;
+  };
+
+
+  /*
+   * @return [Number] friction
+   */
+
+  ARERawActor.prototype.getFriction = function() {
+    return this._friction;
+  };
+
+
+  /*
+   * Set Actor mass property
+   *
+   * @param [Number] mass
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setMass = function(_mass) {
+    this._mass = _mass;
+    this.refreshPhysics();
+    return this;
+  };
+
+
+  /*
+   * Set Actor elasticity property
+   *
+   * @param [Number] elasticity
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setElasticity = function(_elasticity) {
+    this._elasticity = _elasticity;
+    this.refreshPhysics();
+    return this;
+  };
+
+
+  /*
+   * Set Actor friction property
+   *
+   * @param [Number] friction
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setFriction = function(_friction) {
+    this._friction = _friction;
+    this.refreshPhysics();
+    return this;
   };
 
 
@@ -1822,6 +1933,107 @@ AREShader = (function() {
   };
 
   return AREShader;
+
+})();
+
+AREVector2 = (function() {
+  function AREVector2(x, y) {
+    this.x = param.optional(x, 0);
+    this.y = param.optional(y, 0);
+  }
+
+
+  /*
+   * @param [Boolean] bipolar should randomization occur in all directions?
+   * @return [AREVector2] randomizedVector
+   */
+
+  AREVector2.prototype.random = function(options) {
+    var bipolar, seed, x, y;
+    options = param.optional(options, {});
+    bipolar = param.optional(options.bipolar, false);
+    seed = param.optional(options.seed, Math.random() * 0xFFFF);
+    x = Math.random() * this.x;
+    y = Math.random() * this.y;
+    if (bipolar) {
+      if (Math.random() < 0.5) {
+        x = -x;
+      }
+      if (Math.random() < 0.5) {
+        y = -y;
+      }
+    }
+    return new AREVector2(x, y);
+  };
+
+
+  /*
+   * @param [AREVector2]
+   * @return [AREVector2]
+   */
+
+  AREVector2.prototype.add = function(other) {
+    return new AREVector2(this.x + other.x, this.y + other.y);
+  };
+
+
+  /*
+   * @param [AREVector2]
+   * @return [AREVector2]
+   */
+
+  AREVector2.prototype.sub = function(other) {
+    return new AREVector2(this.x - other.x, this.y - other.y);
+  };
+
+
+  /*
+   * @param [AREVector2]
+   * @return [AREVector2]
+   */
+
+  AREVector2.prototype.mul = function(other) {
+    return new AREVector2(this.x * other.x, this.y * other.y);
+  };
+
+
+  /*
+   * @param [AREVector2]
+   * @return [AREVector2]
+   */
+
+  AREVector2.prototype.div = function(other) {
+    return new AREVector2(this.x / other.x, this.y / other.y);
+  };
+
+
+  /*
+   * @return [AREVector2]
+   */
+
+  AREVector2.prototype.floor = function() {
+    return new AREVector2(Math.floor(this.x), Math.floor(this.y));
+  };
+
+
+  /*
+   * @return [AREVector2]
+   */
+
+  AREVector2.prototype.ceil = function() {
+    return new AREVector2(Math.ceil(this.x), Math.ceil(this.y));
+  };
+
+
+  /*
+   * @return [AREVector2]
+   */
+
+  AREVector2.zero = function() {
+    return new AREVector2(0, 0);
+  };
+
+  return AREVector2;
 
 })();
 

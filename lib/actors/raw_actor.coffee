@@ -252,6 +252,11 @@ class ARERawActor
     @_sh_handles = shader.getHandles()
 
   ###
+  # @return [Boolean]
+  ###
+  hasPhysics: -> !!@_shape or !!@_body
+
+  ###
   # Creates the internal physics body, if one does not already exist
   #
   # @param [Number] mass 0.0 - unbound
@@ -259,7 +264,7 @@ class ARERawActor
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
-    return if !!@_shape or !!@_body
+    return if @hasPhysics()
 
     # Start the world stepping if not already doing so
     if AREPhysics.getWorld() == null or AREPhysics.getWorld() == undefined
@@ -347,6 +352,77 @@ class ARERawActor
       AREPhysics.stopStepping()
     else if AREPhysics.bodyCount < 0
       throw new Error "Body count is negative!"
+
+  ###
+  # @return [self]
+  ###
+  enablePhysics: ->
+    unless @hasPhysics()
+      @createPhysicsBody()
+
+    @
+
+  ###
+  # @return [self]
+  ###
+  disablePhysics: ->
+    if @hasPhysics()
+      @destroyPhysicsBody
+
+    @
+
+  ###
+  # @return [self]
+  ###
+  refreshPhysics: ->
+    if @hasPhysics()
+      @destroyPhysicsBody()
+      @createPhysicsBody @_mass, @_friction, @_elasticity
+
+  ###
+  # @return [Number] mass
+  ###
+  getMass: -> @_mass
+
+  ###
+  # @return [Number] elasticity
+  ###
+  getElasticity: -> @_elasticity
+
+  ###
+  # @return [Number] friction
+  ###
+  getFriction: -> @_friction
+
+  ###
+  # Set Actor mass property
+  #
+  # @param [Number] mass
+  # @return [self]
+  ###
+  setMass: (@_mass) ->
+    @refreshPhysics()
+    @
+
+  ###
+  # Set Actor elasticity property
+  #
+  # @param [Number] elasticity
+  # @return [self]
+  ###
+  setElasticity: (@_elasticity) ->
+    @refreshPhysics()
+    @
+
+  ###
+  # Set Actor friction property
+  #
+  # @param [Number] friction
+  # @return [self]
+  ###
+  setFriction: (@_friction) ->
+    @refreshPhysics()
+    @
 
   ###
   # Get actor physics layer

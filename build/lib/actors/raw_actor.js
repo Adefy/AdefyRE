@@ -76,10 +76,7 @@ ARERawActor = (function() {
     this._id = -1;
     this._position = new cp.v(0, 0);
     this._rotation = 0;
-    this._size = {
-      x: 0,
-      y: 0
-    };
+    this._size = new AREVector2(0, 0);
 
     /*
      * Chipmunk-js values
@@ -272,6 +269,15 @@ ARERawActor = (function() {
 
 
   /*
+   * @return [Boolean]
+   */
+
+  ARERawActor.prototype.hasPhysics = function() {
+    return !!this._shape || !!this._body;
+  };
+
+
+  /*
    * Creates the internal physics body, if one does not already exist
    *
    * @param [Number] mass 0.0 - unbound
@@ -284,7 +290,7 @@ ARERawActor = (function() {
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
-    if (!!this._shape || !!this._body) {
+    if (this.hasPhysics()) {
       return;
     }
     if (AREPhysics.getWorld() === null || AREPhysics.getWorld() === void 0) {
@@ -373,6 +379,111 @@ ARERawActor = (function() {
     } else if (AREPhysics.bodyCount < 0) {
       throw new Error("Body count is negative!");
     }
+  };
+
+
+  /*
+   * @return [self]
+   */
+
+  ARERawActor.prototype.enablePhysics = function() {
+    if (!this.hasPhysics()) {
+      this.createPhysicsBody();
+    }
+    return this;
+  };
+
+
+  /*
+   * @return [self]
+   */
+
+  ARERawActor.prototype.disablePhysics = function() {
+    if (this.hasPhysics()) {
+      this.destroyPhysicsBody;
+    }
+    return this;
+  };
+
+
+  /*
+   * @return [self]
+   */
+
+  ARERawActor.prototype.refreshPhysics = function() {
+    if (this.hasPhysics()) {
+      this.destroyPhysicsBody();
+      return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    }
+  };
+
+
+  /*
+   * @return [Number] mass
+   */
+
+  ARERawActor.prototype.getMass = function() {
+    return this._mass;
+  };
+
+
+  /*
+   * @return [Number] elasticity
+   */
+
+  ARERawActor.prototype.getElasticity = function() {
+    return this._elasticity;
+  };
+
+
+  /*
+   * @return [Number] friction
+   */
+
+  ARERawActor.prototype.getFriction = function() {
+    return this._friction;
+  };
+
+
+  /*
+   * Set Actor mass property
+   *
+   * @param [Number] mass
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setMass = function(_mass) {
+    this._mass = _mass;
+    this.refreshPhysics();
+    return this;
+  };
+
+
+  /*
+   * Set Actor elasticity property
+   *
+   * @param [Number] elasticity
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setElasticity = function(_elasticity) {
+    this._elasticity = _elasticity;
+    this.refreshPhysics();
+    return this;
+  };
+
+
+  /*
+   * Set Actor friction property
+   *
+   * @param [Number] friction
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setFriction = function(_friction) {
+    this._friction = _friction;
+    this.refreshPhysics();
+    return this;
   };
 
 
