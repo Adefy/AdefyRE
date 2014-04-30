@@ -355,7 +355,10 @@ class ARERawActor
   #
   # @return [Number] physicsLayer
   ###
-  getPhysicsLayer: -> @_physicsLayer
+  getPhysicsLayer: ->
+
+    # Extract 1 bit position, un-shift
+    @_physicsLayer.toString(2).length - 1
 
   ###
   # Set physics layer. If we have a physics body, applies immediately. Value

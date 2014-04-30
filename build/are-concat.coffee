@@ -420,7 +420,10 @@ class ARERawActor
   #
   # @return [Number] physicsLayer
   ###
-  getPhysicsLayer: -> @_physicsLayer
+  getPhysicsLayer: ->
+
+    # Extract 1 bit position, un-shift
+    @_physicsLayer.toString(2).length - 1
 
   ###
   # Set physics layer. If we have a physics body, applies immediately. Value
@@ -4668,6 +4671,6 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 11
+  PATCH: 12
   BUILD: null
-  STRING: "1.0.11"
+  STRING: "1.0.12"
