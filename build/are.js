@@ -559,7 +559,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.getPhysicsLayer = function() {
-    return this._physicsLayer;
+    return this._physicsLayer.toString(2).length - 1;
   };
 
 
@@ -5172,9 +5172,9 @@ window.AdefyGLI = window.AdefyRE = new AREInterface;
 AREVersion = {
   MAJOR: 1,
   MINOR: 0,
-  PATCH: 11,
+  PATCH: 12,
   BUILD: null,
-  STRING: "1.0.11"
+  STRING: "1.0.12"
 };
 
 //# sourceMappingURL=are.js.map

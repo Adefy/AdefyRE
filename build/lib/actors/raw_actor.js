@@ -494,7 +494,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.getPhysicsLayer = function() {
-    return this._physicsLayer;
+    return this._physicsLayer.toString(2).length - 1;
   };
 
 
