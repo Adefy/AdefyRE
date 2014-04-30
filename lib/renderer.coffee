@@ -6,6 +6,7 @@
 #
 # @depend objects/color3.coffee
 # @depend objects/shader.coffee
+# @depend objects/vector2.coffee
 # @depend shaders.coffee
 #
 # Keeps track of and renders objects, manages textures, and replicates all the

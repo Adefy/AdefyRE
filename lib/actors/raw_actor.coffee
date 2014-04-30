@@ -83,9 +83,7 @@ class ARERawActor
     @_rotation = 0 # Radians, but set in degrees by default
 
     ## size calculated by from verticies
-    @_size =
-      x: 0
-      y: 0
+    @_size = new AREVector2 0, 0
 
     ###
     # Chipmunk-js values
