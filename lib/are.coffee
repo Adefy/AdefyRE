@@ -14,11 +14,12 @@
 # @depend actors/rectangle_actor.coffee
 # @depend actors/circle_actor.coffee
 # @depend actors/polygon_actor.coffee
+# @depend actors/triangle_actor.coffee
 # @depend engine.coffee
 
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 13
+  PATCH: 14
   BUILD: null
-  STRING: "1.0.13"
+  STRING: "1.0.14"

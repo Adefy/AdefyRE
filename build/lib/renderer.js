@@ -570,7 +570,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.wglRender = function() {
-    var a, gl, _i, _id, _idSector, _len, _ref, _savedColor, _savedOpacity;
+    var a, gl, _i, _id, _idSector, _j, _len, _len1, _ref, _ref1, _savedColor, _savedOpacity;
     gl = ARERenderer._gl;
     if (gl === void 0 || gl === null) {
       return;
@@ -581,10 +581,10 @@ ARERenderer = (function() {
     if (ARERenderer.alwaysClearScreen) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
-    _ref = ARERenderer.actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (this._pickRenderRequested) {
+    if (this._pickRenderRequested) {
+      _ref = ARERenderer.actors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        a = _ref[_i];
         _savedColor = a.getColor();
         _savedOpacity = a.getOpacity();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
@@ -595,11 +595,13 @@ ARERenderer = (function() {
         a.wglDraw(gl, this._defaultShader);
         a.setColor(_savedColor);
         a.setOpacity(_savedOpacity);
-      } else {
+      }
+    } else {
+      _ref1 = ARERenderer.actors;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        a = _ref1[_j];
         a = a.updateAttachment();
-        if (a.getMaterial() !== ARERenderer._currentMaterial) {
-          this.switchMaterial(a.getMaterial());
-        }
+        this.switchMaterial(a.getMaterial());
         a.wglDraw(gl);
       }
     }
@@ -714,6 +716,31 @@ ARERenderer = (function() {
         return this.cvRender();
       case ARERenderer.RENDERER_MODE_WGL:
         return this.wglRender();
+    }
+  };
+
+
+  /*
+   * Manually clear the screen
+   *
+   * @return [Void]
+   */
+
+  ARERenderer.prototype.clearScreen = function() {
+    var ctx, gl;
+    switch (ARERenderer.activeRendererMode) {
+      case ARERenderer.RENDERER_MODE_CANVAS:
+        ctx = this._ctx;
+        if (this._clearColor) {
+          ctx.fillStyle = "rgb" + this._clearColor;
+          return ctx.fillRect(0, 0, this._width, this._height);
+        } else {
+          return ctx.clearRect(0, 0, this._width, this._height);
+        }
+        break;
+      case ARERenderer.RENDERER_MODE_WGL:
+        gl = ARERenderer._gl;
+        return gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
   };
 

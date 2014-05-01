@@ -2,7 +2,7 @@
 /*
  * Koon v0.0.1
  */
-var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, AREUtilParam, AREVector2, AREVersion, AREVertAnimation, BazarShop, CBazar, Koon, KoonFlock, KoonNetworkMember, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
+var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, ARETriangleActor, AREUtilParam, AREVector2, AREVersion, AREVertAnimation, BazarShop, CBazar, Koon, KoonFlock, KoonNetworkMember, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -1934,6 +1934,110 @@ ARECircleActor = (function(_super) {
 
 })(AREPolygonActor);
 
+ARETriangleActor = (function(_super) {
+  __extends(ARETriangleActor, _super);
+
+
+  /*
+   * Sets us up with the supplied base and height, generating both our vertex
+   * and UV sets.
+   *
+   * @param [Number] base
+   * @param [Number] height
+   */
+
+  function ARETriangleActor(base, height) {
+    var uvs, verts;
+    this.base = base;
+    this.height = height;
+    param.required(base);
+    param.required(height);
+    if (base <= 0) {
+      throw new Error("Invalid base: " + base);
+    }
+    if (height <= 0) {
+      throw new Error("Invalid height: " + height);
+    }
+    verts = this.generateVertices();
+    uvs = this.generateUVs();
+    ARETriangleActor.__super__.constructor.call(this, verts, uvs);
+  }
+
+
+  /*
+   * Generate array of vertices using our dimensions
+   *
+   * @return [Array<Number>] vertices
+   */
+
+  ARETriangleActor.prototype.generateVertices = function() {
+    var hB, hH;
+    hB = this.base / 2;
+    hH = this.height / 2;
+    return [-hB, -hH, 0, hH, hB, -hH, -hB, -hH];
+  };
+
+
+  /*
+   * Generate array of UV coordinates
+   *
+   * @return [Array<Number>] uvs
+   */
+
+  ARETriangleActor.prototype.generateUVs = function() {
+    return [0, 1, 0, 0, 1, 0, 1, 1];
+  };
+
+
+  /*
+   * Get stored base
+   *
+   * @return [Number] base
+   */
+
+  ARETriangleActor.prototype.getBase = function() {
+    return this.base;
+  };
+
+
+  /*
+   * Get stored height
+   *
+   * @return [Number] height
+   */
+
+  ARETriangleActor.prototype.getHeight = function() {
+    return this.height;
+  };
+
+
+  /*
+   * Set base, causes a vert refresh
+   *
+   * @param [Number] base
+   */
+
+  ARETriangleActor.prototype.setBase = function(base) {
+    this.base = base;
+    return this.updateVertBuffer(this.generateVertices());
+  };
+
+
+  /*
+   * Set height, causes a vert refresh
+   *
+   * @param [Number] height
+   */
+
+  ARETriangleActor.prototype.setHeight = function(height) {
+    this.height = height;
+    return this.updateVertBuffer(this.generateVertices());
+  };
+
+  return ARETriangleActor;
+
+})(ARERawActor);
+
 AREColor3 = (function() {
 
   /*
@@ -2930,7 +3034,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.wglRender = function() {
-    var a, gl, _i, _id, _idSector, _len, _ref, _savedColor, _savedOpacity;
+    var a, gl, _i, _id, _idSector, _j, _len, _len1, _ref, _ref1, _savedColor, _savedOpacity;
     gl = ARERenderer._gl;
     if (gl === void 0 || gl === null) {
       return;
@@ -2941,10 +3045,10 @@ ARERenderer = (function() {
     if (ARERenderer.alwaysClearScreen) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
-    _ref = ARERenderer.actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (this._pickRenderRequested) {
+    if (this._pickRenderRequested) {
+      _ref = ARERenderer.actors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        a = _ref[_i];
         _savedColor = a.getColor();
         _savedOpacity = a.getOpacity();
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
@@ -2955,11 +3059,13 @@ ARERenderer = (function() {
         a.wglDraw(gl, this._defaultShader);
         a.setColor(_savedColor);
         a.setOpacity(_savedOpacity);
-      } else {
+      }
+    } else {
+      _ref1 = ARERenderer.actors;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        a = _ref1[_j];
         a = a.updateAttachment();
-        if (a.getMaterial() !== ARERenderer._currentMaterial) {
-          this.switchMaterial(a.getMaterial());
-        }
+        this.switchMaterial(a.getMaterial());
         a.wglDraw(gl);
       }
     }
@@ -3074,6 +3180,31 @@ ARERenderer = (function() {
         return this.cvRender();
       case ARERenderer.RENDERER_MODE_WGL:
         return this.wglRender();
+    }
+  };
+
+
+  /*
+   * Manually clear the screen
+   *
+   * @return [Void]
+   */
+
+  ARERenderer.prototype.clearScreen = function() {
+    var ctx, gl;
+    switch (ARERenderer.activeRendererMode) {
+      case ARERenderer.RENDERER_MODE_CANVAS:
+        ctx = this._ctx;
+        if (this._clearColor) {
+          ctx.fillStyle = "rgb" + this._clearColor;
+          return ctx.fillRect(0, 0, this._width, this._height);
+        } else {
+          return ctx.clearRect(0, 0, this._width, this._height);
+        }
+        break;
+      case ARERenderer.RENDERER_MODE_WGL:
+        gl = ARERenderer._gl;
+        return gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
   };
 
@@ -5384,9 +5515,9 @@ window.AdefyGLI = window.AdefyRE = new AREInterface;
 AREVersion = {
   MAJOR: 1,
   MINOR: 0,
-  PATCH: 13,
+  PATCH: 14,
   BUILD: null,
-  STRING: "1.0.13"
+  STRING: "1.0.14"
 };
 
 //# sourceMappingURL=are.js.map

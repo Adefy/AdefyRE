@@ -1668,6 +1668,92 @@ class ARECircleActor extends AREPolygonActor
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
 
+# @depend raw_actor.coffee
+
+# Simple rectangle actor; allows for creation using a base and height, and
+# manipulation of that base/height
+class ARETriangleActor extends ARERawActor
+
+  ###
+  # Sets us up with the supplied base and height, generating both our vertex
+  # and UV sets.
+  #
+  # @param [Number] base
+  # @param [Number] height
+  ###
+  constructor: (@base, @height) ->
+    param.required base
+    param.required height
+
+    if base <= 0 then throw new Error "Invalid base: #{base}"
+    if height <= 0 then throw new Error "Invalid height: #{height}"
+
+    verts = @generateVertices()
+    uvs = @generateUVs()
+
+    super verts, uvs
+
+  ###
+  # Generate array of vertices using our dimensions
+  #
+  # @return [Array<Number>] vertices
+  ###
+  generateVertices: ->
+    hB = @base  / 2
+    hH = @height / 2
+
+    [
+      -hB, -hH
+        0,  hH
+       hB, -hH
+      -hB, -hH
+    ]
+
+  ###
+  # Generate array of UV coordinates
+  #
+  # @return [Array<Number>] uvs
+  ###
+  generateUVs: ->
+    [
+      0, 1,
+      0, 0,
+      1, 0,
+      1, 1
+    ]
+
+  ###
+  # Get stored base
+  #
+  # @return [Number] base
+  ###
+  getBase: -> @base
+
+  ###
+  # Get stored height
+  #
+  # @return [Number] height
+  ###
+  getHeight: -> @height
+
+  ###
+  # Set base, causes a vert refresh
+  #
+  # @param [Number] base
+  ###
+  setBase: (@base) -> @updateVertBuffer @generateVertices()
+
+  ###
+  # Set height, causes a vert refresh
+  #
+  # @param [Number] height
+  ###
+  setHeight: (@height) -> @updateVertBuffer @generateVertices()
+
+##
+## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
+##
+
 # Color class, holds r/g/b components
 #
 # Serves to provide a consistent structure for defining colors, and offers
@@ -2649,10 +2735,8 @@ class ARERenderer
       gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    for a in ARERenderer.actors
-
-      if @_pickRenderRequested
-
+    if @_pickRenderRequested
+      for a in ARERenderer.actors
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
         _savedColor = a.getColor()
@@ -2670,18 +2754,15 @@ class ARERenderer
         a.setColor _savedColor
         a.setOpacity _savedOpacity
 
-      else
+    else
+      for a in ARERenderer.actors
         a = a.updateAttachment()
-
         ##
         ## NOTE: Keep in mind that failing to switch to the proper material
         ##       will cause the draw to fail! Pass in a custom shader if
         ##       switching to a different material.
         ##
-
-        if a.getMaterial() != ARERenderer._currentMaterial
-          @switchMaterial a.getMaterial()
-
+        @switchMaterial a.getMaterial()
         a.wglDraw gl
 
     # Switch back to a normal rendering mode, and immediately re-render to the
@@ -2806,6 +2887,26 @@ class ARERenderer
         @cvRender()
       when ARERenderer.RENDERER_MODE_WGL
         @wglRender()
+
+  ###
+  # Manually clear the screen
+  #
+  # @return [Void]
+  ###
+  clearScreen: ->
+    switch ARERenderer.activeRendererMode
+      when ARERenderer.RENDERER_MODE_CANVAS
+
+        ctx = @_ctx
+        if @_clearColor
+          ctx.fillStyle = "rgb#{@_clearColor}"
+          ctx.fillRect 0, 0, @_width, @_height
+        else
+          ctx.clearRect 0, 0, @_width, @_height
+
+      when ARERenderer.RENDERER_MODE_WGL
+        gl = ARERenderer._gl # Code asthetics
+        gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
   ###
   # Returns the currently active renderer mode
@@ -4895,11 +4996,12 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 # @depend actors/rectangle_actor.coffee
 # @depend actors/circle_actor.coffee
 # @depend actors/polygon_actor.coffee
+# @depend actors/triangle_actor.coffee
 # @depend engine.coffee
 
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 13
+  PATCH: 14
   BUILD: null
-  STRING: "1.0.13"
+  STRING: "1.0.14"
