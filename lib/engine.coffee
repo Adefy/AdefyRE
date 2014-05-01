@@ -3,7 +3,7 @@
 ##
 
 # @depend renderer.coffee
-# @depend physics.coffee
+# @depend physics/manager.coffee
 # @depend util/log.coffee
 # @depend animations/bez_animation.coffee
 # @depend animations/vert_animation.coffee
@@ -53,9 +53,12 @@ class AREEngine
     if window._ == null or window._ == undefined
       return ARELog.error "Underscore.js is not present!"
 
-    # Ensure Chipmunk-js is loaded
-    if window.cp == undefined or window.cp == null
-      return ARELog.error "Chipmunk-js is not present!"
+    # Initialize messaging system
+    window.AREMessages = new KoonFlock "AREMessages"
+    window.AREMessages.registerKoon window.Bazar
+
+    # Initialize physics worker
+    @_physics = new PhysicsManager()
 
     @_renderer = new ARERenderer canvas, width, height
     @startRendering()

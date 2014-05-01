@@ -65,6 +65,13 @@ module.exports = (grunt) ->
         src: __coffeeFiles
         dest: buildDir
         ext: ".js"
+      libDev:
+        expand: true
+        options:
+          bare: true
+        src: __coffeeFiles
+        dest: devDir
+        ext: ".js"
       tests:
         expand: true
         options:
