@@ -1140,11 +1140,14 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
     if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
-      gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
-      gl.uniform1i(this._sh_handles.uSampler, 0);
+      if (ARERenderer._currentTexture !== this._texture.texture) {
+        ARERenderer._currentTexture = this._texture.texture;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
+        gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
+        gl.uniform1i(this._sh_handles.uSampler, 0);
+      }
     }
     return this;
   };
@@ -1160,8 +1163,6 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.wglDraw = function(gl, shader) {
     var flatMV, _sh_handles_backup;
-    param.required(gl);
-    param.optional(shader);
     if (!this._visible) {
       return;
     }
@@ -2652,7 +2653,7 @@ ARERenderer = (function() {
    * @type [Boolean]
    */
 
-  ARERenderer.alwaysClearScreen = true;
+  ARERenderer.alwaysClearScreen = false;
 
 
   /*
@@ -2796,6 +2797,7 @@ ARERenderer = (function() {
     ARELog.info("Initialized shaders");
     ARELog.info("ARE WGL initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL;
+    this.activeRenderMethod = this.wglRender;
     return true;
   };
 
@@ -2809,6 +2811,7 @@ ARERenderer = (function() {
     this._ctx = this._canvas.getContext("2d");
     ARELog.info("ARE CTX initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS;
+    this.activeRenderMethod = this.cvRender;
     return true;
   };
 
@@ -2822,8 +2825,20 @@ ARERenderer = (function() {
     this._ctx = this._canvas.getContext("2d");
     ARELog.info("ARE Null initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL;
+    this.activeRenderMethod = this.nullRender;
     return true;
   };
+
+
+  /*
+   * Render method set by our mode, so we don't have to iterate over a
+   * switch-case on each render call.
+   *
+   * Renders a frame, needs to be set in our constructor, by one of the init
+   * methods.
+   */
+
+  ARERenderer.prototype.activeRenderMethod = function() {};
 
 
   /*
@@ -3034,38 +3049,36 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.wglRender = function() {
-    var a, gl, _i, _id, _idSector, _j, _len, _len1, _ref, _ref1, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, gl, _id, _idSector, _savedColor, _savedOpacity;
     gl = ARERenderer._gl;
-    if (gl === void 0 || gl === null) {
-      return;
-    }
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
     }
     if (ARERenderer.alwaysClearScreen) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
-    if (this._pickRenderRequested) {
-      _ref = ARERenderer.actors;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        a = _ref[_i];
-        _savedColor = a.getColor();
-        _savedOpacity = a.getOpacity();
-        _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
-        _idSector = Math.floor(a.getId() / 255);
+    actorCount = ARERenderer.actors.length;
+    while (actorCount--) {
+      a = ARERenderer.actors[actorCount];
+      if (this._pickRenderRequested) {
+        a_id = a._id;
+        _savedColor = a._color;
+        _savedOpacity = a._opacity;
+        _id = a_id - (Math.floor(a_id / 255) * 255);
+        _idSector = Math.floor(a_id / 255);
         this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.setOpacity(1.0);
         a.wglDraw(gl, this._defaultShader);
         a.setColor(_savedColor);
         a.setOpacity(_savedOpacity);
-      }
-    } else {
-      _ref1 = ARERenderer.actors;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        a = _ref1[_j];
-        a = a.updateAttachment();
-        this.switchMaterial(a.getMaterial());
+      } else {
+        if (a._attachedTexture) {
+          a = a.updateAttachment();
+        }
+        if (a._material !== ARERenderer._currentMaterial) {
+          this.switchMaterial(a._material);
+        }
         a.wglDraw(gl);
       }
     }
@@ -3164,23 +3177,6 @@ ARERenderer = (function() {
       _results.push(a.nullDraw(ctx));
     }
     return _results;
-  };
-
-
-  /*
-   * main render function
-   * @return [Void]
-   */
-
-  ARERenderer.prototype.render = function() {
-    switch (ARERenderer.activeRendererMode) {
-      case ARERenderer.RENDERER_MODE_NULL:
-        return this.nullRender();
-      case ARERenderer.RENDERER_MODE_CANVAS:
-        return this.cvRender();
-      case ARERenderer.RENDERER_MODE_WGL:
-        return this.wglRender();
-    }
   };
 
 
@@ -3460,7 +3456,7 @@ PhysicsManager = (function(_super) {
         var l, _results;
         data = e.data;
         if (data.length) {
-          l = data.length - 1;
+          l = data.length;
           _results = [];
           while (l--) {
             dataPacket = data[l];
@@ -5346,17 +5342,17 @@ AREEngine = (function() {
     stepCount = 0;
     return this._renderIntervalId = setInterval((function(_this) {
       return function() {
-        var fps, start;
-        start = Date.now();
-        _this._renderer.render();
-        if (_this.benchmark) {
-          stepCount++;
-          avgStep = avgStep + ((Date.now() - start) / stepCount);
-          if (stepCount % 500 === 0) {
-            fps = (1000 / avgStep).toFixed(2);
-            return console.log("Render step time: " + (avgStep.toFixed(2)) + "ms (" + fps + " FPS)");
-          }
-        }
+        return _this._renderer.activeRenderMethod();
+
+        /*
+        if @benchmark
+          stepCount++
+          avgStep = avgStep + ((Date.now() - start) / stepCount)
+        
+          if stepCount % 500 == 0
+            fps = (1000 / avgStep).toFixed 2
+            console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
+         */
       };
     })(this), this._framerate);
   };

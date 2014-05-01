@@ -87,10 +87,11 @@ class AREEngine
     stepCount = 0
 
     @_renderIntervalId = setInterval =>
-      start = Date.now()
+      # start = Date.now() if @benchmark
 
-      @_renderer.render()
+      @_renderer.activeRenderMethod()
 
+      ###
       if @benchmark
         stepCount++
         avgStep = avgStep + ((Date.now() - start) / stepCount)
@@ -98,6 +99,7 @@ class AREEngine
         if stepCount % 500 == 0
           fps = (1000 / avgStep).toFixed 2
           console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
+      ###
 
     , @_framerate
 

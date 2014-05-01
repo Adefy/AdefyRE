@@ -152,7 +152,7 @@ class ARERenderer
   # screen clearing. This option is only valid with the WGL renderer mode.
   # @type [Boolean]
   ###
-  @alwaysClearScreen: true
+  @alwaysClearScreen: false
 
   ###
   # Sets up the renderer, using either an existing canvas or creating a new one
@@ -347,10 +347,10 @@ class ARERenderer
     @_texShader.generateHandles()
 
     ARELog.info "Initialized shaders"
-
     ARELog.info "ARE WGL initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL
+    @activeRenderMethod = @wglRender
 
     true
 
@@ -365,6 +365,7 @@ class ARERenderer
     ARELog.info "ARE CTX initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS
+    @activeRenderMethod = @cvRender
 
     true
 
@@ -379,8 +380,18 @@ class ARERenderer
     ARELog.info "ARE Null initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL
+    @activeRenderMethod = @nullRender
 
     true
+
+  ###
+  # Render method set by our mode, so we don't have to iterate over a
+  # switch-case on each render call.
+  #
+  # Renders a frame, needs to be set in our constructor, by one of the init
+  # methods.
+  ###
+  activeRenderMethod: ->
 
   ###
   # Returns instance (only one may exist, enforced in constructor)
@@ -535,11 +546,7 @@ class ARERenderer
   # @return [Void]
   ###
   wglRender: ->
-
-    gl = ARERenderer._gl # Code asthetics
-
-    # Probably unecessary, but better to be safe
-    if gl == undefined or gl == null then return
+    gl = ARERenderer._gl
 
     # Render to an off-screen buffer for screen picking if requested to do so.
     # The resulting render is used to pick visible objects. We render in a
@@ -552,23 +559,33 @@ class ARERenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     # Clear the screen
+    #
     # Did you know? WebGL actually clears the screen by itself:
     # if preserveDrawingBuffer is false
     # However a bit of dragging occurs when rendering, probaly some fake
     # motion blur?
+    #
+    # Get rid of this and manually requests clears from the editor when hiding
+    # actors.
     if ARERenderer.alwaysClearScreen
       gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    if @_pickRenderRequested
-      for a in ARERenderer.actors
+    actorCount = ARERenderer.actors.length
+    while actorCount--
+      a = ARERenderer.actors[actorCount]
+
+      if @_pickRenderRequested
+
+        a_id = a._id
+
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
-        _savedColor = a.getColor()
-        _savedOpacity = a.getOpacity()
+        _savedColor = a._color
+        _savedOpacity = a._opacity
 
-        _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
-        _idSector = Math.floor(a.getId() / 255)
+        _id = a_id - (Math.floor(a_id / 255) * 255)
+        _idSector = Math.floor(a_id / 255)
 
         @switchMaterial ARERenderer.MATERIAL_FLAT
 
@@ -579,15 +596,16 @@ class ARERenderer
         a.setColor _savedColor
         a.setOpacity _savedOpacity
 
-    else
-      for a in ARERenderer.actors
-        a = a.updateAttachment()
+      else
+        a = a.updateAttachment() if a._attachedTexture
+
         ##
         ## NOTE: Keep in mind that failing to switch to the proper material
         ##       will cause the draw to fail! Pass in a custom shader if
         ##       switching to a different material.
         ##
-        @switchMaterial a.getMaterial()
+        if a._material != ARERenderer._currentMaterial
+          @switchMaterial a._material
         a.wglDraw gl
 
     # Switch back to a normal rendering mode, and immediately re-render to the
@@ -698,20 +716,6 @@ class ARERenderer
       a = a.updateAttachment()
 
       a.nullDraw ctx
-
-  ###
-  # main render function
-  # @return [Void]
-  ###
-  render: ->
-
-    switch ARERenderer.activeRendererMode
-      when ARERenderer.RENDERER_MODE_NULL
-        @nullRender()
-      when ARERenderer.RENDERER_MODE_CANVAS
-        @cvRender()
-      when ARERenderer.RENDERER_MODE_WGL
-        @wglRender()
 
   ###
   # Manually clear the screen

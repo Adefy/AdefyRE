@@ -88,7 +88,8 @@
           setTimeout(function() {
             createBall();
             refreshActorCount();
-            scheduleBallTimeout();
+            //if(ARERenderer.actors.length < 600)
+              scheduleBallTimeout();
           }, Math.random() * 50);
         };
 

@@ -113,7 +113,7 @@ class AREPhysicsWorker extends Koon
   _broadcastBodyPositions: ->
 
     # We use the same array for pushing updates
-    l = @_bodies.length - 1
+    l = @_bodies.length
     
     while l--
       body = @_bodies[l]
@@ -127,6 +127,7 @@ class AREPhysicsWorker extends Koon
     postMessage ARE_PHYSICS_UPDATE_PACKET
 
   receiveMessage: (message, namespace) ->
+    return unless namespace
     command = namespace.split(".")
 
     switch command[1]

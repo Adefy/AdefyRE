@@ -188,7 +188,7 @@ ARERenderer = (function() {
    * @type [Boolean]
    */
 
-  ARERenderer.alwaysClearScreen = true;
+  ARERenderer.alwaysClearScreen = false;
 
 
   /*
@@ -332,6 +332,7 @@ ARERenderer = (function() {
     ARELog.info("Initialized shaders");
     ARELog.info("ARE WGL initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL;
+    this.activeRenderMethod = this.wglRender;
     return true;
   };
 
@@ -345,6 +346,7 @@ ARERenderer = (function() {
     this._ctx = this._canvas.getContext("2d");
     ARELog.info("ARE CTX initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS;
+    this.activeRenderMethod = this.cvRender;
     return true;
   };
 
@@ -358,8 +360,20 @@ ARERenderer = (function() {
     this._ctx = this._canvas.getContext("2d");
     ARELog.info("ARE Null initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL;
+    this.activeRenderMethod = this.nullRender;
     return true;
   };
+
+
+  /*
+   * Render method set by our mode, so we don't have to iterate over a
+   * switch-case on each render call.
+   *
+   * Renders a frame, needs to be set in our constructor, by one of the init
+   * methods.
+   */
+
+  ARERenderer.prototype.activeRenderMethod = function() {};
 
 
   /*
@@ -570,38 +584,36 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.wglRender = function() {
-    var a, gl, _i, _id, _idSector, _j, _len, _len1, _ref, _ref1, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, gl, _id, _idSector, _savedColor, _savedOpacity;
     gl = ARERenderer._gl;
-    if (gl === void 0 || gl === null) {
-      return;
-    }
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
     }
     if (ARERenderer.alwaysClearScreen) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
-    if (this._pickRenderRequested) {
-      _ref = ARERenderer.actors;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        a = _ref[_i];
-        _savedColor = a.getColor();
-        _savedOpacity = a.getOpacity();
-        _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
-        _idSector = Math.floor(a.getId() / 255);
+    actorCount = ARERenderer.actors.length;
+    while (actorCount--) {
+      a = ARERenderer.actors[actorCount];
+      if (this._pickRenderRequested) {
+        a_id = a._id;
+        _savedColor = a._color;
+        _savedOpacity = a._opacity;
+        _id = a_id - (Math.floor(a_id / 255) * 255);
+        _idSector = Math.floor(a_id / 255);
         this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.setOpacity(1.0);
         a.wglDraw(gl, this._defaultShader);
         a.setColor(_savedColor);
         a.setOpacity(_savedOpacity);
-      }
-    } else {
-      _ref1 = ARERenderer.actors;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        a = _ref1[_j];
-        a = a.updateAttachment();
-        this.switchMaterial(a.getMaterial());
+      } else {
+        if (a._attachedTexture) {
+          a = a.updateAttachment();
+        }
+        if (a._material !== ARERenderer._currentMaterial) {
+          this.switchMaterial(a._material);
+        }
         a.wglDraw(gl);
       }
     }
@@ -700,23 +712,6 @@ ARERenderer = (function() {
       _results.push(a.nullDraw(ctx));
     }
     return _results;
-  };
-
-
-  /*
-   * main render function
-   * @return [Void]
-   */
-
-  ARERenderer.prototype.render = function() {
-    switch (ARERenderer.activeRendererMode) {
-      case ARERenderer.RENDERER_MODE_NULL:
-        return this.nullRender();
-      case ARERenderer.RENDERER_MODE_CANVAS:
-        return this.cvRender();
-      case ARERenderer.RENDERER_MODE_WGL:
-        return this.wglRender();
-    }
   };
 
 
