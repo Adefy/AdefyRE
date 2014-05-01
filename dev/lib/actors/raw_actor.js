@@ -272,7 +272,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.hasPhysics = function() {
-    return !!this._shape || !!this._body;
+    return this._shape !== null || this._body !== null;
   };
 
 
@@ -289,7 +289,7 @@ ARERawActor = (function(_super) {
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
-    if (this.hasPhysics()) {
+    if (!(this._mass !== null && this._mass !== void 0)) {
       return;
     }
     this._friction || (this._friction = ARERawActor.defaultFriction);

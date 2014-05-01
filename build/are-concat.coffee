@@ -512,7 +512,7 @@ class ARERawActor extends Koon
   ###
   # @return [Boolean]
   ###
-  hasPhysics: -> !!@_shape or !!@_body
+  hasPhysics: -> @_shape != null || @_body != null
 
   ###
   # Creates the internal physics body, if one does not already exist
@@ -522,7 +522,7 @@ class ARERawActor extends Koon
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
-    return if @hasPhysics()
+    return unless @_mass != null and @_mass != undefined
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
 
@@ -2748,13 +2748,10 @@ class ARERenderer
 
     # Draw everything!
     actorCount = ARERenderer.actors.length
-    while actorCount--
-      a = ARERenderer.actors[actorCount]
-
-      if @_pickRenderRequested
-
+    if @_pickRenderRequested
+      while actorCount--
+        a = ARERenderer.actors[actorCount]
         a_id = a._id
-
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
         _savedColor = a._color
@@ -2772,22 +2769,8 @@ class ARERenderer
         a.setColor _savedColor
         a.setOpacity _savedOpacity
 
-      else
-        a = a.updateAttachment() if a._attachedTexture
-
-        ##
-        ## NOTE: Keep in mind that failing to switch to the proper material
-        ##       will cause the draw to fail! Pass in a custom shader if
-        ##       switching to a different material.
-        ##
-        if a._material != ARERenderer._currentMaterial
-          @switchMaterial a._material
-        a.wglDraw gl
-
-    # Switch back to a normal rendering mode, and immediately re-render to the
-    # actual screen
-    if @_pickRenderRequested
-
+      # Switch back to a normal rendering mode, and immediately re-render to the
+      # actual screen
       # Call cb
       @_pickRenderCB()
 
@@ -2799,6 +2782,20 @@ class ARERenderer
       # Switch back to normal framebuffer, re-render
       gl.bindFramebuffer gl.FRAMEBUFFER, null
       @render()
+
+    else
+      while actorCount--
+        a = ARERenderer.actors[actorCount]
+        a = a.updateAttachment() if a._attachedTexture
+
+        ##
+        ## NOTE: Keep in mind that failing to switch to the proper material
+        ##       will cause the draw to fail! Pass in a custom shader if
+        ##       switching to a different material.
+        ##
+        if a._material != ARERenderer._currentMaterial
+          @switchMaterial a._material
+        a.wglDraw gl
 
   ###
   # Canavs render

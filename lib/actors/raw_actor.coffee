@@ -249,7 +249,7 @@ class ARERawActor extends Koon
   ###
   # @return [Boolean]
   ###
-  hasPhysics: -> !!@_shape or !!@_body
+  hasPhysics: -> @_shape != null || @_body != null
 
   ###
   # Creates the internal physics body, if one does not already exist
@@ -259,7 +259,7 @@ class ARERawActor extends Koon
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
-    return if @hasPhysics()
+    return unless @_mass != null and @_mass != undefined
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
 

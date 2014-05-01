@@ -584,7 +584,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.wglRender = function() {
-    var a, a_id, actorCount, gl, _id, _idSector, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, gl, _id, _idSector, _results, _savedColor, _savedOpacity;
     gl = ARERenderer._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
@@ -593,9 +593,9 @@ ARERenderer = (function() {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
     actorCount = ARERenderer.actors.length;
-    while (actorCount--) {
-      a = ARERenderer.actors[actorCount];
-      if (this._pickRenderRequested) {
+    if (this._pickRenderRequested) {
+      while (actorCount--) {
+        a = ARERenderer.actors[actorCount];
         a_id = a._id;
         _savedColor = a._color;
         _savedOpacity = a._opacity;
@@ -607,23 +607,26 @@ ARERenderer = (function() {
         a.wglDraw(gl, this._defaultShader);
         a.setColor(_savedColor);
         a.setOpacity(_savedOpacity);
-      } else {
-        if (a._attachedTexture) {
-          a = a.updateAttachment();
-        }
-        if (a._material !== ARERenderer._currentMaterial) {
-          this.switchMaterial(a._material);
-        }
-        a.wglDraw(gl);
       }
-    }
-    if (this._pickRenderRequested) {
       this._pickRenderCB();
       this._pickRenderRequested = false;
       this._pickRenderBuff = null;
       this._pickRenderCB = null;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       return this.render();
+    } else {
+      _results = [];
+      while (actorCount--) {
+        a = ARERenderer.actors[actorCount];
+        if (a._attachedTexture) {
+          a = a.updateAttachment();
+        }
+        if (a._material !== ARERenderer._currentMaterial) {
+          this.switchMaterial(a._material);
+        }
+        _results.push(a.wglDraw(gl));
+      }
+      return _results;
     }
   };
 
