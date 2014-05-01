@@ -75,7 +75,7 @@ AREEngineInterface = (function() {
   };
 
   AREEngineInterface.prototype.setRendererMode = function(mode) {
-    return ARERenderer.rendererMode = mode;
+    return ARERenderer.setRendererMode(mode);
   };
 
 

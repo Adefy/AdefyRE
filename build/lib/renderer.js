@@ -145,6 +145,10 @@ ARERenderer = (function() {
 
   ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
 
+  ARERenderer.setRendererMode = function(mode) {
+    return this.rendererMode = param.optional(mode, null, this.rendererModes);
+  };
+
 
   /*
    * denotes the currently chosen internal Renderer, this value may be different

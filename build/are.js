@@ -2208,6 +2208,10 @@ ARERenderer = (function() {
 
   ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
 
+  ARERenderer.setRendererMode = function(mode) {
+    return this.rendererMode = param.optional(mode, null, this.rendererModes);
+  };
+
 
   /*
    * denotes the currently chosen internal Renderer, this value may be different
@@ -4553,7 +4557,7 @@ AREEngineInterface = (function() {
   };
 
   AREEngineInterface.prototype.setRendererMode = function(mode) {
-    return ARERenderer.rendererMode = mode;
+    return ARERenderer.setRendererMode(mode);
   };
 
 
@@ -5172,9 +5176,9 @@ window.AdefyGLI = window.AdefyRE = new AREInterface;
 AREVersion = {
   MAJOR: 1,
   MINOR: 0,
-  PATCH: 12,
+  PATCH: 13,
   BUILD: null,
-  STRING: "1.0.12"
+  STRING: "1.0.13"
 };
 
 //# sourceMappingURL=are.js.map

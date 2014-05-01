@@ -2027,6 +2027,8 @@ class ARERenderer
   # @type [Number]
   ###
   @rendererMode: @RENDERER_MODE_WGL
+  @setRendererMode: (mode) ->
+    @rendererMode = param.optional mode, null, @rendererModes
 
   ###
   # denotes the currently chosen internal Renderer, this value may be different
@@ -4182,7 +4184,7 @@ class AREEngineInterface
   # calling it!
   ###
   getRendererMode: -> ARERenderer.rendererMode
-  setRendererMode: (mode) -> ARERenderer.rendererMode = mode
+  setRendererMode: (mode) -> ARERenderer.setRendererMode mode
 
   ###
   # Set engine clear color
@@ -4809,6 +4811,6 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 AREVersion =
   MAJOR: 1
   MINOR: 0
-  PATCH: 12
+  PATCH: 13
   BUILD: null
-  STRING: "1.0.12"
+  STRING: "1.0.13"
