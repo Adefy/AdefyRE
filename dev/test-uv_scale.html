@@ -10,6 +10,7 @@
   <script type="text/javascript" src="./js/inkyEWGL.js"></script>
   <script type="text/javascript" src="./js/reutil.js"></script>
   <script type="text/javascript" src="./are.js"></script>
+  <script type="text/javascript" src="./js/are_test_helper.js"></script>
 
   <link type="text/css" rel="stylesheet" href="./css/main.css"/>
 </head>
@@ -74,9 +75,9 @@
     // First order of business, CHOOSE YOUR DESTINY
     // Actually just choose a renderer mode, you can choose from
     // the NULL renderer, the WGL renderer, or the CANVAS renderer; modes
-    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_NULL
-    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS
-    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL
+    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_NULL);
+    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_CANVAS);
+    ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_WGL);
 
     var width = window.innerWidth;
     var height = window.innerHeight;
@@ -84,15 +85,8 @@
       onEngineInit(); // Callback #1
     });
 
-    // Man this gets ugly fast...
-
-    var modestr = "N/A";
-    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
-      modestr = "WebGL"
-    else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
-      modestr = "Canvas"
-
-    document.getElementById("RendererMode").innerHTML = modestr;
+    refreshRendererMode();
+    startActorCountInterval();
 
   </script>
 </body>

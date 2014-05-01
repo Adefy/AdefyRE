@@ -10,6 +10,7 @@
   <script type="text/javascript" src="./js/inkyEWGL.js"></script>
   <script type="text/javascript" src="./js/reutil.js"></script>
   <script type="text/javascript" src="./are.js"></script>
+  <script type="text/javascript" src="./js/are_test_helper.js"></script>
 
   <link type="text/css" rel="stylesheet" href="./css/main.css"/>
 </head>
@@ -41,8 +42,9 @@
     var height = window.innerHeight - 30;
 
     //ARERenderer.force_pos0_0 = false
-    ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
-    //ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_CANVAS;
+    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_NULL);
+    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_CANVAS);
+    ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_WGL);
 
     window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
       window.AdefyRE.Engine().wglFlipTextureY = true;
@@ -83,7 +85,7 @@
         var scheduleBallTimeout = function() {
           setTimeout(function() {
             createBall();
-            document.getElementById("ActorCount").innerHTML = ARERenderer.actors.length;
+            refreshActorCount();
             scheduleBallTimeout();
           }, Math.random() * 500);
         };
@@ -108,13 +110,7 @@
         scheduleBallTimeout();
         ballGCTimeout();
 
-        var modestr = "N/A";
-        if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
-          modestr = "WebGL"
-        else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
-          modestr = "Canvas"
-
-        document.getElementById("RendererMode").innerHTML = modestr;
+        refreshRendererMode();
 
       });
     });
