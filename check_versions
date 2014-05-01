@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+require "json"
+
+are = File.read("lib/are.coffee")
+package = JSON.load File.read("package.json")
+bower = JSON.load File.read("bower.json")
+
+major = (are.match(/MAJOR:\s+(\d+)/)||[])[1]
+minor = (are.match(/MINOR:\s+(\d+)/)||[])[1]
+patch = (are.match(/PATCH:\s+(\d+)/)||[])[1]
+build = (are.match(/BUILD:\s+(\d+)/)||[])[1]
+
+are_version = [major, minor, patch, build].compact.join(".")
+are_string_version = are.match(/STRING:\s+\"(\S+)\"/)[1]
+package_version = package["version"]
+bower_version = bower["version"]
+
+version = ARGV[0] || are_version
+
+if package_version != version
+  raise "Package version (#{package_version}) does not match expected (#{version})"
+end
+
+if bower_version != version
+  raise "Bower version (#{bower_version}) does not match expected (#{version})"
+end
+
+if are_version != version
+  raise "ARE version (#{are_version}) does not match expected (#{version})"
+end
+
+if are_string_version != version
+  raise "ARE version STRING (#{are_string_version}) does not match expected (#{version})"
+end
