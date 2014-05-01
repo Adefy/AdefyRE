@@ -7,6 +7,53 @@ class KoonNetworkMember
   constructor: (name) ->
     @_name = name or "GenericKoonNetworkMember"
     @_uuid = KoonNetworkMember.generateUUID()
+    @_subscribers = []
+
+  ###
+  # Returns a valid receiver for the specified subscriber. Expects the
+  # subscriber to have a receiveMessage method.
+  #
+  # @param [Object] subscriber
+  # @return [Method] receiver
+  # @private
+  ###
+  _generateReceiver: (subscriber) ->
+    (message, namespace) =>
+      subscriber.receiveMessage message, namespace
+
+  ###
+  # Register a new subscriber. 
+  #
+  # @param [Object] subscriber
+  # @param [String] namespace
+  # @return [Koon] self
+  ###
+  subscribe: (subscriber, namespace) ->
+    @_subscribers.push
+      namespace: namespace or ""
+      receiver: @_generateReceiver subscriber
+
+  ###
+  # Broadcast message to the koon. Message is sent out to all subscribers and
+  # other koons.
+  #
+  # @param [Object] message message object as passed directly to listeners
+  # @param [String] namespace optional, defaults to the wildcard namespace *
+  ###
+  broadcast: (message, namespace) ->
+    # return unless typeof message == "object"
+    namespace = namespace or ""
+
+    return if @hasSent message
+    message = @tagAsSent message
+
+    #for subscriber in @_subscribers
+      # if !!namespace.match subscriber.namespace
+      #subscriber.receiver message, namespace
+
+    # This is faster than a normal for loop
+    l = @_subscribers.length
+    @_subscribers[l].receiver message, namespace while l--
 
   ###
   # Get our UUID
@@ -35,55 +82,61 @@ class KoonNetworkMember
     "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace /[xy]/g, (c) ->
       r = Math.random() * 16 | 0
 
-      if c == x
+      if c == "x"
         r.toString 16
       else
         (r & 0x3 | 0x8).toString 16
+
+  tagAsSent: (message) ->
+    unless message._senders
+      message._senders = [@_name]
+    else
+      message._senders.push @_name
+
+    message
+
+  hasSent: (message) ->
+    if message and message._senders
+      for sender in message._senders
+        return true if sender == @_name
+
+    false
+
 
 class Koon extends KoonNetworkMember
 
   constructor: (name) ->
     super(name or "GenericKoon")
 
-    @_subscribers = []
-    @_koons = []
+  receiveMessage: (message, namespace) ->
+    console.log "<#{message._sender}> --> <#{@getName()}>  [#{namespace}] #{JSON.stringify message}"
 
-  ###
-  # Register a new subscriber. Expects the subscriber to have a receiveMessage
-  # method.
-  #
-  # @param [Object] subscriber
-  # @param [Regexp] regex
-  # @return [Koon] self
-  ###
-  subscribe: (subscriber, regex) ->
-    @_subscribers.push
-      regex: regex
-      receiver: (message, namespace) ->
-        subscriber.receiveMessage message, namespace
-
-  ###
-  # Broadcast message to the koon. Message is sent out to all subscribers and
-  # other koons.
-  #
-  # @param [Object] message message object as passed directly to listeners
-  # @param [String] namespace optional, defaults to the wildcard namespace *
-  ###
   broadcast: (message, namespace) ->
-    namespace = "*" unless namespace
+    return unless typeof message == "object"
 
-    for subscriber in @_subscribers
-      if !!subscriber.regex.match namespace
-        subscriber.receiver message, namespace
+    message._sender = @_name
+    super message, namespace
 
-###
-#
-###
 class KoonFlock extends KoonNetworkMember
 
   constructor: (name) ->
     super(name or "GenericKoonFlock")
 
-    @_koons = []
+  registerKoon: (koon, namespace) ->
+    @subscribe koon, namespace
+    koon.subscribe @
 
-  registerKoon: (koon) ->
+  receiveMessage: (message, namespace) ->
+    @broadcast message, namespace
+
+  ###
+  # Returns a valid receiver for the specified koon.
+  #
+  # @param [Object] koon
+  # @return [Method] receiver
+  # @private
+  ###
+  _generateReceiver: (koon) ->
+    (message, namespace) ->
+      unless koon.hasSent message
+        koon.receiveMessage message, namespace

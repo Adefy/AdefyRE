@@ -1,6 +1,299 @@
-var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPhysics, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, AREUtilParam, AREVersion, AREVertAnimation, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
+
+/*
+ * Koon v0.0.1
+ */
+var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, AREUtilParam, AREVersion, AREVertAnimation, BazarShop, CBazar, Koon, KoonFlock, KoonNetworkMember, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+KoonNetworkMember = (function() {
+  function KoonNetworkMember(name) {
+    this._name = name || "GenericKoonNetworkMember";
+    this._uuid = KoonNetworkMember.generateUUID();
+    this._subscribers = [];
+  }
+
+
+  /*
+   * Returns a valid receiver for the specified subscriber. Expects the
+   * subscriber to have a receiveMessage method.
+   *
+   * @param [Object] subscriber
+   * @return [Method] receiver
+   * @private
+   */
+
+  KoonNetworkMember.prototype._generateReceiver = function(subscriber) {
+    return (function(_this) {
+      return function(message, namespace) {
+        return subscriber.receiveMessage(message, namespace);
+      };
+    })(this);
+  };
+
+
+  /*
+   * Register a new subscriber. 
+   *
+   * @param [Object] subscriber
+   * @param [String] namespace
+   * @return [Koon] self
+   */
+
+  KoonNetworkMember.prototype.subscribe = function(subscriber, namespace) {
+    return this._subscribers.push({
+      namespace: namespace || "",
+      receiver: this._generateReceiver(subscriber)
+    });
+  };
+
+
+  /*
+   * Broadcast message to the koon. Message is sent out to all subscribers and
+   * other koons.
+   *
+   * @param [Object] message message object as passed directly to listeners
+   * @param [String] namespace optional, defaults to the wildcard namespace *
+   */
+
+  KoonNetworkMember.prototype.broadcast = function(message, namespace) {
+    var l, _results;
+    namespace = namespace || "";
+    if (this.hasSent(message)) {
+      return;
+    }
+    message = this.tagAsSent(message);
+    l = this._subscribers.length;
+    _results = [];
+    while (l--) {
+      _results.push(this._subscribers[l].receiver(message, namespace));
+    }
+    return _results;
+  };
+
+
+  /*
+   * Get our UUID
+   *
+   * @return [String] uuid
+   */
+
+  KoonNetworkMember.prototype.getId = function() {
+    return this._uuid;
+  };
+
+
+  /*
+   * Get our name
+   *
+   * @return [String] name
+   */
+
+  KoonNetworkMember.prototype.getName = function() {
+    return this._name;
+  };
+
+
+  /*
+   * Returns an RFC4122 v4 compliant UUID
+   *
+   * StackOverflow link: http://goo.gl/z2RxK
+   *
+   * @return [String] uuid
+   */
+
+  KoonNetworkMember.generateUUID = function() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+      var r;
+      r = Math.random() * 16 | 0;
+      if (c === "x") {
+        return r.toString(16);
+      } else {
+        return (r & 0x3 | 0x8).toString(16);
+      }
+    });
+  };
+
+  KoonNetworkMember.prototype.tagAsSent = function(message) {
+    if (!message._senders) {
+      message._senders = [this._name];
+    } else {
+      message._senders.push(this._name);
+    }
+    return message;
+  };
+
+  KoonNetworkMember.prototype.hasSent = function(message) {
+    var sender, _i, _len, _ref;
+    if (message && message._senders) {
+      _ref = message._senders;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        sender = _ref[_i];
+        if (sender === this._name) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  return KoonNetworkMember;
+
+})();
+
+Koon = (function(_super) {
+  __extends(Koon, _super);
+
+  function Koon(name) {
+    Koon.__super__.constructor.call(this, name || "GenericKoon");
+  }
+
+  Koon.prototype.receiveMessage = function(message, namespace) {
+    return console.log("<" + message._sender + "> --> <" + (this.getName()) + ">  [" + namespace + "] " + (JSON.stringify(message)));
+  };
+
+  Koon.prototype.broadcast = function(message, namespace) {
+    if (typeof message !== "object") {
+      return;
+    }
+    message._sender = this._name;
+    return Koon.__super__.broadcast.call(this, message, namespace);
+  };
+
+  return Koon;
+
+})(KoonNetworkMember);
+
+KoonFlock = (function(_super) {
+  __extends(KoonFlock, _super);
+
+  function KoonFlock(name) {
+    KoonFlock.__super__.constructor.call(this, name || "GenericKoonFlock");
+  }
+
+  KoonFlock.prototype.registerKoon = function(koon, namespace) {
+    this.subscribe(koon, namespace);
+    return koon.subscribe(this);
+  };
+
+  KoonFlock.prototype.receiveMessage = function(message, namespace) {
+    return this.broadcast(message, namespace);
+  };
+
+
+  /*
+   * Returns a valid receiver for the specified koon.
+   *
+   * @param [Object] koon
+   * @return [Method] receiver
+   * @private
+   */
+
+  KoonFlock.prototype._generateReceiver = function(koon) {
+    return function(message, namespace) {
+      if (!koon.hasSent(message)) {
+        return koon.receiveMessage(message, namespace);
+      }
+    };
+  };
+
+  return KoonFlock;
+
+})(KoonNetworkMember);
+
+
+/*
+ * Note that shops cannot be accessed directly, they can only be messaged!
+ */
+
+CBazar = (function(_super) {
+  __extends(CBazar, _super);
+
+  function CBazar() {
+    CBazar.__super__.constructor.call(this, "Bazar");
+  }
+
+  return CBazar;
+
+})(KoonFlock);
+
+BazarShop = (function(_super) {
+  __extends(BazarShop, _super);
+
+  function BazarShop(name, deps) {
+    BazarShop.__super__.constructor.call(this, name);
+    async.map(deps, function(dependency, cb) {
+      if (dependency.raw) {
+        return cb(null, dependency.raw);
+      }
+      return $.ajax({
+        url: dependency.url,
+        mimeType: "text",
+        success: function(rawDep) {
+          return cb(null, rawDep);
+        }
+      });
+    }, (function(_this) {
+      return function(error, sources) {
+        _this._initFromSources(sources);
+        return _this._registerWithBazar();
+      };
+    })(this));
+  }
+
+  BazarShop.prototype._initFromSources = function(sources) {
+    var data;
+    if (this._worker) {
+      return;
+    }
+    data = new Blob([sources.join("\n\n")], {
+      type: "text/javascript"
+    });
+    this._worker = new Worker((URL || window.webkitURL).createObjectURL(data));
+    this._connectWorkerListener();
+    return this._worker.postMessage("");
+  };
+
+  BazarShop.prototype._connectWorkerListener = function() {
+    return this._worker.onmessage = (function(_this) {
+      return function(e) {
+        var message, _i, _len, _ref, _results;
+        if (e.data instanceof Array) {
+          _ref = e.data;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            message = _ref[_i];
+            _results.push(_this.broadcast(message.message, message.namespace));
+          }
+          return _results;
+        } else {
+          return _this.broadcast(e.data.message, e.data.namespace);
+        }
+      };
+    })(this);
+  };
+
+  BazarShop.prototype._registerWithBazar = function() {
+    return window.Bazar.registerKoon(this);
+  };
+
+  BazarShop.prototype.receiveMessage = function(message, namespace) {
+    if (!this._worker) {
+      return;
+    }
+    return this._worker.postMessage({
+      message: message,
+      namespace: namespace
+    });
+  };
+
+  return BazarShop;
+
+})(Koon);
+
+if (!window.Bazar) {
+  window.Bazar = new CBazar();
+}
 
 AREUtilParam = (function() {
   function AREUtilParam() {}
@@ -65,20 +358,14 @@ if (window.param === void 0) {
   window.param = AREUtilParam;
 }
 
-ARERawActor = (function() {
+ARERawActor = (function(_super) {
+  __extends(ARERawActor, _super);
+
   ARERawActor.defaultFriction = 0.3;
 
   ARERawActor.defaultMass = 10;
 
   ARERawActor.defaultElasticity = 0.2;
-
-
-  /*
-   * Null offset, used when creating dynamic bodies
-   * @private
-   */
-
-  ARERawActor._nullV = new cp.v(0, 0);
 
 
   /*
@@ -100,6 +387,8 @@ ARERawActor = (function() {
     this.updateVertices(verts, texverts);
     this.setColor(new AREColor3(255, 255, 255));
     this.clearTexture();
+    ARERawActor.__super__.constructor.call(this, "Actor_" + this._id);
+    window.AREMessages.registerKoon(this, /^actor\..*/);
   }
 
 
@@ -139,7 +428,10 @@ ARERawActor = (function() {
     this.layer = 0;
     this._physicsLayer = ~0;
     this._id = -1;
-    this._position = new cp.v(0, 0);
+    this._position = {
+      x: 0,
+      y: 0
+    };
     this._rotation = 0;
     this._size = {
       x: 0,
@@ -147,10 +439,8 @@ ARERawActor = (function() {
     };
 
     /*
-     * Chipmunk-js values
+     * Physics values
      */
-    this._shape = null;
-    this._body = null;
     this._friction = null;
     this._mass = null;
     this._elasticity = null;
@@ -345,34 +635,22 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.createPhysicsBody = function(_mass, _friction, _elasticity) {
-    var a, i, moment, origVerts, pos, space, vertIndex, verts, x, y, _i, _ref;
+    var a, bodyDef, i, origVerts, shapeDef, vertIndex, verts, x, y, _i, _ref;
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
-    if (!!this._shape || !!this._body) {
+    if (!(this._mass !== null && this._mass !== void 0)) {
       return;
     }
-    if (AREPhysics.getWorld() === null || AREPhysics.getWorld() === void 0) {
-      AREPhysics.startStepping();
-    }
-    if (AREPhysics.bodyCount === 0) {
-      AREPhysics.startStepping();
-    }
-    AREPhysics.bodyCount++;
-    if (this._mass === void 0 || this._mass === null) {
-      this._mass = 0;
-    }
+    this._friction || (this._friction = ARERawActor.defaultFriction);
+    this._elasticity || (this._elasticity = ARERawActor.defaultElasticity);
     if (this._mass < 0) {
       this._mass = 0;
     }
-    if (this._friction === void 0) {
-      this._friction = ARERawActor.defaultFriction;
-    } else if (this._friction < 0) {
+    if (this._friction < 0) {
       this._friction = 0;
     }
-    if (this._elasticity === void 0) {
-      this._elasticity = ARERawActor.defaultElasticity;
-    } else if (this._elasticity < 0) {
+    if (this._elasticity < 0) {
       this._elasticity = 0;
     }
     verts = [];
@@ -384,8 +662,8 @@ ARERawActor = (function() {
       origVerts = this._vertices;
     }
     for (i = _i = 0, _ref = origVerts.length - 1; _i < _ref; i = _i += 2) {
-      verts.push(origVerts[i] / ARERenderer.getPPM());
-      verts.push(origVerts[i + 1] / ARERenderer.getPPM());
+      verts.push(origVerts[i]);
+      verts.push(origVerts[i + 1]);
       if (this._mass === 0) {
         x = verts[verts.length - 2];
         y = verts[verts.length - 1];
@@ -394,23 +672,48 @@ ARERawActor = (function() {
         verts[verts.length - 1] = x * Math.sin(a) + (y * Math.cos(a));
       }
     }
-    space = AREPhysics.getWorld();
-    pos = ARERenderer.screenToWorld(this._position);
+    bodyDef = null;
+    shapeDef = {
+      id: this._id,
+      type: "Polygon",
+      vertices: verts,
+      "static": false,
+      position: this._position,
+      friction: this._friction,
+      elasticity: this._elasticity,
+      layer: this._physicsLayer
+    };
     if (this._mass === 0) {
-      this._shape = space.addShape(new cp.PolyShape(space.staticBody, verts, pos));
-      this._shape.setLayers(this._physicsLayer);
-      this._body = null;
+      shapeDef["static"] = true;
+      shapeDef.position = this._position;
     } else {
-      moment = cp.momentForPoly(this._mass, verts, ARERawActor._nullV);
-      this._body = space.addBody(new cp.Body(this._mass, moment));
-      this._body.setPos(pos);
-      this._body.setAngle(this._rotation);
-      this._shape = new cp.PolyShape(this._body, verts, ARERawActor._nullV);
-      this._shape = space.addShape(this._shape);
-      this._shape.setLayers(this._physicsLayer);
+      bodyDef = {
+        id: this._id,
+        position: this._position,
+        angle: this._rotation,
+        mass: this._mass,
+        momentV: {
+          x: 0,
+          y: 0
+        },
+        vertices: verts
+      };
+      shapeDef.position = {
+        x: 0,
+        y: 0
+      };
     }
-    this._shape.setFriction(this._friction);
-    this._shape.setElasticity(this._elasticity);
+    this.broadcast({}, "physics.enable");
+    if (bodyDef) {
+      this.broadcast({
+        def: bodyDef
+      }, "physics.body.create");
+    }
+    if (shapeDef) {
+      this.broadcast({
+        def: shapeDef
+      }, "physics.shape.create");
+    }
     return this;
   };
 
@@ -420,24 +723,12 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.destroyPhysicsBody = function() {
-    if (AREPhysics.bodyCount === 0) {
-      return;
-    }
-    if (!this._shape) {
-      return;
-    }
-    AREPhysics.bodyCount--;
-    AREPhysics.getWorld().removeShape(this._shape);
-    if (this._body) {
-      AREPhysics.getWorld().removeBody(this._body);
-    }
-    this._shape = null;
-    this._body = null;
-    if (AREPhysics.bodyCount === 0) {
-      return AREPhysics.stopStepping();
-    } else if (AREPhysics.bodyCount < 0) {
-      throw new Error("Body count is negative!");
-    }
+    this.broadcast({
+      id: this._id
+    }, "physics.shape.remove");
+    return this.broadcast({
+      id: this._id
+    }, "physics.body.remove");
   };
 
 
@@ -463,9 +754,10 @@ ARERawActor = (function() {
 
   ARERawActor.prototype.setPhysicsLayer = function(layer) {
     this._physicsLayer = 1 << param.required(layer, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-    if (this._shape !== null) {
-      return this._shape.setLayers(this._physicsLayer);
-    }
+    return this.broadcast({
+      id: this._id,
+      layer: this._physicsLayer
+    }, "physics.shape.set.layer");
   };
 
 
@@ -604,10 +896,8 @@ ARERawActor = (function() {
 
   ARERawActor.prototype.setPhysicsVertices = function(verts) {
     this._psyxVertices = param.required(verts);
-    if (this._body !== null) {
-      this.destroyPhysicsBody();
-      return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
-    }
+    this.destroyPhysicsBody();
+    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
   };
 
 
@@ -717,7 +1007,6 @@ ARERawActor = (function() {
   ARERawActor.prototype.updateAttachment = function() {
     var a, pos, rot;
     if (this.hasAttachment() && this.getAttachment()._visible) {
-      this.updatePosition();
       pos = this.getPosition();
       rot = this.getRotation();
       pos.x += this.attachedTextureAnchor.x;
@@ -730,19 +1019,6 @@ ARERawActor = (function() {
     } else {
       return this;
     }
-  };
-
-
-  /*
-   * Update position from physics body if we have one
-   */
-
-  ARERawActor.prototype.updatePosition = function() {
-    if (this._body !== null) {
-      this._position = ARERenderer.worldToScreen(this._body.getPos());
-      this._rotation = this._body.a;
-    }
-    return this;
   };
 
 
@@ -778,7 +1054,6 @@ ARERawActor = (function() {
     if (!this._visible) {
       return;
     }
-    this.updatePosition();
     this._modelM = new Matrix4();
     this._transV.elements[0] = this._position.x - ARERenderer.camPos.x;
     if (ARERenderer.force_pos0_0) {
@@ -876,7 +1151,6 @@ ARERawActor = (function() {
     if (!this._visible) {
       return false;
     }
-    this.updatePosition();
     this._transV.elements[0] = this._position.x - ARERenderer.camPos.x;
     this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
     x = this._transV.elements[0];
@@ -930,7 +1204,6 @@ ARERawActor = (function() {
     if (!this._visible) {
       return false;
     }
-    this.updatePosition();
     return this;
   };
 
@@ -986,16 +1259,11 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setPosition = function(position) {
-    param.required(position);
-    if (this._shape === null) {
-      if (position instanceof cp.v) {
-        this._position = position;
-      } else {
-        this._position = new cp.v(Number(position.x), Number(position.y));
-      }
-    } else if (this._body !== null) {
-      this._body.setPos(ARERenderer.screenToWorld(position));
-    }
+    this._position = param.required(position);
+    this.broadcast({
+      id: this._id,
+      position: position
+    }, "physics.body.set.position");
     return this;
   };
 
@@ -1012,13 +1280,16 @@ ARERawActor = (function() {
   ARERawActor.prototype.setRotation = function(rotation, radians) {
     param.required(rotation);
     radians = param.optional(radians, false);
-    if (radians === false) {
+    if (!radians) {
       rotation = Number(rotation) * 0.0174532925;
     }
     this._rotation = rotation;
-    if (this._body !== null) {
-      this._body.setAngle(this._rotation);
-    } else if (this._shape !== null) {
+    if (this._mass > 0) {
+      this.broadcast({
+        id: this._id,
+        rotation: this._rotation
+      }, "physics.body.set.rotation");
+    } else {
       this.destroyPhysicsBody();
       this.createPhysicsBody(this._mass, this._friction, this._elasticity);
     }
@@ -1216,9 +1487,35 @@ ARERawActor = (function() {
     return this._visible;
   };
 
+  ARERawActor.updateCount = 0;
+
+  ARERawActor.lastTime = Date.now();
+
+  ARERawActor.prototype.receiveMessage = function(message, namespace) {
+    var command;
+    if (namespace.indexOf("actor.") === -1) {
+      return;
+    }
+    if (!(message.id && message.id === this._id)) {
+      return;
+    }
+    command = namespace.split(".");
+    switch (command[1]) {
+      case "update":
+        ARERawActor.updateCount++;
+        if (Date.now() - ARERawActor.lastTime > 1000) {
+          console.log("Got " + ARERawActor.updateCount + " in the last second");
+          ARERawActor.lastTime = Date.now();
+          ARERawActor.updateCount = 0;
+        }
+        this._position = message.position;
+        return this._rotation = message.rotation;
+    }
+  };
+
   return ARERawActor;
 
-})();
+})(Koon);
 
 ARERectangleActor = (function(_super) {
   __extends(ARERectangleActor, _super);
@@ -1868,70 +2165,17 @@ ARERenderer = (function() {
 
 
   /*
-   * Physics pixel-per-meter ratio
-   * @type [Number]
-   */
-
-  ARERenderer._PPM = 128;
-
-
-  /*
-   * Returns PPM ratio
-   * @return [Number] ppm pixels-per-meter
-   */
-
-  ARERenderer.getPPM = function() {
-    return ARERenderer._PPM;
-  };
-
-
-  /*
-   * Returns MPP ratio
-   * @return [Number] mpp meters-per-pixel
-   */
-
-  ARERenderer.getMPP = function() {
-    return 1.0 / ARERenderer._PPM;
-  };
-
-
-  /*
-   * Converts screen coords to world coords
-   *
-   * @param [B2Vec2] v vector in x, y form
-   * @return [B2Vec2] ret v in world coords
-   */
-
-  ARERenderer.screenToWorld = function(v) {
-    var ret;
-    ret = new cp.v;
-    ret.x = v.x / ARERenderer._PPM;
-    ret.y = v.y / ARERenderer._PPM;
-    return ret;
-  };
-
-
-  /*
-   * Converts world coords to screen coords
-   *
-   * @param [B2Vec2] v vector in x, y form
-   * @return [B2Vec2] ret v in screen coords
-   */
-
-  ARERenderer.worldToScreen = function(v) {
-    var ret;
-    ret = new cp.v;
-    ret.x = v.x * ARERenderer._PPM;
-    ret.y = v.y * ARERenderer._PPM;
-    return ret;
-  };
-
-
-  /*
    * @property [Array<Object>] actors for rendering
    */
 
   ARERenderer.actors = [];
+
+
+  /*
+   * @property [Object] actor_hash actor objects stored by id, for faster access
+   */
+
+  ARERenderer.actor_hash = {};
 
 
   /*
@@ -2688,6 +2932,7 @@ ARERenderer = (function() {
     }
     layerIndex = _.sortedIndex(ARERenderer.actors, actor, "layer");
     ARERenderer.actors.splice(layerIndex, 0, actor);
+    ARERenderer.actor_hash[actor.getId()] = actor;
     return actor;
   };
 
@@ -2838,93 +3083,55 @@ ARERenderer = (function() {
 
 })();
 
-AREPhysics = (function() {
-  AREPhysics.velIterations = 6;
+PhysicsManager = (function(_super) {
+  __extends(PhysicsManager, _super);
 
-  AREPhysics.posIterations = 2;
-
-  AREPhysics.frameTime = 1.0 / 60.0;
-
-  AREPhysics._gravity = new cp.v(0, 1);
-
-  AREPhysics._stepIntervalId = null;
-
-  AREPhysics._world = null;
-
-  AREPhysics._densityRatio = 1 / 10000;
-
-  AREPhysics.bodyCount = 0;
-
-  AREPhysics.benchmark = false;
-
-  function AREPhysics() {
-    throw new Error("Physics constructor called");
+  function PhysicsManager() {
+    PhysicsManager.__super__.constructor.call(this, "PhysicsManager", [
+      {
+        raw: "cp = exports = {};"
+      }, {
+        url: "/components/chipmunk/cp.js"
+      }, {
+        url: "/lib/koon/koon.js"
+      }, {
+        url: "/lib/physics/worker.js"
+      }
+    ]);
   }
 
-  AREPhysics.startStepping = function() {
-    var avgStep, stepCount;
-    if (this._stepIntervalId !== null) {
-      return;
-    }
-    this._world = new cp.Space;
-    this._world.gravity = this._gravity;
-    this._world.iterations = 60;
-    this._world.collisionSlop = 0.5;
-    this._world.sleepTimeThreshold = 0.5;
-    ARELog.info("Starting world update loop");
-    avgStep = 0;
-    stepCount = 0;
-    return this._stepIntervalId = setInterval((function(_this) {
-      return function() {
-        var start;
-        start = Date.now();
-        _this._world.step(_this.frameTime);
-        if (_this.benchmark) {
-          stepCount++;
-          avgStep = avgStep + ((Date.now() - start) / stepCount);
-          if (stepCount % 500 === 0) {
-            return console.log("Physics step time: " + (avgStep.toFixed(2)) + "ms");
+  PhysicsManager.prototype._connectWorkerListener = function() {
+    var ID_INDEX, POS_INDEX, ROT_INDEX, actor, data, dataPacket;
+    ID_INDEX = 0;
+    POS_INDEX = 1;
+    ROT_INDEX = 2;
+    data = {};
+    dataPacket = {};
+    actor = {};
+    return this._worker.onmessage = (function(_this) {
+      return function(e) {
+        var l, _results;
+        data = e.data;
+        if (data.length) {
+          l = data.length - 1;
+          _results = [];
+          while (l--) {
+            dataPacket = data[l];
+            actor = ARERenderer.actor_hash[dataPacket[ID_INDEX]];
+            actor._position = dataPacket[POS_INDEX];
+            _results.push(actor._rotation = dataPacket[ROT_INDEX]);
           }
+          return _results;
+        } else {
+          return _this.broadcast(e.data.message, e.data.namespace);
         }
       };
-    })(this), this.frameTime);
+    })(this);
   };
 
-  AREPhysics.stopStepping = function() {
-    if (this._stepIntervalId === null) {
-      return;
-    }
-    ARELog.info("Halting world update loop");
-    clearInterval(this._stepIntervalId);
-    this._stepIntervalId = null;
-    return this._world = null;
-  };
+  return PhysicsManager;
 
-  AREPhysics.getWorld = function() {
-    return this._world;
-  };
-
-  AREPhysics.getDensityRatio = function() {
-    return this._densityRatio;
-  };
-
-  AREPhysics.getGravity = function() {
-    return this._gravity;
-  };
-
-  AREPhysics.setGravity = function(v) {
-    if (!(v instanceof cp.Vect)) {
-      throw new Error("You need to set space gravity using cp.v!");
-    }
-    this._gravity = v;
-    if (this._world !== null && this._world !== void 0) {
-      return this._world.gravity = v;
-    }
-  };
-
-  return AREPhysics;
-
-})();
+})(BazarShop);
 
 ARELog = (function() {
   function ARELog() {}
@@ -4317,7 +4524,6 @@ AREEngineInterface = (function() {
      * NOTE. This does not affect existing textures.
      */
     this.wglFlipTextureY = false;
-    AREPhysics.stopStepping();
     return new AREEngine(width, height, (function(_this) {
       return function(are) {
         _this._engine = are;
@@ -4458,8 +4664,10 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.setBenchmark = function(status) {
-    AREPhysics.benchmark = status;
-    return this._engine.benchmark = status;
+    this._engine.benchmark = status;
+    return window.AREMessages.broadcast({
+      value: status
+    }, "physics.benchmark.set");
   };
 
 
@@ -4755,9 +4963,9 @@ AREEngine = (function() {
     if (window._ === null || window._ === void 0) {
       return ARELog.error("Underscore.js is not present!");
     }
-    if (window.cp === void 0 || window.cp === null) {
-      return ARELog.error("Chipmunk-js is not present!");
-    }
+    window.AREMessages = new KoonFlock("AREMessages");
+    window.AREMessages.registerKoon(window.Bazar);
+    this._physics = new PhysicsManager();
     this._renderer = new ARERenderer(canvas, width, height);
     this.startRendering();
     cb(this);

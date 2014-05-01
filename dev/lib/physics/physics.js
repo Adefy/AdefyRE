@@ -242,6 +242,16 @@ AREPhysicsWorker = (function(_super) {
     return null;
   };
 
+  AREPhysicsWorker.prototype.convertScreenVertsToWorld = function(vertices) {
+    var i, _i, _ref, _results;
+    _results = [];
+    for (i = _i = 0, _ref = vertices.length - 1; _i < _ref; i = _i += 2) {
+      vertices[i] /= this._PPM;
+      _results.push(vertices[i + 1] /= this._PPM);
+    }
+    return _results;
+  };
+
   AREPhysicsWorker.prototype.removeBody = function(message) {
     var body, id;
     if (!(id = message.id)) {
@@ -265,14 +275,15 @@ AREPhysicsWorker = (function(_super) {
   };
 
   AREPhysicsWorker.prototype.createBody = function(def) {
-    var body, moment;
+    var body, moment, vertices;
     if (!(def = message.def)) {
       return;
     }
     if (this.findBody(def.id)) {
       return;
     }
-    moment = cp.momentForPoly(def.mass, def.vertices, def.momentV);
+    vertices = this.convertScreenVertsToWorld(def.vertices);
+    moment = cp.momentForPoly(def.mass, vertices, def.momentV);
     body = new cp.Body(def.mass, moment);
     this._world.addBody(body);
     body.__are_id = def.id;
@@ -286,7 +297,7 @@ AREPhysicsWorker = (function(_super) {
   };
 
   AREPhysicsWorker.prototype.createShape = function(message) {
-    var body, def, shape;
+    var body, def, shape, vertices;
     if (!(def = message.def)) {
       return;
     }
@@ -295,6 +306,7 @@ AREPhysicsWorker = (function(_super) {
     }
     shape = null;
     body = null;
+    vertices = this.convertScreenVertsToWorld(def.vertices);
     if (def["static"]) {
       body = this._world.staticBody;
     } else {
@@ -305,7 +317,7 @@ AREPhysicsWorker = (function(_super) {
     }
     switch (def.type) {
       case "Polygon":
-        shape = new cp.PolyShape(body, def.vertices, this.screenToWorld(def.position));
+        shape = new cp.PolyShape(body, vertices, this.screenToWorld(def.position));
         break;
       default:
         return;
@@ -368,3 +380,5 @@ AREPhysicsWorker = (function(_super) {
   return AREPhysicsWorker;
 
 })(Koon);
+
+new AREPhysicsWorker();

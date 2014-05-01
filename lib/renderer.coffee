@@ -24,51 +24,14 @@ class ARERenderer
   @_gl: null
 
   ###
-  # Physics pixel-per-meter ratio
-  # @type [Number]
-  ###
-  @_PPM: 128
-
-  ###
-  # Returns PPM ratio
-  # @return [Number] ppm pixels-per-meter
-  ###
-  @getPPM: -> ARERenderer._PPM
-
-  ###
-  # Returns MPP ratio
-  # @return [Number] mpp meters-per-pixel
-  ###
-  @getMPP: -> 1.0 / ARERenderer._PPM
-
-  ###
-  # Converts screen coords to world coords
-  #
-  # @param [B2Vec2] v vector in x, y form
-  # @return [B2Vec2] ret v in world coords
-  ###
-  @screenToWorld: (v) ->
-    ret = new cp.v
-    ret.x = v.x / ARERenderer._PPM
-    ret.y = v.y / ARERenderer._PPM
-    ret
-
-  ###
-  # Converts world coords to screen coords
-  #
-  # @param [B2Vec2] v vector in x, y form
-  # @return [B2Vec2] ret v in screen coords
-  ###
-  @worldToScreen: (v) ->
-    ret = new cp.v
-    ret.x = v.x * ARERenderer._PPM
-    ret.y = v.y * ARERenderer._PPM
-    ret
-
-  ###
   # @property [Array<Object>] actors for rendering
   ###
   @actors: []
+
+  ###
+  # @property [Object] actor_hash actor objects stored by id, for faster access
+  ###
+  @actor_hash: {}
 
   ###
   # @property [Array<Object>] texture objects, with names and gl textures
@@ -807,6 +770,7 @@ class ARERenderer
 
     # Insert!
     ARERenderer.actors.splice layerIndex, 0, actor
+    ARERenderer.actor_hash[actor.getId()] = actor
 
     actor
 

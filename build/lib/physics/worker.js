@@ -1,10 +1,13 @@
+var AREPhysicsWorker, ARE_PHYSICS_UPDATE_PACKET, onmessage, worker,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+ARE_PHYSICS_UPDATE_PACKET = [];
+
 
 /*
  * Physics worker, implements a BazarShop and uses Koon for message passing
  */
-var AREPhysicsWorker,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 AREPhysicsWorker = (function(_super) {
   __extends(AREPhysicsWorker, _super);
@@ -24,10 +27,10 @@ AREPhysicsWorker = (function(_super) {
     this._bodyCount = 0;
     this._world = null;
     this._densityRatio = 1 / 10000;
-    this._gravity = new cp.v(0, 1);
+    this._gravity = new cp.v(0, 9.8);
     this._frameTime = 1.0 / 60.0;
     this._posIterations = 2;
-    this._velIterations = 6;
+    this._velIterations = 4;
     return this._PPM = 128;
   };
 
@@ -78,13 +81,21 @@ AREPhysicsWorker = (function(_super) {
     return ret;
   };
 
+  AREPhysicsWorker.prototype.worldToScreenFast = function(v) {
+    return {
+      x: v.x * this._PPM,
+      y: v.y * this._PPM
+    };
+  };
+
   AREPhysicsWorker.prototype.startStepping = function() {
-    var avgStep, stepCount;
+    var avgStep, stepCount, stepTime;
     if (this._stepIntervalId) {
       return;
     }
     avgStep = 0;
     stepCount = 0;
+    stepTime = this._frameTime * 1000;
     return this._stepIntervalId = setInterval((function(_this) {
       return function() {
         _this._world.step(_this._frameTime);
@@ -93,7 +104,8 @@ AREPhysicsWorker = (function(_super) {
         /*
          * Benchmark code
          *
-        return unless @_benchmark
+         *
+         * return unless @_benchmark
         stepCount++
         
         avgStep = avgStep + ((Date.now() - start) / stepCount)
@@ -102,7 +114,7 @@ AREPhysicsWorker = (function(_super) {
           console.log "Physics step time: #{avgStep.toFixed(2)}ms"
          */
       };
-    })(this), this._frameTime);
+    })(this), stepTime);
   };
 
   AREPhysicsWorker.prototype.stopStepping = function() {
@@ -110,96 +122,73 @@ AREPhysicsWorker = (function(_super) {
       return;
     }
     clearInterval(this._stepIntervalId);
-    this._stepIntervalId = null;
-    return this._world = null;
+    return this._stepIntervalId = null;
   };
 
   AREPhysicsWorker.prototype._broadcastBodyPositions = function() {
-    var body, _i, _len, _ref, _results;
-    _ref = this._bodies;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      body = _ref[_i];
-      _results.push(this.broadcast({
-        id: body.__are_id,
-        position: this.worldToScreen(body.getPos()),
-        rotation: body.a
-      }, "actor.update"));
+    var body, l;
+    l = this._bodies.length - 1;
+    while (l--) {
+      body = this._bodies[l];
+      ARE_PHYSICS_UPDATE_PACKET[l] = [body.__are_id, this.worldToScreenFast(body.getPos()), body.a];
     }
-    return _results;
+    return postMessage(ARE_PHYSICS_UPDATE_PACKET);
   };
 
   AREPhysicsWorker.prototype.receiveMessage = function(message, namespace) {
     var command;
-    if (namespace.indexOf("physics.") === -1) {
-      return;
-    }
     command = namespace.split(".");
     switch (command[1]) {
       case "ppm":
-        this._PPM = message.value;
-        break;
+        return this._PPM = message.value;
       case "benchmark":
         switch (command[2]) {
           case "set":
-            this.benchmark = message.value;
-            break;
+            return this.benchmark = message.value;
           case "enable":
-            this.benchmark = true;
-            break;
+            return this.benchmark = true;
           case "disable":
-            this.benchmark = false;
+            return this.benchmark = false;
         }
         break;
       case "disable":
-        this.stopStepping();
-        break;
+        return this.stopStepping();
       case "enable":
-        this.startStepping();
-        break;
+        return this.startStepping();
       case "body":
         switch (command[2]) {
           case "create":
-            this.createBody(message);
-            break;
+            return this.createBody(message);
           case "remove":
-            this.removeBody(message);
-            break;
+            return this.removeBody(message);
           case "set":
             switch (command[3]) {
               case "position":
-                this.bodySetPosition(message);
-                break;
+                return this.bodySetPosition(message);
               case "rotation":
-                this.bodySetRotation(message);
-            }
-        }
-        break;
-      case "shape":
-        switch (command[2]) {
-          case "set":
-            switch (command[3]) {
-              case "layer":
-                this.shapeSetLayer(message);
+                return this.bodySetRotation(message);
             }
         }
         break;
       case "shape":
         switch (command[2]) {
           case "create":
-            this.createShape(message);
-            break;
+            return this.createShape(message);
           case "remove":
-            this.removeShape(message);
+            return this.removeShape(message);
+          case "set":
+            switch (command[3]) {
+              case "layer":
+                return this.shapeSetLayer(message);
+            }
         }
         break;
       case "gravity":
         switch (command[2]) {
           case "set":
-            this.setGravity(message);
+            return this.setGravity(message);
         }
     }
-    return AREPhysicsWorker.__super__.receiveMessage.call(this, message, namespace);
   };
 
 
@@ -232,7 +221,7 @@ AREPhysicsWorker = (function(_super) {
 
   AREPhysicsWorker.prototype.findShape = function(id) {
     var shape, _i, _len, _ref;
-    _ref = this._bodies;
+    _ref = this._shapes;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       shape = _ref[_i];
       if (shape.__are_id === id) {
@@ -240,6 +229,15 @@ AREPhysicsWorker = (function(_super) {
       }
     }
     return null;
+  };
+
+  AREPhysicsWorker.prototype.convertRawVertsToWorld = function(vertices) {
+    var i, _i, _ref;
+    for (i = _i = 0, _ref = vertices.length - 1; _i < _ref; i = _i += 2) {
+      vertices[i] /= this._PPM;
+      vertices[i + 1] /= this._PPM;
+    }
+    return vertices;
   };
 
   AREPhysicsWorker.prototype.removeBody = function(message) {
@@ -264,15 +262,17 @@ AREPhysicsWorker = (function(_super) {
     return this._world.removeShape(shape);
   };
 
-  AREPhysicsWorker.prototype.createBody = function(def) {
-    var body, moment;
+  AREPhysicsWorker.prototype.createBody = function(message) {
+    var body, def, moment, momentV, vertices;
     if (!(def = message.def)) {
       return;
     }
     if (this.findBody(def.id)) {
       return;
     }
-    moment = cp.momentForPoly(def.mass, def.vertices, def.momentV);
+    vertices = this.convertRawVertsToWorld(def.vertices);
+    momentV = new cp.v(def.momentV.x, def.momentV.y);
+    moment = cp.momentForPoly(def.mass, vertices, momentV);
     body = new cp.Body(def.mass, moment);
     this._world.addBody(body);
     body.__are_id = def.id;
@@ -286,7 +286,7 @@ AREPhysicsWorker = (function(_super) {
   };
 
   AREPhysicsWorker.prototype.createShape = function(message) {
-    var body, def, shape;
+    var body, def, shape, vertices;
     if (!(def = message.def)) {
       return;
     }
@@ -295,6 +295,7 @@ AREPhysicsWorker = (function(_super) {
     }
     shape = null;
     body = null;
+    vertices = this.convertRawVertsToWorld(def.vertices);
     if (def["static"]) {
       body = this._world.staticBody;
     } else {
@@ -305,16 +306,13 @@ AREPhysicsWorker = (function(_super) {
     }
     switch (def.type) {
       case "Polygon":
-        shape = new cp.PolyShape(body, def.vertices, this.screenToWorld(def.position));
+        shape = new cp.PolyShape(body, vertices, this.screenToWorld(def.position));
         break;
       default:
         return;
     }
     this._world.addShape(shape);
     shape.__are_id = def.id;
-    if (def.layer) {
-      shape.setLayers(def.layer);
-    }
     if (def.friction) {
       shape.setFriction(def.friction);
     }
@@ -368,3 +366,9 @@ AREPhysicsWorker = (function(_super) {
   return AREPhysicsWorker;
 
 })(Koon);
+
+worker = new AREPhysicsWorker();
+
+onmessage = function(e) {
+  return worker.receiveMessage(e.data.message, e.data.namespace);
+};
