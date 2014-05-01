@@ -86,7 +86,9 @@
           setTimeout(function() {
             createBall();
             document.getElementById("ActorCount").innerHTML = ARERenderer.actors.length;
-            scheduleBallTimeout();
+
+            //if(ARERenderer.actors.length < 600)
+              scheduleBallTimeout();
           }, Math.random() * 50);
         };
 

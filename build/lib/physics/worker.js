@@ -137,6 +137,9 @@ AREPhysicsWorker = (function(_super) {
 
   AREPhysicsWorker.prototype.receiveMessage = function(message, namespace) {
     var command;
+    if (!namespace) {
+      return;
+    }
     command = namespace.split(".");
     switch (command[1]) {
       case "ppm":

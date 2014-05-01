@@ -127,6 +127,7 @@ class AREPhysicsWorker extends Koon
     postMessage ARE_PHYSICS_UPDATE_PACKET
 
   receiveMessage: (message, namespace) ->
+    return unless namespace
     command = namespace.split(".")
 
     switch command[1]
