@@ -113,7 +113,7 @@ class AREPhysicsWorker extends Koon
   _broadcastBodyPositions: ->
 
     # We use the same array for pushing updates
-    l = @_bodies.length - 1
+    l = @_bodies.length
     
     while l--
       body = @_bodies[l]

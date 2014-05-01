@@ -65,17 +65,17 @@ AREEngine = (function() {
     stepCount = 0;
     return this._renderIntervalId = setInterval((function(_this) {
       return function() {
-        var fps, start;
-        start = Date.now();
-        _this._renderer.render();
-        if (_this.benchmark) {
-          stepCount++;
-          avgStep = avgStep + ((Date.now() - start) / stepCount);
-          if (stepCount % 500 === 0) {
-            fps = (1000 / avgStep).toFixed(2);
-            return console.log("Render step time: " + (avgStep.toFixed(2)) + "ms (" + fps + " FPS)");
-          }
-        }
+        return _this._renderer.activeRenderMethod();
+
+        /*
+        if @benchmark
+          stepCount++
+          avgStep = avgStep + ((Date.now() - start) / stepCount)
+        
+          if stepCount % 500 == 0
+            fps = (1000 / avgStep).toFixed 2
+            console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
+         */
       };
     })(this), this._framerate);
   };

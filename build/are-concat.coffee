@@ -860,17 +860,20 @@ class ARERawActor extends Koon
   wglBindTexture: (gl) ->
     # Texture rendering, if needed
     if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
-      gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+      if ARERenderer._currentTexture != @_texture.texture
+        ARERenderer._currentTexture = @_texture.texture
 
-      gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-      #gl.vertexAttrib2f @_sh_handles.aUVScale,
-      #  @_texture.scaleX, @_texture.scaleY
-      # We apparently don't need uUVScale in webgl
-      #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+        gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
-      gl.activeTexture gl.TEXTURE0
-      gl.bindTexture gl.TEXTURE_2D, @_texture.texture
-      gl.uniform1i @_sh_handles.uSampler, 0
+        gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
+        #gl.vertexAttrib2f @_sh_handles.aUVScale,
+        #  @_texture.scaleX, @_texture.scaleY
+        # We apparently don't need uUVScale in webgl
+        #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+
+        gl.activeTexture gl.TEXTURE0
+        gl.bindTexture gl.TEXTURE_2D, @_texture.texture
+        gl.uniform1i @_sh_handles.uSampler, 0
 
     @
 
@@ -882,8 +885,6 @@ class ARERawActor extends Koon
   # @param [Shader] shader optional shader to override our own
   ###
   wglDraw: (gl, shader) ->
-    param.required gl
-    param.optional shader
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
@@ -2101,7 +2102,7 @@ class ARERenderer
   # screen clearing. This option is only valid with the WGL renderer mode.
   # @type [Boolean]
   ###
-  @alwaysClearScreen: true
+  @alwaysClearScreen: false
 
   ###
   # Sets up the renderer, using either an existing canvas or creating a new one
@@ -2296,10 +2297,10 @@ class ARERenderer
     @_texShader.generateHandles()
 
     ARELog.info "Initialized shaders"
-
     ARELog.info "ARE WGL initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL
+    @activeRenderMethod = @wglRender
 
     true
 
@@ -2314,6 +2315,7 @@ class ARERenderer
     ARELog.info "ARE CTX initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS
+    @activeRenderMethod = @cvRender
 
     true
 
@@ -2328,8 +2330,18 @@ class ARERenderer
     ARELog.info "ARE Null initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL
+    @activeRenderMethod = @nullRender
 
     true
+
+  ###
+  # Render method set by our mode, so we don't have to iterate over a
+  # switch-case on each render call.
+  #
+  # Renders a frame, needs to be set in our constructor, by one of the init
+  # methods.
+  ###
+  activeRenderMethod: ->
 
   ###
   # Returns instance (only one may exist, enforced in constructor)
@@ -2484,11 +2496,7 @@ class ARERenderer
   # @return [Void]
   ###
   wglRender: ->
-
-    gl = ARERenderer._gl # Code asthetics
-
-    # Probably unecessary, but better to be safe
-    if gl == undefined or gl == null then return
+    gl = ARERenderer._gl
 
     # Render to an off-screen buffer for screen picking if requested to do so.
     # The resulting render is used to pick visible objects. We render in a
@@ -2501,25 +2509,33 @@ class ARERenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     # Clear the screen
+    # 
     # Did you know? WebGL actually clears the screen by itself:
     # if preserveDrawingBuffer is false
     # However a bit of dragging occurs when rendering, probaly some fake
     # motion blur?
+    #
+    # Get rid of this and manually requests clears from the editor when hiding
+    # actors.
     if ARERenderer.alwaysClearScreen
       gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    for a in ARERenderer.actors
+    actorCount = ARERenderer.actors.length
+    while actorCount--
+      a = ARERenderer.actors[actorCount]
 
       if @_pickRenderRequested
 
+        a_id = a._id
+
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
-        _savedColor = a.getColor()
-        _savedOpacity = a.getOpacity()
+        _savedColor = a._color
+        _savedOpacity = a._opacity
 
-        _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
-        _idSector = Math.floor(a.getId() / 255)
+        _id = a_id - (Math.floor(a_id / 255) * 255)
+        _idSector = Math.floor(a_id / 255)
 
         @switchMaterial ARERenderer.MATERIAL_FLAT
 
@@ -2531,7 +2547,7 @@ class ARERenderer
         a.setOpacity _savedOpacity
 
       else
-        a = a.updateAttachment()
+        a = a.updateAttachment() if a._attachedTexture
 
         ##
         ## NOTE: Keep in mind that failing to switch to the proper material
@@ -2539,8 +2555,8 @@ class ARERenderer
         ##       switching to a different material.
         ##
 
-        if a.getMaterial() != ARERenderer._currentMaterial
-          @switchMaterial a.getMaterial()
+        if a._material != ARERenderer._currentMaterial
+          @switchMaterial a._material
 
         a.wglDraw gl
 
@@ -2652,20 +2668,6 @@ class ARERenderer
       a = a.updateAttachment()
 
       a.nullDraw ctx
-
-  ###
-  # main render function
-  # @return [Void]
-  ###
-  render: ->
-
-    switch ARERenderer.activeRendererMode
-      when ARERenderer.RENDERER_MODE_NULL
-        @nullRender()
-      when ARERenderer.RENDERER_MODE_CANVAS
-        @cvRender()
-      when ARERenderer.RENDERER_MODE_WGL
-        @wglRender()
 
   ###
   # Returns the currently active renderer mode
@@ -2878,7 +2880,7 @@ class PhysicsManager extends BazarShop
       if data.length
 
         # This is faster than a generic for-loop
-        l = data.length - 1
+        l = data.length
 
         while l--
           dataPacket = data[l]
@@ -4611,10 +4613,11 @@ class AREEngine
     stepCount = 0
 
     @_renderIntervalId = setInterval =>
-      start = Date.now()
+      # start = Date.now() if @benchmark
 
-      @_renderer.render()
+      @_renderer.activeRenderMethod()
 
+      ###
       if @benchmark
         stepCount++
         avgStep = avgStep + ((Date.now() - start) / stepCount)
@@ -4622,6 +4625,7 @@ class AREEngine
         if stepCount % 500 == 0
           fps = (1000 / avgStep).toFixed 2
           console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
+      ###
 
     , @_framerate
 

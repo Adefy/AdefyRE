@@ -127,7 +127,7 @@ AREPhysicsWorker = (function(_super) {
 
   AREPhysicsWorker.prototype._broadcastBodyPositions = function() {
     var body, l;
-    l = this._bodies.length - 1;
+    l = this._bodies.length;
     while (l--) {
       body = this._bodies[l];
       ARE_PHYSICS_UPDATE_PACKET[l] = [body.__are_id, this.worldToScreenFast(body.getPos()), body.a];

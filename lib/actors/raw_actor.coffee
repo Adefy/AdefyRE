@@ -597,17 +597,20 @@ class ARERawActor extends Koon
   wglBindTexture: (gl) ->
     # Texture rendering, if needed
     if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
-      gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+      if ARERenderer._currentTexture != @_texture.texture
+        ARERenderer._currentTexture = @_texture.texture
 
-      gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-      #gl.vertexAttrib2f @_sh_handles.aUVScale,
-      #  @_texture.scaleX, @_texture.scaleY
-      # We apparently don't need uUVScale in webgl
-      #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+        gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
-      gl.activeTexture gl.TEXTURE0
-      gl.bindTexture gl.TEXTURE_2D, @_texture.texture
-      gl.uniform1i @_sh_handles.uSampler, 0
+        gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
+        #gl.vertexAttrib2f @_sh_handles.aUVScale,
+        #  @_texture.scaleX, @_texture.scaleY
+        # We apparently don't need uUVScale in webgl
+        #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+
+        gl.activeTexture gl.TEXTURE0
+        gl.bindTexture gl.TEXTURE_2D, @_texture.texture
+        gl.uniform1i @_sh_handles.uSampler, 0
 
     @
 
@@ -619,8 +622,6 @@ class ARERawActor extends Koon
   # @param [Shader] shader optional shader to override our own
   ###
   wglDraw: (gl, shader) ->
-    param.required gl
-    param.optional shader
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!

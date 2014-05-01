@@ -673,11 +673,14 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
     if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
-      gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
-      gl.uniform1i(this._sh_handles.uSampler, 0);
+      if (ARERenderer._currentTexture !== this._texture.texture) {
+        ARERenderer._currentTexture = this._texture.texture;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
+        gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
+        gl.uniform1i(this._sh_handles.uSampler, 0);
+      }
     }
     return this;
   };
@@ -693,8 +696,6 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.wglDraw = function(gl, shader) {
     var flatMV, _sh_handles_backup;
-    param.required(gl);
-    param.optional(shader);
     if (!this._visible) {
       return;
     }

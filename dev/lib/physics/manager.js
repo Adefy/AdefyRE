@@ -32,7 +32,7 @@ PhysicsManager = (function(_super) {
         var l, _results;
         data = e.data;
         if (data.length) {
-          l = data.length - 1;
+          l = data.length;
           _results = [];
           while (l--) {
             dataPacket = data[l];

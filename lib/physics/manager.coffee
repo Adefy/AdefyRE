@@ -30,7 +30,7 @@ class PhysicsManager extends BazarShop
       if data.length
 
         # This is faster than a generic for-loop
-        l = data.length - 1
+        l = data.length
 
         while l--
           dataPacket = data[l]
