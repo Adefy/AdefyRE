@@ -68,7 +68,7 @@ class AREEngineInterface
   # calling it!
   ###
   getRendererMode: -> ARERenderer.rendererMode
-  setRendererMode: (mode) -> ARERenderer.rendererMode = mode
+  setRendererMode: (mode) -> ARERenderer.setRendererMode mode
 
   ###
   # Set engine clear color

@@ -118,6 +118,8 @@ class ARERenderer
   # @type [Number]
   ###
   @rendererMode: @RENDERER_MODE_WGL
+  @setRendererMode: (mode) ->
+    @rendererMode = param.optional mode, null, @rendererModes
 
   ###
   # denotes the currently chosen internal Renderer, this value may be different
