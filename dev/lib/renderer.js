@@ -649,10 +649,8 @@ ARERenderer = (function() {
       ctx.clearRect(0, 0, this._width, this._height);
     }
     ctx.save();
-    if (!ARERenderer.force_pos0_0) {
-      ctx.translate(0, this._height);
-      ctx.scale(1, -1);
-    }
+    ctx.translate(0, this._height);
+    ctx.scale(1, -1);
     _ref = ARERenderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];

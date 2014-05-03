@@ -1092,26 +1092,17 @@ class ARERawActor extends Koon
   ###
   # Renders the current actor using the 2d context, this function should only
   # be called by a ARERenderer in CANVAS mode
+  #
   # @param [Object] 2d context
+  # @return [self]
   ###
   cvDraw: (context) ->
-    param.required context
+    return unless @_visible
 
-    # We only respect our own visibility flag! Any invisible attached textures
-    # cause us to render!
-    return false unless @_visible
-
-    # Prep our vectors and matrices
-    @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-    @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
-
-    x = @_transV.elements[0]
-    y = @_transV.elements[1]
-
-    context.translate(x, y)
+    context.translate @_modelM[12], @_modelM[13]
     context.beginPath()
-    context.rotate(@_rotation)
-    context.moveTo(@_vertices[0], @_vertices[1])
+    context.rotate @_rotation
+    context.moveTo @_vertices[0], @_vertices[1]
 
     for i in [1..(@_vertices.length / 2)]
       context.lineTo(@_vertices[i * 2], @_vertices[i * 2 + 1])
@@ -1155,11 +1146,7 @@ class ARERawActor extends Koon
   # @param [Object] 2d context
   ###
   nullDraw: (context) ->
-    param.required context
-
-    # We only respect our own visibility flag! Any invisible attached textures
-    # cause us to render!
-    return false unless @_visible
+    return unless @_visible
 
     @
 
@@ -2849,9 +2836,9 @@ class ARERenderer
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    unless ARERenderer.force_pos0_0
-      ctx.translate 0, @_height
-      ctx.scale 1, -1
+    #unless ARERenderer.force_pos0_0
+    ctx.translate 0, @_height
+    ctx.scale 1, -1
 
     for a in ARERenderer.actors
       ctx.save()

@@ -1299,20 +1299,17 @@ ARERawActor = (function(_super) {
   /*
    * Renders the current actor using the 2d context, this function should only
    * be called by a ARERenderer in CANVAS mode
+   *
    * @param [Object] 2d context
+   * @return [self]
    */
 
   ARERawActor.prototype.cvDraw = function(context) {
-    var i, x, y, _i, _ref;
-    param.required(context);
+    var i, _i, _ref;
     if (!this._visible) {
-      return false;
+      return;
     }
-    this._transV.elements[0] = this._position.x - ARERenderer.camPos.x;
-    this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
-    x = this._transV.elements[0];
-    y = this._transV.elements[1];
-    context.translate(x, y);
+    context.translate(this._modelM[12], this._modelM[13]);
     context.beginPath();
     context.rotate(this._rotation);
     context.moveTo(this._vertices[0], this._vertices[1]);
@@ -1357,9 +1354,8 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.nullDraw = function(context) {
-    param.required(context);
     if (!this._visible) {
-      return false;
+      return;
     }
     return this;
   };
@@ -3156,10 +3152,8 @@ ARERenderer = (function() {
       ctx.clearRect(0, 0, this._width, this._height);
     }
     ctx.save();
-    if (!ARERenderer.force_pos0_0) {
-      ctx.translate(0, this._height);
-      ctx.scale(1, -1);
-    }
+    ctx.translate(0, this._height);
+    ctx.scale(1, -1);
     _ref = ARERenderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];

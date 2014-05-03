@@ -638,9 +638,9 @@ class ARERenderer
     # Draw everything!
     ctx.save()
     # cursed inverted scene!
-    unless ARERenderer.force_pos0_0
-      ctx.translate 0, @_height
-      ctx.scale 1, -1
+    #unless ARERenderer.force_pos0_0
+    ctx.translate 0, @_height
+    ctx.scale 1, -1
 
     for a in ARERenderer.actors
       ctx.save()
