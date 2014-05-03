@@ -5,7 +5,7 @@ AREShader.shaders.texture = {}
 
 #precision = "highp"
 precision = "mediump"
-varying_precision = "highp"
+varying_precision = "mediump"
 precision_declaration = "precision #{precision} float;"
 
 AREShader.shaders.wire.vertex = """

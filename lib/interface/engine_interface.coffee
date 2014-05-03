@@ -49,9 +49,6 @@ class AREEngineInterface
     ###
     @wglFlipTextureY = false
 
-    # Clear out physics world
-    AREPhysics.stopStepping()
-
     new AREEngine width, height, (are) =>
       @_engine = are
 
@@ -151,8 +148,8 @@ class AREEngineInterface
   # @param [Boolean] benchmark
   ###
   setBenchmark: (status) ->
-    AREPhysics.benchmark = status
     @_engine.benchmark = status
+    window.AREMessages.broadcast value: status, "physics.benchmark.set"
 
   ###
   # Load a package.json manifest, assume texture paths are relative to our

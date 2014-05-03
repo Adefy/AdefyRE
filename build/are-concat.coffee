@@ -1,3 +1,201 @@
+###
+# Koon v0.0.1
+###
+
+class KoonNetworkMember
+
+  constructor: (name) ->
+    @_name = name or "GenericKoonNetworkMember"
+    @_uuid = KoonNetworkMember.generateUUID()
+    @_subscribers = []
+
+  ###
+  # Returns a valid receiver for the specified subscriber. Expects the
+  # subscriber to have a receiveMessage method.
+  #
+  # @param [Object] subscriber
+  # @return [Method] receiver
+  # @private
+  ###
+  _generateReceiver: (subscriber) ->
+    (message, namespace) =>
+      subscriber.receiveMessage message, namespace
+
+  ###
+  # Register a new subscriber. 
+  #
+  # @param [Object] subscriber
+  # @param [String] namespace
+  # @return [Koon] self
+  ###
+  subscribe: (subscriber, namespace) ->
+    @_subscribers.push
+      namespace: namespace or ""
+      receiver: @_generateReceiver subscriber
+
+  ###
+  # Broadcast message to the koon. Message is sent out to all subscribers and
+  # other koons.
+  #
+  # @param [Object] message message object as passed directly to listeners
+  # @param [String] namespace optional, defaults to the wildcard namespace *
+  ###
+  broadcast: (message, namespace) ->
+    # return unless typeof message == "object"
+    namespace = namespace or ""
+
+    return if @hasSent message
+    message = @tagAsSent message
+
+    #for subscriber in @_subscribers
+      # if !!namespace.match subscriber.namespace
+      #subscriber.receiver message, namespace
+
+    # This is faster than a normal for loop
+    l = @_subscribers.length
+    @_subscribers[l].receiver message, namespace while l--
+
+  ###
+  # Get our UUID
+  #
+  # @return [String] uuid
+  ###
+  getId: ->
+    @_uuid
+
+  ###
+  # Get our name
+  #
+  # @return [String] name
+  ###
+  getName: ->
+    @_name
+
+  ###
+  # Returns an RFC4122 v4 compliant UUID
+  #
+  # StackOverflow link: http://goo.gl/z2RxK
+  #
+  # @return [String] uuid
+  ###
+  @generateUUID: ->
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace /[xy]/g, (c) ->
+      r = Math.random() * 16 | 0
+
+      if c == "x"
+        r.toString 16
+      else
+        (r & 0x3 | 0x8).toString 16
+
+  tagAsSent: (message) ->
+    unless message._senders
+      message._senders = [@_name]
+    else
+      message._senders.push @_name
+
+    message
+
+  hasSent: (message) ->
+    if message and message._senders
+      for sender in message._senders
+        return true if sender == @_name
+
+    false
+
+
+class Koon extends KoonNetworkMember
+
+  constructor: (name) ->
+    super(name or "GenericKoon")
+
+  receiveMessage: (message, namespace) ->
+    console.log "<#{message._sender}> --> <#{@getName()}>  [#{namespace}] #{JSON.stringify message}"
+
+  broadcast: (message, namespace) ->
+    return unless typeof message == "object"
+
+    message._sender = @_name
+    super message, namespace
+
+class KoonFlock extends KoonNetworkMember
+
+  constructor: (name) ->
+    super(name or "GenericKoonFlock")
+
+  registerKoon: (koon, namespace) ->
+    @subscribe koon, namespace
+    koon.subscribe @
+
+  receiveMessage: (message, namespace) ->
+    @broadcast message, namespace
+
+  ###
+  # Returns a valid receiver for the specified koon.
+  #
+  # @param [Object] koon
+  # @return [Method] receiver
+  # @private
+  ###
+  _generateReceiver: (koon) ->
+    (message, namespace) ->
+      unless koon.hasSent message
+        koon.receiveMessage message, namespace
+
+###
+# Note that shops cannot be accessed directly, they can only be messaged!
+###
+class CBazar extends KoonFlock
+  constructor: -> super "Bazar"
+
+class BazarShop extends Koon
+
+  constructor: (name, deps) ->
+    super name
+
+    async.map deps, (dependency, cb) ->
+      return cb(null, dependency.raw) if dependency.raw
+
+      $.ajax
+        url: dependency.url
+        mimeType: "text"
+        success:  (rawDep) ->
+          cb null, rawDep
+
+    , (error, sources) =>
+      @_initFromSources sources
+      @_registerWithBazar()
+
+  _initFromSources: (sources) ->
+    return if @_worker
+
+    data = new Blob [sources.join("\n\n")], type: "text/javascript"
+    @_worker = new Worker (URL || (window.webkitURL)).createObjectURL data
+    @_connectWorkerListener()
+    @_worker.postMessage ""
+
+  _connectWorkerListener: ->
+    @_worker.onmessage = (e) =>
+      if e.data instanceof Array
+        for message in e.data
+          @broadcast message.message, message.namespace
+      else
+        @broadcast e.data.message, e.data.namespace
+
+  _registerWithBazar: ->
+    window.Bazar.registerKoon @
+
+  receiveMessage: (message, namespace) ->
+
+    # TODO: Cache messages received when worker not initialised
+    return unless @_worker
+
+    @_worker.postMessage
+      message: message
+      namespace: namespace
+
+# Setup the global bazar instance
+window.Bazar = new CBazar() unless window.Bazar
+
 ##
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
@@ -71,17 +269,11 @@ if window.param == undefined then window.param = AREUtilParam
 # for the specialized actor classes.
 #
 # Constructs itself from the supplied vertex and UV sets
-class ARERawActor
+class ARERawActor extends Koon
 
   @defaultFriction: 0.3
   @defaultMass: 10
   @defaultElasticity: 0.2
-
-  ###
-  # Null offset, used when creating dynamic bodies
-  # @private
-  ###
-  @_nullV: new cp.v 0, 0
 
   ###
   # Adds the actor to the renderer actor list, gets a unique id from the
@@ -106,6 +298,9 @@ class ARERawActor
     # Default to flat rendering
     @clearTexture()
 
+    super "Actor_#{@_id}"
+    window.AREMessages.registerKoon @, /^actor\..*/
+
   ###
   # Gets an id and registers our existence with the renderer
   # @private
@@ -125,11 +320,6 @@ class ARERawActor
       if @_gl == undefined or @_gl == null
         throw new Error "GL context is required for actor initialization!"
 
-    # Initialize our rendering objects
-    @_rotV = new Vector3([0, 0, 1])
-    @_transV = new Vector3([0, 0, 1])
-    @_modelM = new Matrix4()
-
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
     @_strokeColor = null
@@ -144,17 +334,18 @@ class ARERawActor
     @_physicsLayer = ~0
 
     @_id = -1
-    @_position = new cp.v 0, 0
+    @_position = x: 0, y: 0
     @_rotation = 0 # Radians, but set in degrees by default
+
+    @_initializeModelMatrix()
+    @_updateModelMatrix()
 
     ## size calculated by from verticies
     @_size = new AREVector2 0, 0
 
     ###
-    # Chipmunk-js values
+    # Physics values
     ###
-    @_shape = null
-    @_body = null
     @_friction = null
     @_mass = null
     @_elasticity = null
@@ -329,27 +520,13 @@ class ARERawActor
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
-    return if @hasPhysics()
+    return unless @_mass != null and @_mass != undefined
+    @_friction ||= ARERawActor.defaultFriction
+    @_elasticity ||= ARERawActor.defaultElasticity
 
-    # Start the world stepping if not already doing so
-    if AREPhysics.getWorld() == null or AREPhysics.getWorld() == undefined
-      AREPhysics.startStepping()
-
-    if AREPhysics.bodyCount == 0 then AREPhysics.startStepping()
-
-    AREPhysics.bodyCount++
-
-    # Sanity checks
-    if @_mass == undefined or @_mass == null then @_mass = 0
     if @_mass < 0 then @_mass = 0
-
-    if @_friction == undefined
-      @_friction = ARERawActor.defaultFriction
-    else if @_friction < 0 then @_friction = 0
-
-    if @_elasticity == undefined
-      @_elasticity = ARERawActor.defaultElasticity
-    else if @_elasticity < 0 then @_elasticity = 0
+    if @_friction < 0 then @_friction = 0
+    if @_elasticity < 0 then @_elasticity = 0
 
     # Convert vertices
     verts = []
@@ -357,14 +534,17 @@ class ARERawActor
 
     # If we have alternate vertices, use those, otherwise go with the std ones
     origVerts = null
-    if @_psyxVertices.length > 6 then origVerts = @_psyxVertices
-    else origVerts = @_vertices
+
+    if @_psyxVertices.length > 6
+      origVerts = @_psyxVertices
+    else
+      origVerts = @_vertices
 
     for i in [0...origVerts.length - 1] by 2
 
       # Actual coord system conversion
-      verts.push origVerts[i] / ARERenderer.getPPM()
-      verts.push origVerts[i + 1] / ARERenderer.getPPM()
+      verts.push origVerts[i]
+      verts.push origVerts[i + 1]
 
       # Rotate vert if mass is 0, since we can't set static body angle
       if @_mass == 0
@@ -375,26 +555,34 @@ class ARERawActor
         verts[verts.length - 2] = x * Math.cos(a) - (y * Math.sin(a))
         verts[verts.length - 1] = x * Math.sin(a) + (y * Math.cos(a))
 
-    # Grab world handle to shorten future calls
-    space = AREPhysics.getWorld()
-    pos = ARERenderer.screenToWorld @_position
+    bodyDef = null
+    shapeDef =
+      id: @_id
+      type: "Polygon"
+      vertices: verts
+      static: false
+      position: @_position
+      friction: @_friction
+      elasticity: @_elasticity
+      layer: @_physicsLayer
 
     if @_mass == 0
-      @_shape = space.addShape new cp.PolyShape space.staticBody, verts, pos
-      @_shape.setLayers @_physicsLayer
-      @_body = null
+      shapeDef.static = true
+      shapeDef.position = @_position
     else
-      moment = cp.momentForPoly @_mass, verts, ARERawActor._nullV
-      @_body = space.addBody new cp.Body @_mass, moment
-      @_body.setPos pos
-      @_body.setAngle @_rotation
+      bodyDef =
+        id: @_id
+        position: @_position
+        angle: @_rotation
+        mass: @_mass
+        momentV: x: 0, y: 0
+        vertices: verts
 
-      @_shape = new cp.PolyShape @_body, verts, ARERawActor._nullV
-      @_shape = space.addShape @_shape
-      @_shape.setLayers @_physicsLayer
+      shapeDef.position = x: 0, y: 0
 
-    @_shape.setFriction @_friction
-    @_shape.setElasticity @_elasticity
+    @broadcast {}, "physics.enable"
+    @broadcast def: bodyDef, "physics.body.create" if bodyDef
+    @broadcast def: shapeDef, "physics.shape.create" if shapeDef
 
     @
 
@@ -402,21 +590,8 @@ class ARERawActor
   # Destroys the physics body if one exists
   ###
   destroyPhysicsBody: ->
-    return if AREPhysics.bodyCount == 0
-    return unless @_shape
-
-    AREPhysics.bodyCount--
-
-    AREPhysics.getWorld().removeShape @_shape
-    AREPhysics.getWorld().removeBody @_body if @_body
-
-    @_shape = null
-    @_body = null
-
-    if AREPhysics.bodyCount == 0
-      AREPhysics.stopStepping()
-    else if AREPhysics.bodyCount < 0
-      throw new Error "Body count is negative!"
+    @broadcast id: @_id, "physics.shape.remove"
+    @broadcast id: @_id, "physics.body.remove"
 
   ###
   # @return [self]
@@ -510,7 +685,10 @@ class ARERawActor
   setPhysicsLayer: (layer) ->
     @_physicsLayer = 1 << param.required(layer, [0..16])
 
-    if @_shape != null then @_shape.setLayers @_physicsLayer
+    @broadcast
+      id: @_id
+      layer: @_physicsLayer
+    , "physics.shape.set.layer"
 
   ###
   # Update our vertices, causing a rebuild of the physics body, if it doesn't
@@ -625,9 +803,8 @@ class ARERawActor
   setPhysicsVertices: (verts) ->
     @_psyxVertices = param.required verts
 
-    if @_body != null
-      @destroyPhysicsBody()
-      @createPhysicsBody @_mass, @_friction, @_elasticity
+    @destroyPhysicsBody()
+    @createPhysicsBody @_mass, @_friction, @_elasticity
 
   ###
   # Attach texture to render instead of ourselves. This is very useful when
@@ -729,9 +906,6 @@ class ARERawActor
     # If so, set properties and draw
     if @hasAttachment() and @getAttachment()._visible
 
-      # Get physics updates
-      @updatePosition()
-
       # Setup anchor point
       pos = @getPosition()
       rot = @getRotation()
@@ -752,36 +926,80 @@ class ARERawActor
       @
 
   ###
-  # Update position from physics body if we have one
-  ###
-  updatePosition: ->
-    # @_body is null for static bodies!
-    if @_body != null
-      @_position = ARERenderer.worldToScreen @_body.getPos()
-      @_rotation = @_body.a
-
-    @
-
-  ###
   # Binds the actor's WebGL Texture with all needed attributes
   # @param [Object] gl WebGL Context
   ###
   wglBindTexture: (gl) ->
-    # Texture rendering, if needed
-    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
-      gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+    ARERenderer._currentTexture = @_texture.texture
 
-      gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-      #gl.vertexAttrib2f @_sh_handles.aUVScale,
-      #  @_texture.scaleX, @_texture.scaleY
-      # We apparently don't need uUVScale in webgl
-      #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
-      gl.activeTexture gl.TEXTURE0
-      gl.bindTexture gl.TEXTURE_2D, @_texture.texture
-      gl.uniform1i @_sh_handles.uSampler, 0
+    gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
+    #gl.vertexAttrib2f @_sh_handles.aUVScale,
+    #  @_texture.scaleX, @_texture.scaleY
+    # We apparently don't need uUVScale in webgl
+    #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+
+    gl.activeTexture gl.TEXTURE0
+    gl.bindTexture gl.TEXTURE_2D, @_texture.texture
+    gl.uniform1i @_sh_handles.uSampler, 0
 
     @
+
+  ###
+  # Updates our @_modelM based on our current position and rotation. This used
+  # to be in our @wglDraw method, and it used to use methods from EWGL_math.js
+  #
+  # Since our rotation vector is ALWAYS (0, 0, 1) and our translation Z coord
+  # always 1.0, we can reduce the majority of the previous operations, and
+  # directly set matrix values ourselves.
+  #
+  # Since most matrix values never actually change (always either 0, or 1), we
+  # set those up in @_initializeModelMatrix() and never touch them again :D
+  #
+  # This is FUGLY, but as long as we are 2D-only, it's as fast as it gets.
+  #
+  # THIS. IS. SPARTAAAAA!.
+  ###
+  _updateModelMatrix: ->
+
+    # Make some variables local to speed up access
+    renderer = ARERenderer
+    pos = @_position
+    camPos = ARERenderer.camPos
+
+    s = Math.sin(-@_rotation)
+    c = Math.cos(-@_rotation)
+
+    @_modelM[0] = c
+    @_modelM[1] = s
+    @_modelM[4] = -s
+    @_modelM[5] = c
+
+    @_modelM[12] = pos.x - camPos.x
+
+    if renderer.force_pos0_0
+      @_modelM[13] = renderer.getHeight() - pos.y + camPos.y
+    else
+      @_modelM[13] = pos.y - camPos.y
+
+  ###
+  # Sets the constant values in our model matrix so that calls to
+  # @_updateModelMatrix are sufficient to update our rendered state.
+  ###
+  _initializeModelMatrix: ->
+    @_modelM = [16]
+
+    @_modelM[2] = 0
+    @_modelM[3] = 0
+    @_modelM[6] = 0
+    @_modelM[7] = 0
+    @_modelM[8] = 0
+    @_modelM[9] = 0
+    @_modelM[10] = 1
+    @_modelM[11] = 0
+    @_modelM[14] = 1
+    @_modelM[15] = 1
 
   ###
   # Renders the Actor using the WebGL interface, this function should only
@@ -791,28 +1009,10 @@ class ARERawActor
   # @param [Shader] shader optional shader to override our own
   ###
   wglDraw: (gl, shader) ->
-    param.required gl
-    param.optional shader
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
     return unless @_visible
-
-    @updatePosition()
-
-    @_modelM = new Matrix4()
-    @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-
-    if ARERenderer.force_pos0_0
-      @_transV.elements[1] = ARERenderer.getHeight() - \
-                              @_position.y + ARERenderer.camPos.y
-    else
-      @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
-
-    @_modelM.translate(@_transV)
-    @_modelM.rotate(-@_rotation, @_rotV)
-
-    flatMV = @_modelM.flatten()
 
     # Temporarily change handles if a shader was passed in
     if shader
@@ -821,13 +1021,16 @@ class ARERawActor
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
-    gl.uniformMatrix4fv @_sh_handles.uModelView, false, flatMV
+    gl.uniformMatrix4fv @_sh_handles.uModelView, false, @_modelM
 
     gl.uniform4f @_sh_handles.uColor, @_colArray[0], @_colArray[1], @_colArray[2], 1.0
     gl.uniform4fv @_sh_handles.uClipRect, @_clipRect if @_sh_handles.uClipRect
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
-    @wglBindTexture gl
+    # Texture rendering, if needed
+    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
+      if ARERenderer._currentTexture != @_texture.texture
+        @wglBindTexture gl
 
     ###
     # @TODO, actually apply the RENDER_STYLE_*
@@ -898,8 +1101,6 @@ class ARERawActor
     # cause us to render!
     return false unless @_visible
 
-    @updatePosition()
-
     # Prep our vectors and matrices
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
     @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
@@ -960,8 +1161,6 @@ class ARERawActor
     # cause us to render!
     return false unless @_visible
 
-    @updatePosition()
-
     @
 
   ###
@@ -1004,15 +1203,13 @@ class ARERawActor
   # @return [self]
   ###
   setPosition: (position) ->
-    param.required position
+    @_position = param.required position
+    @_updateModelMatrix()
 
-    if @_shape == null
-      if position instanceof cp.v
-        @_position = position
-      else
-        @_position = new cp.v Number(position.x), Number(position.y)
-    else if @_body != null
-      @_body.setPos ARERenderer.screenToWorld position
+    @broadcast
+      id: @_id
+      position: position
+    ,"physics.body.set.position"
 
     @
 
@@ -1028,13 +1225,16 @@ class ARERawActor
     param.required rotation
     radians = param.optional radians, false
 
-    if radians == false then rotation = Number(rotation) * 0.0174532925
-
+    rotation = Number(rotation) * 0.0174532925 unless radians
     @_rotation = rotation
+    @_updateModelMatrix()
 
-    if @_body != null
-      @_body.setAngle @_rotation
-    else if @_shape != null
+    if @_mass > 0
+      @broadcast
+        id: @_id
+        rotation: @_rotation
+      ,"physics.body.set.rotation"
+    else
       @destroyPhysicsBody()
       @createPhysicsBody @_mass, @_friction, @_elasticity
 
@@ -1201,6 +1401,21 @@ class ARERawActor
   # @return [Boolean] visible
   ###
   getVisible: -> @_visible
+
+  @updateCount: 0
+  @lastTime: Date.now()
+
+  receiveMessage: (message, namespace) ->
+    return unless namespace.indexOf("actor.") != -1
+    return unless message.id and message.id == @_id
+    command = namespace.split(".")
+
+    switch command[1]
+      when "update"
+
+        @_position = message.position
+        @_rotation = message.rotation
+        @_updateModelMatrix()
 
 ##
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
@@ -1815,7 +2030,7 @@ AREShader.shaders.texture = {}
 
 #precision = "highp"
 precision = "mediump"
-varying_precision = "highp"
+varying_precision = "mediump"
 precision_declaration = "precision #{precision} float;"
 
 AREShader.shaders.wire.vertex = """
@@ -1907,6 +2122,7 @@ void main() {
   gl_FragColor = baseColor;
 }
 """
+
 ##
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
@@ -1934,51 +2150,14 @@ class ARERenderer
   @_gl: null
 
   ###
-  # Physics pixel-per-meter ratio
-  # @type [Number]
-  ###
-  @_PPM: 128
-
-  ###
-  # Returns PPM ratio
-  # @return [Number] ppm pixels-per-meter
-  ###
-  @getPPM: -> ARERenderer._PPM
-
-  ###
-  # Returns MPP ratio
-  # @return [Number] mpp meters-per-pixel
-  ###
-  @getMPP: -> 1.0 / ARERenderer._PPM
-
-  ###
-  # Converts screen coords to world coords
-  #
-  # @param [B2Vec2] v vector in x, y form
-  # @return [B2Vec2] ret v in world coords
-  ###
-  @screenToWorld: (v) ->
-    ret = new cp.v
-    ret.x = v.x / ARERenderer._PPM
-    ret.y = v.y / ARERenderer._PPM
-    ret
-
-  ###
-  # Converts world coords to screen coords
-  #
-  # @param [B2Vec2] v vector in x, y form
-  # @return [B2Vec2] ret v in screen coords
-  ###
-  @worldToScreen: (v) ->
-    ret = new cp.v
-    ret.x = v.x * ARERenderer._PPM
-    ret.y = v.y * ARERenderer._PPM
-    ret
-
-  ###
   # @property [Array<Object>] actors for rendering
   ###
   @actors: []
+
+  ###
+  # @property [Object] actor_hash actor objects stored by id, for faster access
+  ###
+  @actor_hash: {}
 
   ###
   # @property [Array<Object>] texture objects, with names and gl textures
@@ -2096,7 +2275,7 @@ class ARERenderer
   # screen clearing. This option is only valid with the WGL renderer mode.
   # @type [Boolean]
   ###
-  @alwaysClearScreen: true
+  @alwaysClearScreen: false
 
   ###
   # Sets up the renderer, using either an existing canvas or creating a new one
@@ -2291,10 +2470,10 @@ class ARERenderer
     @_texShader.generateHandles()
 
     ARELog.info "Initialized shaders"
-
     ARELog.info "ARE WGL initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL
+    @activeRenderMethod = @wglRender
 
     true
 
@@ -2309,6 +2488,7 @@ class ARERenderer
     ARELog.info "ARE CTX initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS
+    @activeRenderMethod = @cvRender
 
     true
 
@@ -2323,8 +2503,18 @@ class ARERenderer
     ARELog.info "ARE Null initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL
+    @activeRenderMethod = @nullRender
 
     true
+
+  ###
+  # Render method set by our mode, so we don't have to iterate over a
+  # switch-case on each render call.
+  #
+  # Renders a frame, needs to be set in our constructor, by one of the init
+  # methods.
+  ###
+  activeRenderMethod: ->
 
   ###
   # Returns instance (only one may exist, enforced in constructor)
@@ -2479,11 +2669,7 @@ class ARERenderer
   # @return [Void]
   ###
   wglRender: ->
-
-    gl = ARERenderer._gl # Code asthetics
-
-    # Probably unecessary, but better to be safe
-    if gl == undefined or gl == null then return
+    gl = ARERenderer._gl
 
     # Render to an off-screen buffer for screen picking if requested to do so.
     # The resulting render is used to pick visible objects. We render in a
@@ -2496,25 +2682,33 @@ class ARERenderer
       gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
     # Clear the screen
+    # 
     # Did you know? WebGL actually clears the screen by itself:
     # if preserveDrawingBuffer is false
     # However a bit of dragging occurs when rendering, probaly some fake
     # motion blur?
+    #
+    # Get rid of this and manually requests clears from the editor when hiding
+    # actors.
     if ARERenderer.alwaysClearScreen
       gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    for a in ARERenderer.actors
+    actorCount = ARERenderer.actors.length
+    while actorCount--
+      a = ARERenderer.actors[actorCount]
 
       if @_pickRenderRequested
 
+        a_id = a._id
+
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
-        _savedColor = a.getColor()
-        _savedOpacity = a.getOpacity()
+        _savedColor = a._color
+        _savedOpacity = a._opacity
 
-        _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
-        _idSector = Math.floor(a.getId() / 255)
+        _id = a_id - (Math.floor(a_id / 255) * 255)
+        _idSector = Math.floor(a_id / 255)
 
         @switchMaterial ARERenderer.MATERIAL_FLAT
 
@@ -2526,7 +2720,7 @@ class ARERenderer
         a.setOpacity _savedOpacity
 
       else
-        a = a.updateAttachment()
+        a = a.updateAttachment() if a._attachedTexture
 
         ##
         ## NOTE: Keep in mind that failing to switch to the proper material
@@ -2534,8 +2728,8 @@ class ARERenderer
         ##       switching to a different material.
         ##
 
-        if a.getMaterial() != ARERenderer._currentMaterial
-          @switchMaterial a.getMaterial()
+        if a._material != ARERenderer._currentMaterial
+          @switchMaterial a._material
 
         a.wglDraw gl
 
@@ -2649,20 +2843,6 @@ class ARERenderer
       a.nullDraw ctx
 
   ###
-  # main render function
-  # @return [Void]
-  ###
-  render: ->
-
-    switch ARERenderer.activeRendererMode
-      when ARERenderer.RENDERER_MODE_NULL
-        @nullRender()
-      when ARERenderer.RENDERER_MODE_CANVAS
-        @cvRender()
-      when ARERenderer.RENDERER_MODE_WGL
-        @wglRender()
-
-  ###
   # Returns the currently active renderer mode
   # @return [Number] rendererMode
   ###
@@ -2717,6 +2897,7 @@ class ARERenderer
 
     # Insert!
     ARERenderer.actors.splice layerIndex, 0, actor
+    ARERenderer.actor_hash[actor.getId()] = actor
 
     actor
 
@@ -2840,105 +3021,49 @@ class ARERenderer
 
     ARERenderer.textures.push tex
 
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
+class PhysicsManager extends BazarShop
 
-# Chipmunk-js wrapper
-class AREPhysics
+  constructor: ->
+    super "PhysicsManager", [
+      raw: "cp = exports = {};"
+    ,
+      url: "/components/chipmunk/cp.js"
+    ,
+      url: "/lib/koon/koon.js"
+    ,
+      url: "/lib/physics/worker.js"
+    ]
 
-  # @property [Number] velocity iterations
-  @velIterations: 6
+  _connectWorkerListener: ->
 
-  # @property [Number] position iterations
-  @posIterations: 2
+    # Use constant indexes to get a nice speed boost
+    ID_INDEX = 0
+    POS_INDEX = 1
+    ROT_INDEX = 2
 
-  # @property [Number] time to step for
-  @frameTime: 1.0 / 60.0
+    # Keep data storage objects here so we can re-use them later
+    data = {}
+    dataPacket = {}
+    actor = {}
 
-  # acting upwards
-  #@_gravity: new cp.v 0, -1
-  # 0, 0 acting downwards
-  @_gravity: new cp.v 0, 1
+    @_worker.onmessage = (e) =>
+      data = e.data
 
-  @_stepIntervalId: null
-  @_world: null
+      # Array updates are batch render updates, manually apply to speed it up
+      if data.length
 
-  @_densityRatio: 1 / 10000
+        # This is faster than a generic for-loop
+        l = data.length
 
-  @bodyCount: 0
+        while l--
+          dataPacket = data[l]
 
-  @benchmark: false
-
-  # Constructor, should never be called
-  # AREPhysics should only ever be accessed as static
-  constructor: -> throw new Error "Physics constructor called"
-
-  # Starts the world step loop if not already running
-  @startStepping: ->
-
-    if @_stepIntervalId != null then return
-
-    @_world = new cp.Space
-    @_world.gravity = @_gravity
-    @_world.iterations = 60
-    @_world.collisionSlop = 0.5
-    @_world.sleepTimeThreshold = 0.5
-
-    ARELog.info "Starting world update loop"
-
-    avgStep = 0
-    stepCount = 0
-
-    @_stepIntervalId = setInterval =>
-      start = Date.now()
-
-      @_world.step @frameTime
-
-      if @benchmark
-        stepCount++
-        avgStep = avgStep + ((Date.now() - start) / stepCount)
-
-        if stepCount % 500 == 0
-          console.log "Physics step time: #{avgStep.toFixed(2)}ms"
-
-    , @frameTime
-
-  # Halt the world step loop if running
-  @stopStepping: ->
-    if @_stepIntervalId == null then return
-    ARELog.info "Halting world update loop"
-    clearInterval @_stepIntervalId
-    @_stepIntervalId = null
-    @_world = null
-
-  # Get the internal chipmunk world
-  #
-  # @return [Object] world
-  @getWorld: -> @_world
-
-  # Get object density ratio number thing (keeps it constant)
-  #
-  # @return [Number] densityRatio
-  @getDensityRatio: -> @_densityRatio
-
-  # Get gravity
-  #
-  # @return [cp.v] gravity
-  @getGravity: -> @_gravity
-
-  # Set gravity
-  #
-  # @param [cp.v] gravity
-  @setGravity: (v) ->
-
-    if v !instanceof cp.Vect
-      throw new Error "You need to set space gravity using cp.v!"
-
-    @_gravity = v
-
-    if @_world != null and @_world != undefined
-      @_world.gravity = v
+          actor = ARERenderer.actor_hash[dataPacket[ID_INDEX]]
+          actor._position = dataPacket[POS_INDEX]
+          actor._rotation = dataPacket[ROT_INDEX]
+          actor._updateModelMatrix()
+      else
+        @broadcast e.data.message, e.data.namespace
 
 ##
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
@@ -4163,9 +4288,6 @@ class AREEngineInterface
     ###
     @wglFlipTextureY = false
 
-    # Clear out physics world
-    AREPhysics.stopStepping()
-
     new AREEngine width, height, (are) =>
       @_engine = are
 
@@ -4265,8 +4387,8 @@ class AREEngineInterface
   # @param [Boolean] benchmark
   ###
   setBenchmark: (status) ->
-    AREPhysics.benchmark = status
     @_engine.benchmark = status
+    window.AREMessages.broadcast value: status, "physics.benchmark.set"
 
   ###
   # Load a package.json manifest, assume texture paths are relative to our
@@ -4581,7 +4703,7 @@ class AREInterface
 ##
 
 # @depend renderer.coffee
-# @depend physics.coffee
+# @depend physics/manager.coffee
 # @depend util/log.coffee
 # @depend animations/bez_animation.coffee
 # @depend animations/vert_animation.coffee
@@ -4631,11 +4753,16 @@ class AREEngine
     if window._ == null or window._ == undefined
       return ARELog.error "Underscore.js is not present!"
 
-    # Ensure Chipmunk-js is loaded
-    if window.cp == undefined or window.cp == null
-      return ARELog.error "Chipmunk-js is not present!"
+    # Initialize messaging system
+    window.AREMessages = new KoonFlock "AREMessages"
+    window.AREMessages.registerKoon window.Bazar
+
+    # Initialize physics worker
+    @_physics = new PhysicsManager()
 
     @_renderer = new ARERenderer canvas, width, height
+
+    @_currentlyRendering = false
     @startRendering()
     cb @
 
@@ -4654,38 +4781,16 @@ class AREEngine
   # @return [Void]
   ###
   startRendering: ->
-    if @_renderIntervalId != null then return
-
+    return if @_currentlyRendering
+    @_currentlyRendering = true
     ARELog.info "Starting render loop"
 
-    avgStep = 0
-    stepCount = 0
-
-    @_renderIntervalId = setInterval =>
-      start = Date.now()
-
-      @_renderer.render()
-
-      if @benchmark
-        stepCount++
-        avgStep = avgStep + ((Date.now() - start) / stepCount)
-
-        if stepCount % 500 == 0
-          fps = (1000 / avgStep).toFixed 2
-          console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
-
-    , @_framerate
-
-  ###
-  # Halt render loop if it's running
-  # @return [Void]
-  ###
-  stopRendering: ->
-    if @_renderIntervalId == null then return
-
-    ARELog.info "Halting render loop"
-    clearInterval @_renderIntervalId
-    @_renderIntervalId = null
+    renderer = @_renderer
+    render = ->
+      renderer.activeRenderMethod()
+      window.requestAnimationFrame render
+    
+    window.requestAnimationFrame render
 
   ###
   # Set renderer clear color in integer RGB form (passes through to renderer)
@@ -4800,6 +4905,8 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 # dependency-aware manner. Deps are described at the top of each file, with
 # this essentially serving as the root node in the dep tree.
 #
+# @depend koon/koon.coffee
+# @depend bazar/bazar.coffee
 # @depend util/util_param.coffee
 # @depend actors/rectangle_actor.coffee
 # @depend actors/circle_actor.coffee
@@ -4808,7 +4915,7 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 
 AREVersion =
   MAJOR: 1
-  MINOR: 0
-  PATCH: 12
+  MINOR: 1
+  PATCH: 0
   BUILD: null
-  STRING: "1.0.12"
+  STRING: "1.1.0"

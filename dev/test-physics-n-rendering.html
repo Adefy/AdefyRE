@@ -5,6 +5,8 @@
   <title>AdefyRE Physics + Rendering Test</title>
 
   <script type="text/javascript" src="./components/underscore/underscore.js"></script>
+  <script type="text/javascript" src="./components/async/lib/async.js"></script>
+  <script type="text/javascript" src="./components/zepto/zepto.min.js"></script>
   <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
   <script type="text/javascript" src="./js/EWGL_math.js"></script>
   <script type="text/javascript" src="./js/inkyEWGL.js"></script>
@@ -65,8 +67,7 @@
 
         var createBall = function() {
           var x = Math.random() * width;
-          var y = -(Math.random() * 500);
-          //var y = window.AdefyRE.Engine().getHeight() + (Math.random() * 500);
+          var y = -(Math.random() * 10000);
 
           var mass = Math.random() * 100;
           var friction = Math.random();
@@ -80,14 +81,20 @@
             .createPhysicsBody(mass, friction, elasticity);
         };
 
-        var scheduleBallTimeout = function() {
-          setTimeout(function() {
-            createBall();
-            document.getElementById("ActorCount").innerHTML = ARERenderer.actors.length;
-            scheduleBallTimeout();
-          }, Math.random() * 500);
-        };
+        for(var i = 0; i < 500; i++) {
+          createBall();
+          document.getElementById("ActorCount").innerHTML = ARERenderer.actors.length;
+        }
 
+        var modestr = "N/A";
+        if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
+          modestr = "WebGL"
+        else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
+          modestr = "Canvas"
+
+        document.getElementById("RendererMode").innerHTML = modestr;
+
+        /*
         // Throw out the old balls ~_~
         // For people like IceDragon, who has a shitty computer
         var ballGCTimeout = function() {
@@ -106,16 +113,7 @@
         };
 
         scheduleBallTimeout();
-        ballGCTimeout();
-
-        var modestr = "N/A";
-        if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
-          modestr = "WebGL"
-        else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
-          modestr = "Canvas"
-
-        document.getElementById("RendererMode").innerHTML = modestr;
-
+        ballGCTimeout(); */
       });
     });
 

@@ -6,17 +6,11 @@
 # for the specialized actor classes.
 #
 # Constructs itself from the supplied vertex and UV sets
-class ARERawActor
+class ARERawActor extends Koon
 
   @defaultFriction: 0.3
   @defaultMass: 10
   @defaultElasticity: 0.2
-
-  ###
-  # Null offset, used when creating dynamic bodies
-  # @private
-  ###
-  @_nullV: new cp.v 0, 0
 
   ###
   # Adds the actor to the renderer actor list, gets a unique id from the
@@ -41,6 +35,9 @@ class ARERawActor
     # Default to flat rendering
     @clearTexture()
 
+    super "Actor_#{@_id}"
+    window.AREMessages.registerKoon @, /^actor\..*/
+
   ###
   # Gets an id and registers our existence with the renderer
   # @private
@@ -60,11 +57,6 @@ class ARERawActor
       if @_gl == undefined or @_gl == null
         throw new Error "GL context is required for actor initialization!"
 
-    # Initialize our rendering objects
-    @_rotV = new Vector3([0, 0, 1])
-    @_transV = new Vector3([0, 0, 1])
-    @_modelM = new Matrix4()
-
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
     @_strokeColor = null
@@ -79,17 +71,18 @@ class ARERawActor
     @_physicsLayer = ~0
 
     @_id = -1
-    @_position = new cp.v 0, 0
+    @_position = x: 0, y: 0
     @_rotation = 0 # Radians, but set in degrees by default
+
+    @_initializeModelMatrix()
+    @_updateModelMatrix()
 
     ## size calculated by from verticies
     @_size = new AREVector2 0, 0
 
     ###
-    # Chipmunk-js values
+    # Physics values
     ###
-    @_shape = null
-    @_body = null
     @_friction = null
     @_mass = null
     @_elasticity = null
@@ -264,27 +257,13 @@ class ARERawActor
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
-    return if @hasPhysics()
+    return unless @_mass != null and @_mass != undefined
+    @_friction ||= ARERawActor.defaultFriction
+    @_elasticity ||= ARERawActor.defaultElasticity
 
-    # Start the world stepping if not already doing so
-    if AREPhysics.getWorld() == null or AREPhysics.getWorld() == undefined
-      AREPhysics.startStepping()
-
-    if AREPhysics.bodyCount == 0 then AREPhysics.startStepping()
-
-    AREPhysics.bodyCount++
-
-    # Sanity checks
-    if @_mass == undefined or @_mass == null then @_mass = 0
     if @_mass < 0 then @_mass = 0
-
-    if @_friction == undefined
-      @_friction = ARERawActor.defaultFriction
-    else if @_friction < 0 then @_friction = 0
-
-    if @_elasticity == undefined
-      @_elasticity = ARERawActor.defaultElasticity
-    else if @_elasticity < 0 then @_elasticity = 0
+    if @_friction < 0 then @_friction = 0
+    if @_elasticity < 0 then @_elasticity = 0
 
     # Convert vertices
     verts = []
@@ -292,14 +271,17 @@ class ARERawActor
 
     # If we have alternate vertices, use those, otherwise go with the std ones
     origVerts = null
-    if @_psyxVertices.length > 6 then origVerts = @_psyxVertices
-    else origVerts = @_vertices
+
+    if @_psyxVertices.length > 6
+      origVerts = @_psyxVertices
+    else
+      origVerts = @_vertices
 
     for i in [0...origVerts.length - 1] by 2
 
       # Actual coord system conversion
-      verts.push origVerts[i] / ARERenderer.getPPM()
-      verts.push origVerts[i + 1] / ARERenderer.getPPM()
+      verts.push origVerts[i]
+      verts.push origVerts[i + 1]
 
       # Rotate vert if mass is 0, since we can't set static body angle
       if @_mass == 0
@@ -310,26 +292,34 @@ class ARERawActor
         verts[verts.length - 2] = x * Math.cos(a) - (y * Math.sin(a))
         verts[verts.length - 1] = x * Math.sin(a) + (y * Math.cos(a))
 
-    # Grab world handle to shorten future calls
-    space = AREPhysics.getWorld()
-    pos = ARERenderer.screenToWorld @_position
+    bodyDef = null
+    shapeDef =
+      id: @_id
+      type: "Polygon"
+      vertices: verts
+      static: false
+      position: @_position
+      friction: @_friction
+      elasticity: @_elasticity
+      layer: @_physicsLayer
 
     if @_mass == 0
-      @_shape = space.addShape new cp.PolyShape space.staticBody, verts, pos
-      @_shape.setLayers @_physicsLayer
-      @_body = null
+      shapeDef.static = true
+      shapeDef.position = @_position
     else
-      moment = cp.momentForPoly @_mass, verts, ARERawActor._nullV
-      @_body = space.addBody new cp.Body @_mass, moment
-      @_body.setPos pos
-      @_body.setAngle @_rotation
+      bodyDef =
+        id: @_id
+        position: @_position
+        angle: @_rotation
+        mass: @_mass
+        momentV: x: 0, y: 0
+        vertices: verts
 
-      @_shape = new cp.PolyShape @_body, verts, ARERawActor._nullV
-      @_shape = space.addShape @_shape
-      @_shape.setLayers @_physicsLayer
+      shapeDef.position = x: 0, y: 0
 
-    @_shape.setFriction @_friction
-    @_shape.setElasticity @_elasticity
+    @broadcast {}, "physics.enable"
+    @broadcast def: bodyDef, "physics.body.create" if bodyDef
+    @broadcast def: shapeDef, "physics.shape.create" if shapeDef
 
     @
 
@@ -337,21 +327,8 @@ class ARERawActor
   # Destroys the physics body if one exists
   ###
   destroyPhysicsBody: ->
-    return if AREPhysics.bodyCount == 0
-    return unless @_shape
-
-    AREPhysics.bodyCount--
-
-    AREPhysics.getWorld().removeShape @_shape
-    AREPhysics.getWorld().removeBody @_body if @_body
-
-    @_shape = null
-    @_body = null
-
-    if AREPhysics.bodyCount == 0
-      AREPhysics.stopStepping()
-    else if AREPhysics.bodyCount < 0
-      throw new Error "Body count is negative!"
+    @broadcast id: @_id, "physics.shape.remove"
+    @broadcast id: @_id, "physics.body.remove"
 
   ###
   # @return [self]
@@ -445,7 +422,10 @@ class ARERawActor
   setPhysicsLayer: (layer) ->
     @_physicsLayer = 1 << param.required(layer, [0..16])
 
-    if @_shape != null then @_shape.setLayers @_physicsLayer
+    @broadcast
+      id: @_id
+      layer: @_physicsLayer
+    , "physics.shape.set.layer"
 
   ###
   # Update our vertices, causing a rebuild of the physics body, if it doesn't
@@ -560,9 +540,8 @@ class ARERawActor
   setPhysicsVertices: (verts) ->
     @_psyxVertices = param.required verts
 
-    if @_body != null
-      @destroyPhysicsBody()
-      @createPhysicsBody @_mass, @_friction, @_elasticity
+    @destroyPhysicsBody()
+    @createPhysicsBody @_mass, @_friction, @_elasticity
 
   ###
   # Attach texture to render instead of ourselves. This is very useful when
@@ -664,9 +643,6 @@ class ARERawActor
     # If so, set properties and draw
     if @hasAttachment() and @getAttachment()._visible
 
-      # Get physics updates
-      @updatePosition()
-
       # Setup anchor point
       pos = @getPosition()
       rot = @getRotation()
@@ -687,36 +663,80 @@ class ARERawActor
       @
 
   ###
-  # Update position from physics body if we have one
-  ###
-  updatePosition: ->
-    # @_body is null for static bodies!
-    if @_body != null
-      @_position = ARERenderer.worldToScreen @_body.getPos()
-      @_rotation = @_body.a
-
-    @
-
-  ###
   # Binds the actor's WebGL Texture with all needed attributes
   # @param [Object] gl WebGL Context
   ###
   wglBindTexture: (gl) ->
-    # Texture rendering, if needed
-    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
-      gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+    ARERenderer._currentTexture = @_texture.texture
 
-      gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-      #gl.vertexAttrib2f @_sh_handles.aUVScale,
-      #  @_texture.scaleX, @_texture.scaleY
-      # We apparently don't need uUVScale in webgl
-      #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
-      gl.activeTexture gl.TEXTURE0
-      gl.bindTexture gl.TEXTURE_2D, @_texture.texture
-      gl.uniform1i @_sh_handles.uSampler, 0
+    gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
+    #gl.vertexAttrib2f @_sh_handles.aUVScale,
+    #  @_texture.scaleX, @_texture.scaleY
+    # We apparently don't need uUVScale in webgl
+    #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+
+    gl.activeTexture gl.TEXTURE0
+    gl.bindTexture gl.TEXTURE_2D, @_texture.texture
+    gl.uniform1i @_sh_handles.uSampler, 0
 
     @
+
+  ###
+  # Updates our @_modelM based on our current position and rotation. This used
+  # to be in our @wglDraw method, and it used to use methods from EWGL_math.js
+  #
+  # Since our rotation vector is ALWAYS (0, 0, 1) and our translation Z coord
+  # always 1.0, we can reduce the majority of the previous operations, and
+  # directly set matrix values ourselves.
+  #
+  # Since most matrix values never actually change (always either 0, or 1), we
+  # set those up in @_initializeModelMatrix() and never touch them again :D
+  #
+  # This is FUGLY, but as long as we are 2D-only, it's as fast as it gets.
+  #
+  # THIS. IS. SPARTAAAAA!.
+  ###
+  _updateModelMatrix: ->
+
+    # Make some variables local to speed up access
+    renderer = ARERenderer
+    pos = @_position
+    camPos = ARERenderer.camPos
+
+    s = Math.sin(-@_rotation)
+    c = Math.cos(-@_rotation)
+
+    @_modelM[0] = c
+    @_modelM[1] = s
+    @_modelM[4] = -s
+    @_modelM[5] = c
+
+    @_modelM[12] = pos.x - camPos.x
+
+    if renderer.force_pos0_0
+      @_modelM[13] = renderer.getHeight() - pos.y + camPos.y
+    else
+      @_modelM[13] = pos.y - camPos.y
+
+  ###
+  # Sets the constant values in our model matrix so that calls to
+  # @_updateModelMatrix are sufficient to update our rendered state.
+  ###
+  _initializeModelMatrix: ->
+    @_modelM = [16]
+
+    @_modelM[2] = 0
+    @_modelM[3] = 0
+    @_modelM[6] = 0
+    @_modelM[7] = 0
+    @_modelM[8] = 0
+    @_modelM[9] = 0
+    @_modelM[10] = 1
+    @_modelM[11] = 0
+    @_modelM[14] = 1
+    @_modelM[15] = 1
 
   ###
   # Renders the Actor using the WebGL interface, this function should only
@@ -726,28 +746,10 @@ class ARERawActor
   # @param [Shader] shader optional shader to override our own
   ###
   wglDraw: (gl, shader) ->
-    param.required gl
-    param.optional shader
 
     # We only respect our own visibility flag! Any invisible attached textures
     # cause us to render!
     return unless @_visible
-
-    @updatePosition()
-
-    @_modelM = new Matrix4()
-    @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-
-    if ARERenderer.force_pos0_0
-      @_transV.elements[1] = ARERenderer.getHeight() - \
-                              @_position.y + ARERenderer.camPos.y
-    else
-      @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
-
-    @_modelM.translate(@_transV)
-    @_modelM.rotate(-@_rotation, @_rotV)
-
-    flatMV = @_modelM.flatten()
 
     # Temporarily change handles if a shader was passed in
     if shader
@@ -756,13 +758,16 @@ class ARERawActor
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
-    gl.uniformMatrix4fv @_sh_handles.uModelView, false, flatMV
+    gl.uniformMatrix4fv @_sh_handles.uModelView, false, @_modelM
 
     gl.uniform4f @_sh_handles.uColor, @_colArray[0], @_colArray[1], @_colArray[2], 1.0
     gl.uniform4fv @_sh_handles.uClipRect, @_clipRect if @_sh_handles.uClipRect
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
-    @wglBindTexture gl
+    # Texture rendering, if needed
+    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
+      if ARERenderer._currentTexture != @_texture.texture
+        @wglBindTexture gl
 
     ###
     # @TODO, actually apply the RENDER_STYLE_*
@@ -833,8 +838,6 @@ class ARERawActor
     # cause us to render!
     return false unless @_visible
 
-    @updatePosition()
-
     # Prep our vectors and matrices
     @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
     @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
@@ -895,8 +898,6 @@ class ARERawActor
     # cause us to render!
     return false unless @_visible
 
-    @updatePosition()
-
     @
 
   ###
@@ -939,15 +940,13 @@ class ARERawActor
   # @return [self]
   ###
   setPosition: (position) ->
-    param.required position
+    @_position = param.required position
+    @_updateModelMatrix()
 
-    if @_shape == null
-      if position instanceof cp.v
-        @_position = position
-      else
-        @_position = new cp.v Number(position.x), Number(position.y)
-    else if @_body != null
-      @_body.setPos ARERenderer.screenToWorld position
+    @broadcast
+      id: @_id
+      position: position
+    ,"physics.body.set.position"
 
     @
 
@@ -963,13 +962,16 @@ class ARERawActor
     param.required rotation
     radians = param.optional radians, false
 
-    if radians == false then rotation = Number(rotation) * 0.0174532925
-
+    rotation = Number(rotation) * 0.0174532925 unless radians
     @_rotation = rotation
+    @_updateModelMatrix()
 
-    if @_body != null
-      @_body.setAngle @_rotation
-    else if @_shape != null
+    if @_mass > 0
+      @broadcast
+        id: @_id
+        rotation: @_rotation
+      ,"physics.body.set.rotation"
+    else
       @destroyPhysicsBody()
       @createPhysicsBody @_mass, @_friction, @_elasticity
 
@@ -1136,3 +1138,18 @@ class ARERawActor
   # @return [Boolean] visible
   ###
   getVisible: -> @_visible
+
+  @updateCount: 0
+  @lastTime: Date.now()
+
+  receiveMessage: (message, namespace) ->
+    return unless namespace.indexOf("actor.") != -1
+    return unless message.id and message.id == @_id
+    command = namespace.split(".")
+
+    switch command[1]
+      when "update"
+
+        @_position = message.position
+        @_rotation = message.rotation
+        @_updateModelMatrix()

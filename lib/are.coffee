@@ -8,6 +8,8 @@
 # dependency-aware manner. Deps are described at the top of each file, with
 # this essentially serving as the root node in the dep tree.
 #
+# @depend koon/koon.coffee
+# @depend bazar/bazar.coffee
 # @depend util/util_param.coffee
 # @depend actors/rectangle_actor.coffee
 # @depend actors/circle_actor.coffee
@@ -16,7 +18,7 @@
 
 AREVersion =
   MAJOR: 1
-  MINOR: 0
-  PATCH: 13
+  MINOR: 1
+  PATCH: 0
   BUILD: null
-  STRING: "1.0.13"
+  STRING: "1.1.0"
