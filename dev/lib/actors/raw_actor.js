@@ -59,9 +59,6 @@ ARERawActor = (function(_super) {
         throw new Error("GL context is required for actor initialization!");
       }
     }
-    this._rotV = new Vector3([0, 0, 1]);
-    this._transV = new Vector3([0, 0, 1]);
-    this._modelM = new Matrix4();
     this._color = null;
     this._strokeColor = null;
     this._strokeWidth = 1;
@@ -77,6 +74,8 @@ ARERawActor = (function(_super) {
       y: 0
     };
     this._rotation = 0;
+    this._initializeModelMatrix();
+    this._updateModelMatrix();
     this._size = new AREVector2(0, 0);
 
     /*
@@ -783,17 +782,69 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
-    if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
-      if (ARERenderer._currentTexture !== this._texture.texture) {
-        ARERenderer._currentTexture = this._texture.texture;
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
-        gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
-        gl.uniform1i(this._sh_handles.uSampler, 0);
-      }
-    }
+    ARERenderer._currentTexture = this._texture.texture;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
+    gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
+    gl.uniform1i(this._sh_handles.uSampler, 0);
     return this;
+  };
+
+
+  /*
+   * Updates our @_modelM based on our current position and rotation. This used
+   * to be in our @wglDraw method, and it used to use methods from EWGL_math.js
+   *
+   * Since our rotation vector is ALWAYS (0, 0, 1) and our translation Z coord
+   * always 1.0, we can reduce the majority of the previous operations, and
+   * directly set matrix values ourselves.
+   *
+   * Since most matrix values never actually change (always either 0, or 1), we
+   * set those up in @_initializeModelMatrix() and never touch them again :D
+   *
+   * This is FUGLY, but as long as we are 2D-only, it's as fast as it gets.
+   *
+   * THIS. IS. SPARTAAAAA!.
+   */
+
+  ARERawActor.prototype._updateModelMatrix = function() {
+    var c, camPos, pos, renderer, s;
+    renderer = ARERenderer;
+    pos = this._position;
+    camPos = ARERenderer.camPos;
+    s = Math.sin(-this._rotation);
+    c = Math.cos(-this._rotation);
+    this._modelM[0] = c;
+    this._modelM[1] = s;
+    this._modelM[4] = -s;
+    this._modelM[5] = c;
+    this._modelM[12] = pos.x - camPos.x;
+    if (renderer.force_pos0_0) {
+      return this._modelM[13] = renderer.getHeight() - pos.y + camPos.y;
+    } else {
+      return this._modelM[13] = pos.y - camPos.y;
+    }
+  };
+
+
+  /*
+   * Sets the constant values in our model matrix so that calls to
+   * @_updateModelMatrix are sufficient to update our rendered state.
+   */
+
+  ARERawActor.prototype._initializeModelMatrix = function() {
+    this._modelM = [16];
+    this._modelM[2] = 0;
+    this._modelM[3] = 0;
+    this._modelM[6] = 0;
+    this._modelM[7] = 0;
+    this._modelM[8] = 0;
+    this._modelM[9] = 0;
+    this._modelM[10] = 1;
+    this._modelM[11] = 0;
+    this._modelM[14] = 1;
+    return this._modelM[15] = 1;
   };
 
 
@@ -806,33 +857,27 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.wglDraw = function(gl, shader) {
-    var flatMV, _sh_handles_backup;
+    var _sh_handles_backup;
     if (!this._visible) {
       return;
     }
-    this._modelM = new Matrix4();
-    this._transV.elements[0] = this._position.x - ARERenderer.camPos.x;
-    if (ARERenderer.force_pos0_0) {
-      this._transV.elements[1] = ARERenderer.getHeight() - this._position.y + ARERenderer.camPos.y;
-    } else {
-      this._transV.elements[1] = this._position.y - ARERenderer.camPos.y;
-    }
-    this._modelM.translate(this._transV);
-    this._modelM.rotate(-this._rotation, this._rotV);
-    flatMV = this._modelM.flatten();
     if (shader) {
       _sh_handles_backup = this._sh_handles;
       this._sh_handles = shader.getHandles();
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
     gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.uniformMatrix4fv(this._sh_handles.uModelView, false, flatMV);
+    gl.uniformMatrix4fv(this._sh_handles.uModelView, false, this._modelM);
     gl.uniform4f(this._sh_handles.uColor, this._colArray[0], this._colArray[1], this._colArray[2], 1.0);
     if (this._sh_handles.uClipRect) {
       gl.uniform4fv(this._sh_handles.uClipRect, this._clipRect);
     }
     gl.uniform1f(this._sh_handles.uOpacity, this._opacity);
-    this.wglBindTexture(gl);
+    if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
+      if (ARERenderer._currentTexture !== this._texture.texture) {
+        this.wglBindTexture(gl);
+      }
+    }
 
     /*
      * @TODO, actually apply the RENDER_STYLE_*
@@ -1016,6 +1061,7 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setPosition = function(position) {
     this._position = param.required(position);
+    this._updateModelMatrix();
     this.broadcast({
       id: this._id,
       position: position
@@ -1040,6 +1086,7 @@ ARERawActor = (function(_super) {
       rotation = Number(rotation) * 0.0174532925;
     }
     this._rotation = rotation;
+    this._updateModelMatrix();
     if (this._mass > 0) {
       this.broadcast({
         id: this._id,
@@ -1258,14 +1305,9 @@ ARERawActor = (function(_super) {
     command = namespace.split(".");
     switch (command[1]) {
       case "update":
-        ARERawActor.updateCount++;
-        if (Date.now() - ARERawActor.lastTime > 1000) {
-          console.log("Got " + ARERawActor.updateCount + " in the last second");
-          ARERawActor.lastTime = Date.now();
-          ARERawActor.updateCount = 0;
-        }
         this._position = message.position;
-        return this._rotation = message.rotation;
+        this._rotation = message.rotation;
+        return this._updateModelMatrix();
     }
   };
 

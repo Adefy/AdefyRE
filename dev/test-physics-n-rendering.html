@@ -69,8 +69,7 @@
 
         var createBall = function() {
           var x = Math.random() * width;
-          var y = -(Math.random() * 500);
-          //var y = window.AdefyRE.Engine().getHeight() + (Math.random() * 500);
+          var y = -(Math.random() * 1000);
 
           var mass = Math.random() * 100;
           var friction = Math.random();
@@ -93,6 +92,14 @@
           }, Math.random() * 50);
         };
 
+        var modestr = "N/A";
+        if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
+          modestr = "WebGL"
+        else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
+          modestr = "Canvas"
+
+        document.getElementById("RendererMode").innerHTML = modestr;
+
         // Throw out the old balls ~_~
         // For people like IceDragon, who has a shitty computer
         var ballGCTimeout = function() {
@@ -112,9 +119,7 @@
 
         scheduleBallTimeout();
         ballGCTimeout();
-
         refreshRendererMode();
-
       });
     });
 

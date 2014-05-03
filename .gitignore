@@ -3,4 +3,5 @@ dev/are.js
 dev/are.js.map
 dev/are-concat.coffee
 dev/components
+dev/lib
 .DS_Store

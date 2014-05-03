@@ -320,11 +320,6 @@ class ARERawActor extends Koon
       if @_gl == undefined or @_gl == null
         throw new Error "GL context is required for actor initialization!"
 
-    # Initialize our rendering objects
-    @_rotV = new Vector3([0, 0, 1])
-    @_transV = new Vector3([0, 0, 1])
-    @_modelM = new Matrix4()
-
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
     @_strokeColor = null
@@ -341,6 +336,9 @@ class ARERawActor extends Koon
     @_id = -1
     @_position = x: 0, y: 0
     @_rotation = 0 # Radians, but set in degrees by default
+
+    @_initializeModelMatrix()
+    @_updateModelMatrix()
 
     ## size calculated by from verticies
     @_size = new AREVector2 0, 0
@@ -932,24 +930,76 @@ class ARERawActor extends Koon
   # @param [Object] gl WebGL Context
   ###
   wglBindTexture: (gl) ->
-    # Texture rendering, if needed
-    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
-      if ARERenderer._currentTexture != @_texture.texture
-        ARERenderer._currentTexture = @_texture.texture
+    ARERenderer._currentTexture = @_texture.texture
 
-        gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
 
-        gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-        #gl.vertexAttrib2f @_sh_handles.aUVScale,
-        #  @_texture.scaleX, @_texture.scaleY
-        # We apparently don't need uUVScale in webgl
-        #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+    gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
+    #gl.vertexAttrib2f @_sh_handles.aUVScale,
+    #  @_texture.scaleX, @_texture.scaleY
+    # We apparently don't need uUVScale in webgl
+    #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
 
-        gl.activeTexture gl.TEXTURE0
-        gl.bindTexture gl.TEXTURE_2D, @_texture.texture
-        gl.uniform1i @_sh_handles.uSampler, 0
+    gl.activeTexture gl.TEXTURE0
+    gl.bindTexture gl.TEXTURE_2D, @_texture.texture
+    gl.uniform1i @_sh_handles.uSampler, 0
 
     @
+
+  ###
+  # Updates our @_modelM based on our current position and rotation. This used
+  # to be in our @wglDraw method, and it used to use methods from EWGL_math.js
+  #
+  # Since our rotation vector is ALWAYS (0, 0, 1) and our translation Z coord
+  # always 1.0, we can reduce the majority of the previous operations, and
+  # directly set matrix values ourselves.
+  #
+  # Since most matrix values never actually change (always either 0, or 1), we
+  # set those up in @_initializeModelMatrix() and never touch them again :D
+  #
+  # This is FUGLY, but as long as we are 2D-only, it's as fast as it gets.
+  #
+  # THIS. IS. SPARTAAAAA!.
+  ###
+  _updateModelMatrix: ->
+
+    # Make some variables local to speed up access
+    renderer = ARERenderer
+    pos = @_position
+    camPos = ARERenderer.camPos
+
+    s = Math.sin(-@_rotation)
+    c = Math.cos(-@_rotation)
+
+    @_modelM[0] = c
+    @_modelM[1] = s
+    @_modelM[4] = -s
+    @_modelM[5] = c
+
+    @_modelM[12] = pos.x - camPos.x
+
+    if renderer.force_pos0_0
+      @_modelM[13] = renderer.getHeight() - pos.y + camPos.y
+    else
+      @_modelM[13] = pos.y - camPos.y
+
+  ###
+  # Sets the constant values in our model matrix so that calls to
+  # @_updateModelMatrix are sufficient to update our rendered state.
+  ###
+  _initializeModelMatrix: ->
+    @_modelM = [16]
+
+    @_modelM[2] = 0
+    @_modelM[3] = 0
+    @_modelM[6] = 0
+    @_modelM[7] = 0
+    @_modelM[8] = 0
+    @_modelM[9] = 0
+    @_modelM[10] = 1
+    @_modelM[11] = 0
+    @_modelM[14] = 1
+    @_modelM[15] = 1
 
   ###
   # Renders the Actor using the WebGL interface, this function should only
@@ -964,20 +1014,6 @@ class ARERawActor extends Koon
     # cause us to render!
     return unless @_visible
 
-    @_modelM = new Matrix4()
-    @_transV.elements[0] = @_position.x - ARERenderer.camPos.x
-
-    if ARERenderer.force_pos0_0
-      @_transV.elements[1] = ARERenderer.getHeight() - \
-                              @_position.y + ARERenderer.camPos.y
-    else
-      @_transV.elements[1] = @_position.y - ARERenderer.camPos.y
-
-    @_modelM.translate(@_transV)
-    @_modelM.rotate(-@_rotation, @_rotV)
-
-    flatMV = @_modelM.flatten()
-
     # Temporarily change handles if a shader was passed in
     if shader
       _sh_handles_backup = @_sh_handles
@@ -985,13 +1021,16 @@ class ARERawActor extends Koon
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
     gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
-    gl.uniformMatrix4fv @_sh_handles.uModelView, false, flatMV
+    gl.uniformMatrix4fv @_sh_handles.uModelView, false, @_modelM
 
     gl.uniform4f @_sh_handles.uColor, @_colArray[0], @_colArray[1], @_colArray[2], 1.0
     gl.uniform4fv @_sh_handles.uClipRect, @_clipRect if @_sh_handles.uClipRect
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
-    @wglBindTexture gl
+    # Texture rendering, if needed
+    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
+      if ARERenderer._currentTexture != @_texture.texture
+        @wglBindTexture gl
 
     ###
     # @TODO, actually apply the RENDER_STYLE_*
@@ -1165,6 +1204,7 @@ class ARERawActor extends Koon
   ###
   setPosition: (position) ->
     @_position = param.required position
+    @_updateModelMatrix()
 
     @broadcast
       id: @_id
@@ -1186,8 +1226,8 @@ class ARERawActor extends Koon
     radians = param.optional radians, false
 
     rotation = Number(rotation) * 0.0174532925 unless radians
-
     @_rotation = rotation
+    @_updateModelMatrix()
 
     if @_mass > 0
       @broadcast
@@ -1373,15 +1413,9 @@ class ARERawActor extends Koon
     switch command[1]
       when "update"
 
-        ARERawActor.updateCount++
-
-        if Date.now() - ARERawActor.lastTime > 1000
-          console.log "Got #{ARERawActor.updateCount} in the last second"
-          ARERawActor.lastTime = Date.now()
-          ARERawActor.updateCount = 0
-
         @_position = message.position
         @_rotation = message.rotation
+        @_updateModelMatrix()
 
 ##
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
@@ -2082,7 +2116,7 @@ AREShader.shaders.texture = {}
 
 #precision = "highp"
 precision = "mediump"
-varying_precision = "highp"
+varying_precision = "mediump"
 precision_declaration = "precision #{precision} float;"
 
 AREShader.shaders.wire.vertex = """
@@ -2174,6 +2208,7 @@ void main() {
   gl_FragColor = baseColor;
 }
 """
+
 ##
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
@@ -3129,6 +3164,7 @@ class PhysicsManager extends BazarShop
           actor = ARERenderer.actor_hash[dataPacket[ID_INDEX]]
           actor._position = dataPacket[POS_INDEX]
           actor._rotation = dataPacket[ROT_INDEX]
+          actor._updateModelMatrix()
       else
         @broadcast e.data.message, e.data.namespace
 
@@ -4828,6 +4864,8 @@ class AREEngine
     @_physics = new PhysicsManager()
 
     @_renderer = new ARERenderer canvas, width, height
+
+    @_currentlyRendering = false
     @startRendering()
     cb @
 
@@ -4846,40 +4884,16 @@ class AREEngine
   # @return [Void]
   ###
   startRendering: ->
-    if @_renderIntervalId != null then return
-
+    return if @_currentlyRendering
+    @_currentlyRendering = true
     ARELog.info "Starting render loop"
 
-    avgStep = 0
-    stepCount = 0
-
-    @_renderIntervalId = setInterval =>
-      # start = Date.now() if @benchmark
-
-      @_renderer.activeRenderMethod()
-
-      ###
-      if @benchmark
-        stepCount++
-        avgStep = avgStep + ((Date.now() - start) / stepCount)
-
-        if stepCount % 500 == 0
-          fps = (1000 / avgStep).toFixed 2
-          console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
-      ###
-
-    , @_framerate
-
-  ###
-  # Halt render loop if it's running
-  # @return [Void]
-  ###
-  stopRendering: ->
-    if @_renderIntervalId == null then return
-
-    ARELog.info "Halting render loop"
-    clearInterval @_renderIntervalId
-    @_renderIntervalId = null
+    renderer = @_renderer
+    render = ->
+      renderer.activeRenderMethod()
+      window.requestAnimationFrame render
+    
+    window.requestAnimationFrame render
 
   ###
   # Set renderer clear color in integer RGB form (passes through to renderer)
@@ -5005,7 +5019,7 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 
 AREVersion =
   MAJOR: 1
-  MINOR: 0
-  PATCH: 14
+  MINOR: 1
+  PATCH: 0
   BUILD: null
-  STRING: "1.0.14"
+  STRING: "1.1.0"

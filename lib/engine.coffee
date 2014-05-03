@@ -61,6 +61,8 @@ class AREEngine
     @_physics = new PhysicsManager()
 
     @_renderer = new ARERenderer canvas, width, height
+
+    @_currentlyRendering = false
     @startRendering()
     cb @
 
@@ -79,40 +81,16 @@ class AREEngine
   # @return [Void]
   ###
   startRendering: ->
-    if @_renderIntervalId != null then return
-
+    return if @_currentlyRendering
+    @_currentlyRendering = true
     ARELog.info "Starting render loop"
 
-    avgStep = 0
-    stepCount = 0
-
-    @_renderIntervalId = setInterval =>
-      # start = Date.now() if @benchmark
-
-      @_renderer.activeRenderMethod()
-
-      ###
-      if @benchmark
-        stepCount++
-        avgStep = avgStep + ((Date.now() - start) / stepCount)
-
-        if stepCount % 500 == 0
-          fps = (1000 / avgStep).toFixed 2
-          console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
-      ###
-
-    , @_framerate
-
-  ###
-  # Halt render loop if it's running
-  # @return [Void]
-  ###
-  stopRendering: ->
-    if @_renderIntervalId == null then return
-
-    ARELog.info "Halting render loop"
-    clearInterval @_renderIntervalId
-    @_renderIntervalId = null
+    renderer = @_renderer
+    render = ->
+      renderer.activeRenderMethod()
+      window.requestAnimationFrame render
+    
+    window.requestAnimationFrame render
 
   ###
   # Set renderer clear color in integer RGB form (passes through to renderer)

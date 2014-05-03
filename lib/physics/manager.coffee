@@ -38,5 +38,6 @@ class PhysicsManager extends BazarShop
           actor = ARERenderer.actor_hash[dataPacket[ID_INDEX]]
           actor._position = dataPacket[POS_INDEX]
           actor._rotation = dataPacket[ROT_INDEX]
+          actor._updateModelMatrix()
       else
         @broadcast e.data.message, e.data.namespace

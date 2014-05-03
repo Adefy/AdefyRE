@@ -10,7 +10,7 @@ AREShader.shaders.texture = {};
 
 precision = "mediump";
 
-varying_precision = "highp";
+varying_precision = "mediump";
 
 precision_declaration = "precision " + precision + " float;";
 
