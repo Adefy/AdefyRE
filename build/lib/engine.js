@@ -33,6 +33,7 @@ AREEngine = (function() {
     window.AREMessages.registerKoon(window.Bazar);
     this._physics = new PhysicsManager();
     this._renderer = new ARERenderer(canvas, width, height);
+    this._currentlyRendering = false;
     this.startRendering();
     cb(this);
   }
@@ -56,43 +57,18 @@ AREEngine = (function() {
    */
 
   AREEngine.prototype.startRendering = function() {
-    var avgStep, stepCount;
-    if (this._renderIntervalId !== null) {
+    var render, renderer;
+    if (this._currentlyRendering) {
       return;
     }
+    this._currentlyRendering = true;
     ARELog.info("Starting render loop");
-    avgStep = 0;
-    stepCount = 0;
-    return this._renderIntervalId = setInterval((function(_this) {
-      return function() {
-        return _this._renderer.activeRenderMethod();
-
-        /*
-        if @benchmark
-          stepCount++
-          avgStep = avgStep + ((Date.now() - start) / stepCount)
-        
-          if stepCount % 500 == 0
-            fps = (1000 / avgStep).toFixed 2
-            console.log "Render step time: #{avgStep.toFixed(2)}ms (#{fps} FPS)"
-         */
-      };
-    })(this), this._framerate);
-  };
-
-
-  /*
-   * Halt render loop if it's running
-   * @return [Void]
-   */
-
-  AREEngine.prototype.stopRendering = function() {
-    if (this._renderIntervalId === null) {
-      return;
-    }
-    ARELog.info("Halting render loop");
-    clearInterval(this._renderIntervalId);
-    return this._renderIntervalId = null;
+    renderer = this._renderer;
+    render = function() {
+      renderer.activeRenderMethod();
+      return window.requestAnimationFrame(render);
+    };
+    return window.requestAnimationFrame(render);
   };
 
 

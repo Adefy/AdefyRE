@@ -38,7 +38,8 @@ PhysicsManager = (function(_super) {
             dataPacket = data[l];
             actor = ARERenderer.actor_hash[dataPacket[ID_INDEX]];
             actor._position = dataPacket[POS_INDEX];
-            _results.push(actor._rotation = dataPacket[ROT_INDEX]);
+            actor._rotation = dataPacket[ROT_INDEX];
+            _results.push(actor._updateModelMatrix());
           }
           return _results;
         } else {
