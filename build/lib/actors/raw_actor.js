@@ -487,6 +487,87 @@ ARERawActor = (function(_super) {
 
 
   /*
+   * @return [self]
+   */
+
+  ARERawActor.prototype.refreshPhysics = function() {
+    if (this.hasPhysics()) {
+      this.destroyPhysicsBody();
+      return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    }
+  };
+
+
+  /*
+   * @return [Number] mass
+   */
+
+  ARERawActor.prototype.getMass = function() {
+    return this._mass;
+  };
+
+
+  /*
+   * @return [Number] elasticity
+   */
+
+  ARERawActor.prototype.getElasticity = function() {
+    return this._elasticity;
+  };
+
+
+  /*
+   * @return [Number] friction
+   */
+
+  ARERawActor.prototype.getFriction = function() {
+    return this._friction;
+  };
+
+
+  /*
+   * Set Actor mass property
+   *
+   * @param [Number] mass
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setMass = function(_mass) {
+    this._mass = _mass;
+    this.refreshPhysics();
+    return this;
+  };
+
+
+  /*
+   * Set Actor elasticity property
+   *
+   * @param [Number] elasticity
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setElasticity = function(_elasticity) {
+    this._elasticity = _elasticity;
+    this.refreshPhysics();
+    return this;
+  };
+
+
+  /*
+   * Set Actor friction property
+   *
+   * @param [Number] friction
+   * @return [self]
+   */
+
+  ARERawActor.prototype.setFriction = function(_friction) {
+    this._friction = _friction;
+    this.refreshPhysics();
+    return this;
+  };
+
+
+  /*
    * Get actor physics layer
    *
    * @return [Number] physicsLayer

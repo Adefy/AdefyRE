@@ -2,8 +2,10 @@ module.exports = (grunt) ->
 
   # Output
   libName = "are.js"
-  productionName = "are-prod.min.js"
-  productionNameFull = "are-prod-full.min.js"
+  productionName = "are-prod.js"
+  productionNameMin = "are-prod.min.js"
+  productionNameFull = "are-prod-full.js"
+  productionNameFullMin = "are-prod-full.min.js"
 
   # Directories
   buildDir = "build"
@@ -11,7 +13,9 @@ module.exports = (grunt) ->
   testDir = "test"
   devDir = "dev"
   production = "#{buildDir}/#{productionName}"
+  productionMin = "#{buildDir}/#{productionNameMin}"
   productionFull = "#{buildDir}/#{productionNameFull}"
+  productionFullMin = "#{buildDir}/#{productionNameFullMin}"
 
   productionConcatFull = [
     "#{devDir}/components/underscore/underscore.js"
@@ -46,8 +50,8 @@ module.exports = (grunt) ->
   __testOut["#{buildDir}/test/spec.coffee"] = ["#{testDir}/tests.coffee"]
 
   _uglify = {}
-  _uglify[production] = "#{buildDir}/#{libName}"
-  _uglify[productionFull] = productionFull
+  _uglify[productionMin] = "#{buildDir}/#{libName}"
+  _uglify[productionFullMin] = productionFull
 
   grunt.initConfig
     pkg: grunt.file.readJSON "package.json"

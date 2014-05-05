@@ -665,6 +665,59 @@ class ARERawActor extends Koon
     @
 
   ###
+  # @return [self]
+  ###
+  refreshPhysics: ->
+    if @hasPhysics()
+      @destroyPhysicsBody()
+      @createPhysicsBody @_mass, @_friction, @_elasticity
+
+  ###
+  # @return [Number] mass
+  ###
+  getMass: -> @_mass
+
+  ###
+  # @return [Number] elasticity
+  ###
+  getElasticity: -> @_elasticity
+
+  ###
+  # @return [Number] friction
+  ###
+  getFriction: -> @_friction
+
+  ###
+  # Set Actor mass property
+  #
+  # @param [Number] mass
+  # @return [self]
+  ###
+  setMass: (@_mass) ->
+    @refreshPhysics()
+    @
+
+  ###
+  # Set Actor elasticity property
+  #
+  # @param [Number] elasticity
+  # @return [self]
+  ###
+  setElasticity: (@_elasticity) ->
+    @refreshPhysics()
+    @
+
+  ###
+  # Set Actor friction property
+  #
+  # @param [Number] friction
+  # @return [self]
+  ###
+  setFriction: (@_friction) ->
+    @refreshPhysics()
+    @
+
+  ###
   # Get actor physics layer
   #
   # @return [Number] physicsLayer
