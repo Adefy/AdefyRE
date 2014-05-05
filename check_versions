@@ -18,17 +18,17 @@ bower_version = bower["version"]
 version = ARGV[0] || are_version
 
 if package_version != version
-  raise "Package version (#{package_version}) does not match expected (#{version})"
+  abort "Package version (#{package_version}) does not match expected (#{version})"
 end
 
 if bower_version != version
-  raise "Bower version (#{bower_version}) does not match expected (#{version})"
+  abort "Bower version (#{bower_version}) does not match expected (#{version})"
 end
 
 if are_version != version
-  raise "ARE version (#{are_version}) does not match expected (#{version})"
+  abort "ARE version (#{are_version}) does not match expected (#{version})"
 end
 
 if are_string_version != version
-  raise "ARE version STRING (#{are_string_version}) does not match expected (#{version})"
+  abort "ARE version STRING (#{are_string_version}) does not match expected (#{version})"
 end

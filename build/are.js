@@ -5527,9 +5527,9 @@ window.AdefyGLI = window.AdefyRE = new AREInterface;
 AREVersion = {
   MAJOR: 1,
   MINOR: 1,
-  PATCH: 0,
+  PATCH: 1,
   BUILD: null,
-  STRING: "1.1.0"
+  STRING: "1.1.1"
 };
 
 //# sourceMappingURL=are.js.map
