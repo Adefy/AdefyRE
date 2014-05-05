@@ -58,7 +58,7 @@ class AREEngine
     window.AREMessages.registerKoon window.Bazar
 
     # Initialize physics worker
-    @_physics = new PhysicsManager()
+    @_physics = new PhysicsManager ARE.config.deps.physics
 
     @_renderer = new ARERenderer canvas, width, height
 
@@ -89,7 +89,7 @@ class AREEngine
     render = ->
       renderer.activeRenderMethod()
       window.requestAnimationFrame render
-    
+
     window.requestAnimationFrame render
 
   ###
@@ -190,7 +190,3 @@ class AREEngine
   # @return [Number]
   ###
   getActiveRendererMode: -> ARERenderer.activeRendererMode
-
-# Break out an interface. Use responsibly.
-# All we need, is the awesome
-window.AdefyGLI = window.AdefyRE = new AREInterface

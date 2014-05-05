@@ -2092,7 +2092,7 @@ Matrix4 = window.m4x4
 Matrix4.prototype.flatten = function() {
   return this.elements;
 }
-var AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, ARETriangleActor, AREUtilParam, AREVector2, AREVersion, AREVertAnimation, BazarShop, CBazar, Koon, KoonFlock, KoonNetworkMember, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
+var ARE, AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngine, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, ARETriangleActor, AREUtilParam, AREVector2, AREVertAnimation, BazarShop, CBazar, Koon, KoonFlock, KoonNetworkMember, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -5639,16 +5639,17 @@ ARERenderer = (function() {
 PhysicsManager = (function(_super) {
   __extends(PhysicsManager, _super);
 
-  function PhysicsManager() {
+  function PhysicsManager(depPaths) {
+    param.required(depPaths);
     PhysicsManager.__super__.constructor.call(this, "PhysicsManager", [
       {
         raw: "cp = exports = {};"
       }, {
-        url: "/components/chipmunk/cp.js"
+        url: depPaths.chipmunk
       }, {
-        url: "/lib/koon/koon.js"
+        url: depPaths.koon
       }, {
-        url: "/lib/physics/worker.js"
+        url: depPaths.physics_worker
       }
     ]);
   }
@@ -7519,7 +7520,7 @@ AREEngine = (function() {
     }
     window.AREMessages = new KoonFlock("AREMessages");
     window.AREMessages.registerKoon(window.Bazar);
-    this._physics = new PhysicsManager();
+    this._physics = new PhysicsManager(ARE.config.deps.physics);
     this._renderer = new ARERenderer(canvas, width, height);
     this._currentlyRendering = false;
     this.startRendering();
@@ -7693,14 +7694,25 @@ AREEngine = (function() {
 
 })();
 
-window.AdefyGLI = window.AdefyRE = new AREInterface;
-
-AREVersion = {
-  MAJOR: 1,
-  MINOR: 1,
-  PATCH: 1,
-  BUILD: null,
-  STRING: "1.1.1"
+ARE = {
+  config: {
+    deps: {
+      physics: {
+        chipmunk: "/components/chipmunk/cp.js",
+        koon: "/lib/koon/koon.js",
+        physics_worker: "/lib/physics/worker.js"
+      }
+    }
+  },
+  Version: {
+    MAJOR: 1,
+    MINOR: 1,
+    PATCH: 2,
+    BUILD: null,
+    STRING: "1.1.2"
+  }
 };
+
+window.AdefyGLI = window.AdefyRE = new AREInterface;
 
 //# sourceMappingURL=are.js.map

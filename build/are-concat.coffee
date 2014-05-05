@@ -3166,15 +3166,17 @@ class ARERenderer
 
 class PhysicsManager extends BazarShop
 
-  constructor: ->
+  constructor: (depPaths) ->
+    param.required depPaths
+
     super "PhysicsManager", [
       raw: "cp = exports = {};"
     ,
-      url: "/components/chipmunk/cp.js"
+      url: depPaths.chipmunk
     ,
-      url: "/lib/koon/koon.js"
+      url: depPaths.koon
     ,
-      url: "/lib/physics/worker.js"
+      url: depPaths.physics_worker
     ]
 
   _connectWorkerListener: ->
@@ -4901,7 +4903,7 @@ class AREEngine
     window.AREMessages.registerKoon window.Bazar
 
     # Initialize physics worker
-    @_physics = new PhysicsManager()
+    @_physics = new PhysicsManager ARE.config.deps.physics
 
     @_renderer = new ARERenderer canvas, width, height
 
@@ -4932,7 +4934,7 @@ class AREEngine
     render = ->
       renderer.activeRenderMethod()
       window.requestAnimationFrame render
-    
+
     window.requestAnimationFrame render
 
   ###
@@ -5034,10 +5036,6 @@ class AREEngine
   ###
   getActiveRendererMode: -> ARERenderer.activeRendererMode
 
-# Break out an interface. Use responsibly.
-# All we need, is the awesome
-window.AdefyGLI = window.AdefyRE = new AREInterface
-
 ##
 ## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
 ##
@@ -5057,9 +5055,21 @@ window.AdefyGLI = window.AdefyRE = new AREInterface
 # @depend actors/triangle_actor.coffee
 # @depend engine.coffee
 
-AREVersion =
-  MAJOR: 1
-  MINOR: 1
-  PATCH: 1
-  BUILD: null
-  STRING: "1.1.1"
+ARE =
+  config:
+    deps:
+      physics:
+        chipmunk: "/components/chipmunk/cp.js"
+        koon: "/lib/koon/koon.js"
+        physics_worker: "/lib/physics/worker.js"
+
+  Version:
+    MAJOR: 1
+    MINOR: 1
+    PATCH: 2
+    BUILD: null
+    STRING: "1.1.2"
+
+# Break out an interface. Use responsibly.
+# All we need, is the awesome
+window.AdefyGLI = window.AdefyRE = new AREInterface

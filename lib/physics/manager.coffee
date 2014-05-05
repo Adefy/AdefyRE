@@ -1,14 +1,16 @@
 class PhysicsManager extends BazarShop
 
-  constructor: ->
+  constructor: (depPaths) ->
+    param.required depPaths
+
     super "PhysicsManager", [
       raw: "cp = exports = {};"
     ,
-      url: "/components/chipmunk/cp.js"
+      url: depPaths.chipmunk
     ,
-      url: "/lib/koon/koon.js"
+      url: depPaths.koon
     ,
-      url: "/lib/physics/worker.js"
+      url: depPaths.physics_worker
     ]
 
   _connectWorkerListener: ->

@@ -5,16 +5,17 @@ var PhysicsManager,
 PhysicsManager = (function(_super) {
   __extends(PhysicsManager, _super);
 
-  function PhysicsManager() {
+  function PhysicsManager(depPaths) {
+    param.required(depPaths);
     PhysicsManager.__super__.constructor.call(this, "PhysicsManager", [
       {
         raw: "cp = exports = {};"
       }, {
-        url: "/components/chipmunk/cp.js"
+        url: depPaths.chipmunk
       }, {
-        url: "/lib/koon/koon.js"
+        url: depPaths.koon
       }, {
-        url: "/lib/physics/worker.js"
+        url: depPaths.physics_worker
       }
     ]);
   }

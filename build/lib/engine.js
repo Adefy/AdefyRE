@@ -31,7 +31,7 @@ AREEngine = (function() {
     }
     window.AREMessages = new KoonFlock("AREMessages");
     window.AREMessages.registerKoon(window.Bazar);
-    this._physics = new PhysicsManager();
+    this._physics = new PhysicsManager(ARE.config.deps.physics);
     this._renderer = new ARERenderer(canvas, width, height);
     this._currentlyRendering = false;
     this.startRendering();
@@ -204,5 +204,3 @@ AREEngine = (function() {
   return AREEngine;
 
 })();
-
-window.AdefyGLI = window.AdefyRE = new AREInterface;
