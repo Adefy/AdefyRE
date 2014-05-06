@@ -587,6 +587,10 @@ class ARERenderer
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
         _savedColor = a._color
+        _savedColor =
+          r: _savedColor._r
+          g: _savedColor._g
+          b: _savedColor._b
         _savedOpacity = a._opacity
 
         _id = a_id - (Math.floor(a_id / 255) * 255)
@@ -598,7 +602,7 @@ class ARERenderer
         a.setColor _id, _idSector, 248
         a.setOpacity 1.0
         a.wglDraw gl, @_defaultShader
-        a.setColor _savedColor
+        a.setColor _savedColor.r, _savedColor.g, _savedColor.b
         a.setOpacity _savedOpacity
 
       # Switch back to a normal rendering mode, and immediately re-render to the
@@ -659,8 +663,12 @@ class ARERenderer
       if @_pickRenderRequested
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
-        _savedColor = a.getColor()
-        _savedOpacity = a.getOpacity()
+        _savedColor = a._color
+        _savedColor =
+          r: _savedColor._r
+          g: _savedColor._g
+          b: _savedColor._b
+        _savedOpacity = a._opacity
 
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
@@ -671,7 +679,7 @@ class ARERenderer
         a.setColor _id, _idSector, 248
         a.setOpacity 1.0
         a.cvDraw ctx
-        a.setColor _savedColor
+        a.setColor _savedColor.r, _savedColor.g, _savedColor.b
         a.setOpacity _savedOpacity
 
       else
