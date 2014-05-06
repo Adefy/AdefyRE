@@ -350,7 +350,7 @@ class ARERenderer
     ARELog.info "ARE WGL initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL
-    @activeRenderMethod = @wglRender
+    @render = @_wglRender
 
     true
 
@@ -365,7 +365,7 @@ class ARERenderer
     ARELog.info "ARE CTX initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS
-    @activeRenderMethod = @cvRender
+    @render = @_cvRender
 
     true
 
@@ -380,7 +380,7 @@ class ARERenderer
     ARELog.info "ARE Null initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL
-    @activeRenderMethod = @nullRender
+    @render = @_nullRender
 
     true
 
@@ -391,7 +391,8 @@ class ARERenderer
   # Renders a frame, needs to be set in our constructor, by one of the init
   # methods.
   ###
-  activeRenderMethod: ->
+  render: ->
+    @
 
   ###
   # Returns instance (only one may exist, enforced in constructor)
@@ -499,6 +500,8 @@ class ARERenderer
       else
         ARELog.error "Can't set clear color, ARERenderer._gl not valid!"
 
+    @
+
   ###
   # Request a frame to be rendered for scene picking.
   #
@@ -517,6 +520,8 @@ class ARERenderer
     @_pickRenderSelectionRect = null
     @_pickRenderCB = cb
     @_pickRenderRequested = true
+
+    @
 
   ###
   # Request a frame to be rendered for scene picking.
@@ -541,11 +546,14 @@ class ARERenderer
     @_pickRenderCB = cb
     @_pickRenderRequested = true
 
+    @
+
   ###
   # Draws a using WebGL frame
   # @return [Void]
+  # @private
   ###
-  wglRender: ->
+  _wglRender: ->
     gl = ARERenderer._gl
 
     # Render to an off-screen buffer for screen picking if requested to do so.
@@ -621,11 +629,14 @@ class ARERenderer
           @switchMaterial a._material
         a.wglDraw gl
 
+    @
+
   ###
   # Canavs render
-  # @return [Void]
+  # @return [self]
+  # @private
   ###
-  cvRender: ->
+  _cvRender: ->
     ctx = @_ctx
     if ctx == undefined or ctx == null then return
 
@@ -691,11 +702,14 @@ class ARERenderer
 
       @render()
 
+    @
+
   ###
   # "No render" function
   # @return [Void]
+  # @private
   ###
-  nullRender: ->
+  _nullRender: ->
 
     ctx = @_ctx
 
@@ -713,6 +727,8 @@ class ARERenderer
       a = a.updateAttachment()
 
       a.nullDraw ctx
+
+    @
 
   ###
   # Manually clear the screen
@@ -733,6 +749,8 @@ class ARERenderer
       when ARERenderer.RENDERER_MODE_WGL
         gl = ARERenderer._gl # Code asthetics
         gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
+
+    @
 
   ###
   # Returns the currently active renderer mode
@@ -863,6 +881,8 @@ class ARERenderer
 
     ARELog.info "ARERenderer Switched material #{ARERenderer._currentMaterial}"
 
+    @
+
   ###
   # Checks if we have a texture loaded
   #
@@ -912,3 +932,5 @@ class ARERenderer
     param.required tex.texture
 
     ARERenderer.textures.push tex
+
+    @

@@ -87,7 +87,7 @@ class AREEngine
 
     renderer = @_renderer
     render = ->
-      renderer.activeRenderMethod()
+      renderer.render()
       window.requestAnimationFrame render
 
     window.requestAnimationFrame render
