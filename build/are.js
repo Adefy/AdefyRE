@@ -437,6 +437,7 @@ ARERawActor = (function(_super) {
     /*
      * Physics values
      */
+    this._physics = false;
     this._friction = null;
     this._mass = null;
     this._elasticity = null;
@@ -627,7 +628,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.hasPhysics = function() {
-    return this._shape !== null || this._body !== null;
+    return this._physics;
   };
 
 
@@ -708,6 +709,7 @@ ARERawActor = (function(_super) {
         y: 0
       };
     }
+    this._physics = true;
     this.broadcast({}, "physics.enable");
     if (bodyDef) {
       this.broadcast({
@@ -728,12 +730,15 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.destroyPhysicsBody = function() {
-    this.broadcast({
-      id: this._id
-    }, "physics.shape.remove");
-    return this.broadcast({
-      id: this._id
-    }, "physics.body.remove");
+    if (this._physics) {
+      this.broadcast({
+        id: this._id
+      }, "physics.shape.remove");
+      this.broadcast({
+        id: this._id
+      }, "physics.body.remove");
+      return this._physics = false;
+    }
   };
 
 
@@ -2916,7 +2921,7 @@ ARERenderer = (function() {
     ARELog.info("Initialized shaders");
     ARELog.info("ARE WGL initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL;
-    this.activeRenderMethod = this.wglRender;
+    this.render = this._wglRender;
     return true;
   };
 
@@ -2930,7 +2935,7 @@ ARERenderer = (function() {
     this._ctx = this._canvas.getContext("2d");
     ARELog.info("ARE CTX initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS;
-    this.activeRenderMethod = this.cvRender;
+    this.render = this._cvRender;
     return true;
   };
 
@@ -2944,7 +2949,7 @@ ARERenderer = (function() {
     this._ctx = this._canvas.getContext("2d");
     ARELog.info("ARE Null initialized");
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL;
-    this.activeRenderMethod = this.nullRender;
+    this.render = this._nullRender;
     return true;
   };
 
@@ -2957,7 +2962,9 @@ ARERenderer = (function() {
    * methods.
    */
 
-  ARERenderer.prototype.activeRenderMethod = function() {};
+  ARERenderer.prototype.render = function() {
+    return this;
+  };
 
 
   /*
@@ -3108,11 +3115,12 @@ ARERenderer = (function() {
       g = this._clearColor.getG(true);
       b = this._clearColor.getB(true);
       if (ARERenderer._gl !== null && ARERenderer._gl !== void 0) {
-        return ARERenderer._gl.clearColor(colOrR, g, b, 1.0);
+        ARERenderer._gl.clearColor(colOrR, g, b, 1.0);
       } else {
-        return ARELog.error("Can't set clear color, ARERenderer._gl not valid!");
+        ARELog.error("Can't set clear color, ARERenderer._gl not valid!");
       }
     }
+    return this;
   };
 
 
@@ -3133,7 +3141,8 @@ ARERenderer = (function() {
     this._pickRenderBuff = buffer;
     this._pickRenderSelectionRect = null;
     this._pickRenderCB = cb;
-    return this._pickRenderRequested = true;
+    this._pickRenderRequested = true;
+    return this;
   };
 
 
@@ -3158,17 +3167,19 @@ ARERenderer = (function() {
     this._pickRenderBuff = null;
     this._pickRenderSelectionRect = selectionRect;
     this._pickRenderCB = cb;
-    return this._pickRenderRequested = true;
+    this._pickRenderRequested = true;
+    return this;
   };
 
 
   /*
    * Draws a using WebGL frame
    * @return [Void]
+   * @private
    */
 
-  ARERenderer.prototype.wglRender = function() {
-    var a, a_id, actorCount, gl, _id, _idSector, _results, _savedColor, _savedOpacity;
+  ARERenderer.prototype._wglRender = function() {
+    var a, a_id, actorCount, gl, _id, _idSector, _savedColor, _savedOpacity;
     gl = ARERenderer._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
@@ -3182,6 +3193,11 @@ ARERenderer = (function() {
         a = ARERenderer.actors[actorCount];
         a_id = a._id;
         _savedColor = a._color;
+        _savedColor = {
+          r: _savedColor._r,
+          g: _savedColor._g,
+          b: _savedColor._b
+        };
         _savedOpacity = a._opacity;
         _id = a_id - (Math.floor(a_id / 255) * 255);
         _idSector = Math.floor(a_id / 255);
@@ -3189,7 +3205,7 @@ ARERenderer = (function() {
         a.setColor(_id, _idSector, 248);
         a.setOpacity(1.0);
         a.wglDraw(gl, this._defaultShader);
-        a.setColor(_savedColor);
+        a.setColor(_savedColor.r, _savedColor.g, _savedColor.b);
         a.setOpacity(_savedOpacity);
       }
       this._pickRenderCB();
@@ -3197,9 +3213,8 @@ ARERenderer = (function() {
       this._pickRenderBuff = null;
       this._pickRenderCB = null;
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      return this.render();
+      this.render();
     } else {
-      _results = [];
       while (actorCount--) {
         a = ARERenderer.actors[actorCount];
         if (a._attachedTexture) {
@@ -3208,19 +3223,20 @@ ARERenderer = (function() {
         if (a._material !== ARERenderer._currentMaterial) {
           this.switchMaterial(a._material);
         }
-        _results.push(a.wglDraw(gl));
+        a.wglDraw(gl);
       }
-      return _results;
     }
+    return this;
   };
 
 
   /*
    * Canavs render
-   * @return [Void]
+   * @return [self]
+   * @private
    */
 
-  ARERenderer.prototype.cvRender = function() {
+  ARERenderer.prototype._cvRender = function() {
     var a, ctx, material, r, _i, _id, _idSector, _len, _ref, _savedColor, _savedOpacity;
     ctx = this._ctx;
     if (ctx === void 0 || ctx === null) {
@@ -3240,15 +3256,20 @@ ARERenderer = (function() {
       a = _ref[_i];
       ctx.save();
       if (this._pickRenderRequested) {
-        _savedColor = a.getColor();
-        _savedOpacity = a.getOpacity();
+        _savedColor = a._color;
+        _savedColor = {
+          r: _savedColor._r,
+          g: _savedColor._g,
+          b: _savedColor._b
+        };
+        _savedOpacity = a._opacity;
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255);
         _idSector = Math.floor(a.getId() / 255);
         this.switchMaterial(ARERenderer.MATERIAL_FLAT);
         a.setColor(_id, _idSector, 248);
         a.setOpacity(1.0);
         a.cvDraw(ctx);
-        a.setColor(_savedColor);
+        a.setColor(_savedColor.r, _savedColor.g, _savedColor.b);
         a.setOpacity(_savedOpacity);
       } else {
         a = a.updateAttachment();
@@ -3267,18 +3288,20 @@ ARERenderer = (function() {
       this._pickRenderBuff = null;
       this._pickRenderSelectionRect = null;
       this._pickRenderCB = null;
-      return this.render();
+      this.render();
     }
+    return this;
   };
 
 
   /*
    * "No render" function
    * @return [Void]
+   * @private
    */
 
-  ARERenderer.prototype.nullRender = function() {
-    var a, ctx, _i, _len, _ref, _results;
+  ARERenderer.prototype._nullRender = function() {
+    var a, ctx, _i, _len, _ref;
     ctx = this._ctx;
     if (ctx === void 0 || ctx === null) {
       return;
@@ -3290,13 +3313,12 @@ ARERenderer = (function() {
       ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
     }
     _ref = ARERenderer.actors;
-    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       a = a.updateAttachment();
-      _results.push(a.nullDraw(ctx));
+      a.nullDraw(ctx);
     }
-    return _results;
+    return this;
   };
 
 
@@ -3313,15 +3335,16 @@ ARERenderer = (function() {
         ctx = this._ctx;
         if (this._clearColor) {
           ctx.fillStyle = "rgb" + this._clearColor;
-          return ctx.fillRect(0, 0, this._width, this._height);
+          ctx.fillRect(0, 0, this._width, this._height);
         } else {
-          return ctx.clearRect(0, 0, this._width, this._height);
+          ctx.clearRect(0, 0, this._width, this._height);
         }
         break;
       case ARERenderer.RENDERER_MODE_WGL:
         gl = ARERenderer._gl;
-        return gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
+    return this;
   };
 
 
@@ -3466,7 +3489,8 @@ ARERenderer = (function() {
       }
     }
     ARERenderer._currentMaterial = material;
-    return ARELog.info("ARERenderer Switched material " + ARERenderer._currentMaterial);
+    ARELog.info("ARERenderer Switched material " + ARERenderer._currentMaterial);
+    return this;
   };
 
 
@@ -3539,7 +3563,8 @@ ARERenderer = (function() {
   ARERenderer.addTexture = function(tex) {
     param.required(tex.name);
     param.required(tex.texture);
-    return ARERenderer.textures.push(tex);
+    ARERenderer.textures.push(tex);
+    return this;
   };
 
   return ARERenderer;
@@ -5464,7 +5489,7 @@ AREEngine = (function() {
     ARELog.info("Starting render loop");
     renderer = this._renderer;
     render = function() {
-      renderer.activeRenderMethod();
+      renderer.render();
       return window.requestAnimationFrame(render);
     };
     return window.requestAnimationFrame(render);

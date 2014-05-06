@@ -346,6 +346,7 @@ class ARERawActor extends Koon
     ###
     # Physics values
     ###
+    @_physics = false # is physics current enabled on this actor?
     @_friction = null
     @_mass = null
     @_elasticity = null
@@ -510,7 +511,7 @@ class ARERawActor extends Koon
   ###
   # @return [Boolean]
   ###
-  hasPhysics: -> @_shape != null || @_body != null
+  hasPhysics: -> @_physics
 
   ###
   # Creates the internal physics body, if one does not already exist
@@ -521,6 +522,7 @@ class ARERawActor extends Koon
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
     return unless @_mass != null and @_mass != undefined
+
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
 
@@ -580,6 +582,7 @@ class ARERawActor extends Koon
 
       shapeDef.position = x: 0, y: 0
 
+    @_physics = true
     @broadcast {}, "physics.enable"
     @broadcast def: bodyDef, "physics.body.create" if bodyDef
     @broadcast def: shapeDef, "physics.shape.create" if shapeDef
@@ -590,8 +593,10 @@ class ARERawActor extends Koon
   # Destroys the physics body if one exists
   ###
   destroyPhysicsBody: ->
-    @broadcast id: @_id, "physics.shape.remove"
-    @broadcast id: @_id, "physics.body.remove"
+    if @_physics
+      @broadcast id: @_id, "physics.shape.remove"
+      @broadcast id: @_id, "physics.body.remove"
+      @_physics = false
 
   ###
   # @return [self]
@@ -2601,7 +2606,7 @@ class ARERenderer
     ARELog.info "ARE WGL initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL
-    @activeRenderMethod = @wglRender
+    @render = @_wglRender
 
     true
 
@@ -2616,7 +2621,7 @@ class ARERenderer
     ARELog.info "ARE CTX initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS
-    @activeRenderMethod = @cvRender
+    @render = @_cvRender
 
     true
 
@@ -2631,7 +2636,7 @@ class ARERenderer
     ARELog.info "ARE Null initialized"
 
     ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL
-    @activeRenderMethod = @nullRender
+    @render = @_nullRender
 
     true
 
@@ -2642,7 +2647,8 @@ class ARERenderer
   # Renders a frame, needs to be set in our constructor, by one of the init
   # methods.
   ###
-  activeRenderMethod: ->
+  render: ->
+    @
 
   ###
   # Returns instance (only one may exist, enforced in constructor)
@@ -2750,6 +2756,8 @@ class ARERenderer
       else
         ARELog.error "Can't set clear color, ARERenderer._gl not valid!"
 
+    @
+
   ###
   # Request a frame to be rendered for scene picking.
   #
@@ -2768,6 +2776,8 @@ class ARERenderer
     @_pickRenderSelectionRect = null
     @_pickRenderCB = cb
     @_pickRenderRequested = true
+
+    @
 
   ###
   # Request a frame to be rendered for scene picking.
@@ -2792,11 +2802,14 @@ class ARERenderer
     @_pickRenderCB = cb
     @_pickRenderRequested = true
 
+    @
+
   ###
   # Draws a using WebGL frame
   # @return [Void]
+  # @private
   ###
-  wglRender: ->
+  _wglRender: ->
     gl = ARERenderer._gl
 
     # Render to an off-screen buffer for screen picking if requested to do so.
@@ -2830,6 +2843,10 @@ class ARERenderer
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
         _savedColor = a._color
+        _savedColor =
+          r: _savedColor._r
+          g: _savedColor._g
+          b: _savedColor._b
         _savedOpacity = a._opacity
 
         _id = a_id - (Math.floor(a_id / 255) * 255)
@@ -2841,7 +2858,7 @@ class ARERenderer
         a.setColor _id, _idSector, 248
         a.setOpacity 1.0
         a.wglDraw gl, @_defaultShader
-        a.setColor _savedColor
+        a.setColor _savedColor.r, _savedColor.g, _savedColor.b
         a.setOpacity _savedOpacity
 
       # Switch back to a normal rendering mode, and immediately re-render to the
@@ -2872,11 +2889,14 @@ class ARERenderer
           @switchMaterial a._material
         a.wglDraw gl
 
+    @
+
   ###
   # Canavs render
-  # @return [Void]
+  # @return [self]
+  # @private
   ###
-  cvRender: ->
+  _cvRender: ->
     ctx = @_ctx
     if ctx == undefined or ctx == null then return
 
@@ -2899,8 +2919,12 @@ class ARERenderer
       if @_pickRenderRequested
         # If rendering for picking, we need to temporarily change the color
         # of the actor. Blue key is 248
-        _savedColor = a.getColor()
-        _savedOpacity = a.getOpacity()
+        _savedColor = a._color
+        _savedColor =
+          r: _savedColor._r
+          g: _savedColor._g
+          b: _savedColor._b
+        _savedOpacity = a._opacity
 
         _id = a.getId() - (Math.floor(a.getId() / 255) * 255)
         _idSector = Math.floor(a.getId() / 255)
@@ -2911,7 +2935,7 @@ class ARERenderer
         a.setColor _id, _idSector, 248
         a.setOpacity 1.0
         a.cvDraw ctx
-        a.setColor _savedColor
+        a.setColor _savedColor.r, _savedColor.g, _savedColor.b
         a.setOpacity _savedOpacity
 
       else
@@ -2942,11 +2966,14 @@ class ARERenderer
 
       @render()
 
+    @
+
   ###
   # "No render" function
   # @return [Void]
+  # @private
   ###
-  nullRender: ->
+  _nullRender: ->
 
     ctx = @_ctx
 
@@ -2964,6 +2991,8 @@ class ARERenderer
       a = a.updateAttachment()
 
       a.nullDraw ctx
+
+    @
 
   ###
   # Manually clear the screen
@@ -2984,6 +3013,8 @@ class ARERenderer
       when ARERenderer.RENDERER_MODE_WGL
         gl = ARERenderer._gl # Code asthetics
         gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
+
+    @
 
   ###
   # Returns the currently active renderer mode
@@ -3114,6 +3145,8 @@ class ARERenderer
 
     ARELog.info "ARERenderer Switched material #{ARERenderer._currentMaterial}"
 
+    @
+
   ###
   # Checks if we have a texture loaded
   #
@@ -3163,6 +3196,8 @@ class ARERenderer
     param.required tex.texture
 
     ARERenderer.textures.push tex
+
+    @
 
 class PhysicsManager extends BazarShop
 
@@ -4932,7 +4967,7 @@ class AREEngine
 
     renderer = @_renderer
     render = ->
-      renderer.activeRenderMethod()
+      renderer.render()
       window.requestAnimationFrame render
 
     window.requestAnimationFrame render

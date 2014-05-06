@@ -65,7 +65,7 @@ AREEngine = (function() {
     ARELog.info("Starting render loop");
     renderer = this._renderer;
     render = function() {
-      renderer.activeRenderMethod();
+      renderer.render();
       return window.requestAnimationFrame(render);
     };
     return window.requestAnimationFrame(render);

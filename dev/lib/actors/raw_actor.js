@@ -81,6 +81,7 @@ ARERawActor = (function(_super) {
     /*
      * Physics values
      */
+    this._physics = false;
     this._friction = null;
     this._mass = null;
     this._elasticity = null;
@@ -271,7 +272,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.hasPhysics = function() {
-    return this._shape !== null || this._body !== null;
+    return this._physics;
   };
 
 
@@ -352,6 +353,7 @@ ARERawActor = (function(_super) {
         y: 0
       };
     }
+    this._physics = true;
     this.broadcast({}, "physics.enable");
     if (bodyDef) {
       this.broadcast({
@@ -372,12 +374,15 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.destroyPhysicsBody = function() {
-    this.broadcast({
-      id: this._id
-    }, "physics.shape.remove");
-    return this.broadcast({
-      id: this._id
-    }, "physics.body.remove");
+    if (this._physics) {
+      this.broadcast({
+        id: this._id
+      }, "physics.shape.remove");
+      this.broadcast({
+        id: this._id
+      }, "physics.body.remove");
+      return this._physics = false;
+    }
   };
 
 
