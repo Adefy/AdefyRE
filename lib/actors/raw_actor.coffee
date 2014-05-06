@@ -83,6 +83,7 @@ class ARERawActor extends Koon
     ###
     # Physics values
     ###
+    @_physics = false # is physics current enabled on this actor?
     @_friction = null
     @_mass = null
     @_elasticity = null
@@ -247,7 +248,7 @@ class ARERawActor extends Koon
   ###
   # @return [Boolean]
   ###
-  hasPhysics: -> @_shape != null || @_body != null
+  hasPhysics: -> @_physics
 
   ###
   # Creates the internal physics body, if one does not already exist
@@ -258,6 +259,7 @@ class ARERawActor extends Koon
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
     return unless @_mass != null and @_mass != undefined
+
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
 
@@ -317,6 +319,7 @@ class ARERawActor extends Koon
 
       shapeDef.position = x: 0, y: 0
 
+    @_physics = true
     @broadcast {}, "physics.enable"
     @broadcast def: bodyDef, "physics.body.create" if bodyDef
     @broadcast def: shapeDef, "physics.shape.create" if shapeDef
@@ -327,8 +330,10 @@ class ARERawActor extends Koon
   # Destroys the physics body if one exists
   ###
   destroyPhysicsBody: ->
-    @broadcast id: @_id, "physics.shape.remove"
-    @broadcast id: @_id, "physics.body.remove"
+    if @_physics
+      @broadcast id: @_id, "physics.shape.remove"
+      @broadcast id: @_id, "physics.body.remove"
+      @_physics = false
 
   ###
   # @return [self]
