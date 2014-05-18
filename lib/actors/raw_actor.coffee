@@ -478,7 +478,7 @@ class ARERawActor extends Koon
   # @param [Number] layer
   ###
   setPhysicsLayer: (layer) ->
-    @_physicsLayer = 1 << param.required(layer, [0..16])
+    @_physicsLayer = 1 << param.required(layer, [0...16])
 
     @broadcast
       id: @_id
