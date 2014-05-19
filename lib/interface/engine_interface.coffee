@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 ###
 # Calculates the next power of 2 number from (x)
 # @param [Number] x
@@ -19,6 +15,8 @@ nextHighestPowerOfTwo = (x) ->
 # Renderer interface class
 class AREEngineInterface
 
+  constructor: (@_masterInterface) ->
+
   ###
   # Initialize the engine
   #
@@ -30,18 +28,8 @@ class AREEngineInterface
   ###
   initialize: (width, height, ad, log, id) ->
     param.required ad
-    param.required width
-    param.required height
-    log = param.optional log, 4
-    id = param.optional id, ""
-
-    # Clean us up just in case we are being initialized for a second time
-    ARERenderer.actors = []
-    ARERenderer.textures = []
-    ARERenderer._gl = null
-    ARERenderer.me = null
-    ARERenderer._currentMaterial = "none"
-    ARERenderer.camPos = x: 0, y: 0
+    log ||= 4
+    id ||= ""
 
     ###
     # Should WGL textures be flipped by their Y axis?
@@ -49,13 +37,15 @@ class AREEngineInterface
     ###
     @wglFlipTextureY = false
 
-    new AREEngine width, height, (are) =>
-      @_engine = are
+    new ARE width, height, (@_engine) =>
 
-      are.startRendering()
-      ad are
+      @_masterInterface.setEngine @_engine
+      @_renderer = @_engine.getRenderer()
+      @_engine.startRendering()
+
+      ad @_engine
+
     , log, id
-
 
   ###
   # Set global render mode
@@ -64,8 +54,7 @@ class AREEngineInterface
   # interfacing with us should check for the existence of the method before
   # calling it!
   ###
-  getRendererMode: -> ARERenderer.rendererMode
-  setRendererMode: (mode) -> ARERenderer.setRendererMode mode
+  getRendererMode: -> @_renderer.getActiveRendererMode()
 
   ###
   # Set engine clear color
@@ -75,12 +64,8 @@ class AREEngineInterface
   # @param [Number] b
   ###
   setClearColor: (r, g, b) ->
-    param.required r
-    param.required g
-    param.required b
-
-    if @_engine == undefined then return
-    else ARERenderer.me.setClearColor r, g, b
+    return unless @_renderer
+    @_renderer.setClearColor r, g, b
 
   ###
   # Get engine clear color as (r,g,b) JSON, fails with null
@@ -88,10 +73,10 @@ class AREEngineInterface
   # @return [String] clearcol
   ###
   getClearColor: ->
-    if @_engine == undefined then return null
+    return unless @_renderer
 
-    col = ARERenderer.me.getClearColor()
-    JSON.stringify { r: col.getR(), g: col.getG(), b: col.getB() }
+    col = @_renderer.getClearColor()
+    "{ r: #{col.getR()}, g: #{col.getG()}, b: #{col.getB()} }"
 
   ###
   # Set log level
@@ -99,9 +84,7 @@ class AREEngineInterface
   # @param [Number] level 0-4
   ###
   setLogLevel: (level) ->
-    param.required level, [0, 1, 2, 3, 4]
-
-    ARELog.level = level
+    ARELog.level = param.required level, [0, 1, 2, 3, 4]
 
   ###
   # Set camera center position. Leaving out a component leaves it unchanged
@@ -110,15 +93,18 @@ class AREEngineInterface
   # @param [Number] y
   ###
   setCameraPosition: (x, y) ->
-    ARERenderer.camPos.x = param.optional x, ARERenderer.camPos.x
-    ARERenderer.camPos.y = param.optional y, ARERenderer.camPos.y
+    currentPosition = @_renderer.getCameraPosition()
+
+    @_renderer.setCameraPosition
+      x: x or currentPosition.x
+      y: y or currentPosition.y
 
   ###
   # Fetch camera position. Returns a JSON object with x,y keys
   #
   # @return [Object]
   ###
-  getCameraPosition: -> JSON.stringify ARERenderer.camPos
+  getCameraPosition: -> JSON.stringify @_renderer.getCameraPosition()
 
   ###
   # Return our engine's width
@@ -126,10 +112,8 @@ class AREEngineInterface
   # @return [Number] width
   ###
   getWidth: ->
-    if @_engine == null or @_engine == undefined
-      -1
-    else
-      @_engine.getWidth()
+    return -1 unless @_renderer
+    @_renderer.getWidth()
 
   ###
   # Return our engine's height
@@ -137,10 +121,8 @@ class AREEngineInterface
   # @return [Number] height
   ###
   getHeight: ->
-    if @_engine == null or @_engine == undefined
-      -1
-    else
-      @_engine.getHeight()
+    return -1 unless @_renderer
+    @_renderer.getHeight()
 
   ###
   # Enable/disable benchmarking
@@ -148,6 +130,7 @@ class AREEngineInterface
   # @param [Boolean] benchmark
   ###
   setBenchmark: (status) ->
+    return unless @_engine
     @_engine.benchmark = status
     window.AREMessages.broadcast value: status, "physics.benchmark.set"
 
@@ -159,38 +142,32 @@ class AREEngineInterface
   # @param [Method] cb callback to call once the load completes (textures)
   ###
   loadManifest: (json, cb) ->
-    param.required json
-
-    manifest = JSON.parse json
+    manifest = JSON.parse param.required json
 
     ##
     ## NOTE: The manifest only contains textures now, but for the sake of
     ##       backwards compatibilty, we check for a textures array
 
-    manifest = manifest.textures if manifest.textures != undefined
-    if _.isEmpty(manifest)
-      return cb()
+    manifest = manifest.textures if manifest.textures
+    return cb() if _.isEmpty(manifest)
 
     count = 0
-
     flipTexture = @wglFlipTextureY
 
     # Load textures
     for tex in manifest
 
       # Feature check
-      if tex.compression != undefined and tex.compression != "none"
-        console.error tex.compression
-        throw new Error "Only un-compressed textures are supported!"
+      if tex.compression and tex.compression != "none"
+        throw new Error "Texture is compressed! [#{tex.compression}]"
 
-      if tex.type != undefined and tex.type != "image"
-        console.error tex.type
-        throw new Error "Only image textures are supported!"
+      if tex.type and tex.type != "image"
+        throw new Error "Texture is not an image! [#{tex.type}]"
 
       # Gogo
       @loadTexture tex.name, tex.path, flipTexture, ->
         count++
-        if count == manifest.length then cb()
+        cb() if count == manifest.length
 
   ###
   # Loads a texture, and adds it to our renderer
@@ -201,21 +178,21 @@ class AREEngineInterface
   # @param [Method] cb called when texture is loaded
   ###
   loadTexture: (name, path, flipTexture, cb) ->
-    flipTexture = param.optional flipTexture, @wglFlipTextureY
+    flipTexture = @wglFlipTextureY if typeof flipTexture != "boolean"
     ARELog.info "Loading texture: #{name}, #{path}"
 
     # Create texture and image
     img = new Image()
     img.crossOrigin = "anonymous"
 
-    gl = ARERenderer._gl
+    gl = @_renderer.getGL()
     tex = null
 
-    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
+    if @_renderer.isWGLRendererActive()
       ARELog.info "Loading Gl Texture"
 
       tex = gl.createTexture()
-      img.onload = ->
+      img.onload = =>
 
         scaleX = 1
         scaleY = 1
@@ -257,7 +234,7 @@ class AREEngineInterface
         gl.bindTexture gl.TEXTURE_2D, null
 
         # Add to renderer
-        ARERenderer.addTexture
+        @_renderer.addTexture
           name: name
           texture: tex
           width: img.width
@@ -269,10 +246,10 @@ class AREEngineInterface
 
     else
       ARELog.info "Loading Canvas Image"
-      img.onload = ->
+      img.onload = =>
 
         # Add to renderer
-        ARERenderer.addTexture
+        @_renderer.addTexture
           name: name
           texture: img
           width: img.width
@@ -289,7 +266,7 @@ class AREEngineInterface
   # @param [String] name
   # @param [Object] size
   ###
-  getTextureSize: (name) -> ARERenderer.getTextureSize name
+  getTextureSize: (name) -> @_renderer.getTextureSize name
 
   ###
   # TODO: Implement

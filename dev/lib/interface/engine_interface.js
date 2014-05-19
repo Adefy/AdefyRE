@@ -17,7 +17,9 @@ nextHighestPowerOfTwo = function(x) {
 };
 
 AREEngineInterface = (function() {
-  function AREEngineInterface() {}
+  function AREEngineInterface(_masterInterface) {
+    this._masterInterface = _masterInterface;
+  }
 
 
   /*
@@ -32,30 +34,21 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.initialize = function(width, height, ad, log, id) {
     param.required(ad);
-    param.required(width);
-    param.required(height);
-    log = param.optional(log, 4);
-    id = param.optional(id, "");
-    ARERenderer.actors = [];
-    ARERenderer.textures = [];
-    ARERenderer._gl = null;
-    ARERenderer.me = null;
-    ARERenderer._currentMaterial = "none";
-    ARERenderer.camPos = {
-      x: 0,
-      y: 0
-    };
+    log || (log = 4);
+    id || (id = "");
 
     /*
      * Should WGL textures be flipped by their Y axis?
      * NOTE. This does not affect existing textures.
      */
     this.wglFlipTextureY = false;
-    return new AREEngine(width, height, (function(_this) {
-      return function(are) {
-        _this._engine = are;
-        are.startRendering();
-        return ad(are);
+    return new ARE(width, height, (function(_this) {
+      return function(_engine) {
+        _this._engine = _engine;
+        _this._masterInterface.setEngine(_this._engine);
+        _this._renderer = _this._engine.getRenderer();
+        _this._engine.startRendering();
+        return ad(_this._engine);
       };
     })(this), log, id);
   };
@@ -70,11 +63,7 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.getRendererMode = function() {
-    return ARERenderer.rendererMode;
-  };
-
-  AREEngineInterface.prototype.setRendererMode = function(mode) {
-    return ARERenderer.setRendererMode(mode);
+    return this._renderer.getActiveRendererMode();
   };
 
 
@@ -87,14 +76,10 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.setClearColor = function(r, g, b) {
-    param.required(r);
-    param.required(g);
-    param.required(b);
-    if (this._engine === void 0) {
-
-    } else {
-      return ARERenderer.me.setClearColor(r, g, b);
+    if (!this._renderer) {
+      return;
     }
+    return this._renderer.setClearColor(r, g, b);
   };
 
 
@@ -106,15 +91,11 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.getClearColor = function() {
     var col;
-    if (this._engine === void 0) {
-      return null;
+    if (!this._renderer) {
+      return;
     }
-    col = ARERenderer.me.getClearColor();
-    return JSON.stringify({
-      r: col.getR(),
-      g: col.getG(),
-      b: col.getB()
-    });
+    col = this._renderer.getClearColor();
+    return "{ r: " + (col.getR()) + ", g: " + (col.getG()) + ", b: " + (col.getB()) + " }";
   };
 
 
@@ -125,8 +106,7 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.setLogLevel = function(level) {
-    param.required(level, [0, 1, 2, 3, 4]);
-    return ARELog.level = level;
+    return ARELog.level = param.required(level, [0, 1, 2, 3, 4]);
   };
 
 
@@ -138,8 +118,12 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.setCameraPosition = function(x, y) {
-    ARERenderer.camPos.x = param.optional(x, ARERenderer.camPos.x);
-    return ARERenderer.camPos.y = param.optional(y, ARERenderer.camPos.y);
+    var currentPosition;
+    currentPosition = this._renderer.getCameraPosition();
+    return this._renderer.setCameraPosition({
+      x: x || currentPosition.x,
+      y: y || currentPosition.y
+    });
   };
 
 
@@ -150,7 +134,7 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.getCameraPosition = function() {
-    return JSON.stringify(ARERenderer.camPos);
+    return JSON.stringify(this._renderer.getCameraPosition());
   };
 
 
@@ -161,11 +145,10 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.getWidth = function() {
-    if (this._engine === null || this._engine === void 0) {
+    if (!this._renderer) {
       return -1;
-    } else {
-      return this._engine.getWidth();
     }
+    return this._renderer.getWidth();
   };
 
 
@@ -176,11 +159,10 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.getHeight = function() {
-    if (this._engine === null || this._engine === void 0) {
+    if (!this._renderer) {
       return -1;
-    } else {
-      return this._engine.getHeight();
     }
+    return this._renderer.getHeight();
   };
 
 
@@ -191,6 +173,9 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.setBenchmark = function(status) {
+    if (!this._engine) {
+      return;
+    }
     this._engine.benchmark = status;
     return window.AREMessages.broadcast({
       value: status
@@ -208,9 +193,8 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.loadManifest = function(json, cb) {
     var count, flipTexture, manifest, tex, _i, _len, _results;
-    param.required(json);
-    manifest = JSON.parse(json);
-    if (manifest.textures !== void 0) {
+    manifest = JSON.parse(param.required(json));
+    if (manifest.textures) {
       manifest = manifest.textures;
     }
     if (_.isEmpty(manifest)) {
@@ -221,13 +205,11 @@ AREEngineInterface = (function() {
     _results = [];
     for (_i = 0, _len = manifest.length; _i < _len; _i++) {
       tex = manifest[_i];
-      if (tex.compression !== void 0 && tex.compression !== "none") {
-        console.error(tex.compression);
-        throw new Error("Only un-compressed textures are supported!");
+      if (tex.compression && tex.compression !== "none") {
+        throw new Error("Texture is compressed! [" + tex.compression + "]");
       }
-      if (tex.type !== void 0 && tex.type !== "image") {
-        console.error(tex.type);
-        throw new Error("Only image textures are supported!");
+      if (tex.type && tex.type !== "image") {
+        throw new Error("Texture is not an image! [" + tex.type + "]");
       }
       _results.push(this.loadTexture(tex.name, tex.path, flipTexture, function() {
         count++;
@@ -251,64 +233,70 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.loadTexture = function(name, path, flipTexture, cb) {
     var gl, img, tex;
-    flipTexture = param.optional(flipTexture, this.wglFlipTextureY);
+    if (typeof flipTexture !== "boolean") {
+      flipTexture = this.wglFlipTextureY;
+    }
     ARELog.info("Loading texture: " + name + ", " + path);
     img = new Image();
     img.crossOrigin = "anonymous";
-    gl = ARERenderer._gl;
+    gl = this._renderer.getGL();
     tex = null;
-    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
+    if (this._renderer.isWGLRendererActive()) {
       ARELog.info("Loading Gl Texture");
       tex = gl.createTexture();
-      img.onload = function() {
-        var canvas, ctx, h, scaleX, scaleY, w;
-        scaleX = 1;
-        scaleY = 1;
-        w = (img.width & (img.width - 1)) !== 0;
-        h = (img.height & (img.height - 1)) !== 0;
-        if (w || h) {
-          canvas = document.createElement("canvas");
-          canvas.width = nextHighestPowerOfTwo(img.width);
-          canvas.height = nextHighestPowerOfTwo(img.height);
-          scaleX = img.width / canvas.width;
-          scaleY = img.height / canvas.height;
-          ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          img = canvas;
-        }
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        ARERenderer.addTexture({
-          name: name,
-          texture: tex,
-          width: img.width,
-          height: img.height,
-          scaleX: scaleX,
-          scaleY: scaleY
-        });
-        if (cb) {
-          return cb();
-        }
-      };
+      img.onload = (function(_this) {
+        return function() {
+          var canvas, ctx, h, scaleX, scaleY, w;
+          scaleX = 1;
+          scaleY = 1;
+          w = (img.width & (img.width - 1)) !== 0;
+          h = (img.height & (img.height - 1)) !== 0;
+          if (w || h) {
+            canvas = document.createElement("canvas");
+            canvas.width = nextHighestPowerOfTwo(img.width);
+            canvas.height = nextHighestPowerOfTwo(img.height);
+            scaleX = img.width / canvas.width;
+            scaleY = img.height / canvas.height;
+            ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            img = canvas;
+          }
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipTexture);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.bindTexture(gl.TEXTURE_2D, null);
+          _this._renderer.addTexture({
+            name: name,
+            texture: tex,
+            width: img.width,
+            height: img.height,
+            scaleX: scaleX,
+            scaleY: scaleY
+          });
+          if (cb) {
+            return cb();
+          }
+        };
+      })(this);
     } else {
       ARELog.info("Loading Canvas Image");
-      img.onload = function() {
-        ARERenderer.addTexture({
-          name: name,
-          texture: img,
-          width: img.width,
-          height: img.height
-        });
-        if (cb) {
-          return cb();
-        }
-      };
+      img.onload = (function(_this) {
+        return function() {
+          _this._renderer.addTexture({
+            name: name,
+            texture: img,
+            width: img.width,
+            height: img.height
+          });
+          if (cb) {
+            return cb();
+          }
+        };
+      })(this);
     }
     return img.src = path;
   };
@@ -322,7 +310,7 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.getTextureSize = function(name) {
-    return ARERenderer.getTextureSize(name);
+    return this._renderer.getTextureSize(name);
   };
 
 

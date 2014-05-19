@@ -10,9 +10,9 @@ AREColor3 = (function() {
    * @param [Number] b blue component
    */
   function AREColor3(colOrR, g, b) {
-    colOrR = param.optional(colOrR, 0);
-    g = param.optional(g, 0);
-    b = param.optional(b, 0);
+    colOrR || (colOrR = 0);
+    g || (g = 0);
+    b || (b = 0);
     if (colOrR instanceof AREColor3) {
       this._r = colOrR.getR();
       this._g = colOrR.getG();

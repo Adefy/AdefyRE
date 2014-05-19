@@ -3,63 +3,6 @@ var ARERenderer;
 ARERenderer = (function() {
 
   /*
-   * @type [Number]
-   */
-  ARERenderer._nextID = 0;
-
-
-  /*
-   * GL Context
-   * @type [Context]
-   */
-
-  ARERenderer._gl = null;
-
-
-  /*
-   * @property [Array<Object>] actors for rendering
-   */
-
-  ARERenderer.actors = [];
-
-
-  /*
-   * @property [Object] actor_hash actor objects stored by id, for faster access
-   */
-
-  ARERenderer.actor_hash = {};
-
-
-  /*
-   * @property [Array<Object>] texture objects, with names and gl textures
-   */
-
-  ARERenderer.textures = [];
-
-
-  /*
-   * This is a tad ugly, but it works well. We need to be able to create
-   * instance objects in the constructor, and provide one resulting object
-   * to any class that asks for it, without an instance avaliable. @me is set
-   * in the constructor, and an error is thrown if it is not already null.
-   *
-   * @property [ARERenderer] instance reference, enforced const in constructor
-   */
-
-  ARERenderer.me = null;
-
-
-  /*
-   * @property [Object] camPos Camera position, with x and y keys
-   */
-
-  ARERenderer.camPos = {
-    x: 0,
-    y: 0
-  };
-
-
-  /*
    * Renderer Modes
    * 0: null
    *    The null renderer is the same as the canvas renderer, however
@@ -70,40 +13,11 @@ ARERenderer = (function() {
    *    All rendering will be done using WebGL
    * @enum
    */
+  ARERenderer.RENDER_MODE_NULL = 0;
 
-  ARERenderer.RENDERER_MODE_NULL = 0;
+  ARERenderer.RENDER_MODE_CANVAS = 1;
 
-  ARERenderer.RENDERER_MODE_CANVAS = 1;
-
-  ARERenderer.RENDERER_MODE_WGL = 2;
-
-
-  /*
-   * @type [Array<Number>]
-   */
-
-  ARERenderer.rendererModes = [0, 1, 2];
-
-
-  /*
-   * This denote the rendererMode that is wanted by the user
-   * @type [Number]
-   */
-
-  ARERenderer.rendererMode = ARERenderer.RENDERER_MODE_WGL;
-
-  ARERenderer.setRendererMode = function(mode) {
-    return this.rendererMode = param.optional(mode, null, this.rendererModes);
-  };
-
-
-  /*
-   * denotes the currently chosen internal Renderer, this value may be different
-   * from the rendererMode, especially if webgl failed to load.
-   * @type [Number]
-   */
-
-  ARERenderer.activeRendererMode = null;
+  ARERenderer.RENDER_MODE_WGL = 2;
 
 
   /*
@@ -112,30 +26,23 @@ ARERenderer = (function() {
    * @enum
    */
 
-  ARERenderer.RENDER_MODE_LINE_LOOP = 0;
+  ARERenderer.GL_MODE_LINE_LOOP = 0;
 
-  ARERenderer.RENDER_MODE_TRIANGLE_FAN = 1;
+  ARERenderer.GL_MODE_TRIANGLE_FAN = 1;
 
-  ARERenderer.RENDER_MODE_TRIANGLE_STRIP = 2;
-
-
-  /*
-   * @type [Array<Number>]
-   */
-
-  ARERenderer.renderModes = [0, 1, 2];
+  ARERenderer.GL_MODE_TRIANGLE_STRIP = 2;
 
 
   /*
-   * Render Style
    * A render style determines how a canvas element is drawn, this can
    * also be used for WebGL elements as well, as they fine tune the drawing
    * process.
+  
    * STROKE will work with all RENDER_MODE*.
-   * FILL will work with RENDER_MODE_TRIANGLE_FAN and
-   * RENDER_MODE_TRIANGLE_STRIP only.
+   * FILL will work with GL_MODE_TRIANGLE_FAN and
+   * GL_MODE_TRIANGLE_STRIP only.
    * FILL_AND_STROKE will work with all current render modes, however
-   * RENDER_MODE_LINE_LOOP will only use STROKE
+   * GL_MODE_LINE_LOOP will only use STROKE
    * @enum
    */
 
@@ -144,13 +51,6 @@ ARERenderer = (function() {
   ARERenderer.RENDER_STYLE_FILL = 2;
 
   ARERenderer.RENDER_STYLE_FILL_AND_STROKE = 3;
-
-
-  /*
-   * @type [Array<Number>]
-   */
-
-  ARERenderer.renderStyles = [0, 1, 2, 3];
 
 
   /*
@@ -167,123 +67,103 @@ ARERenderer = (function() {
 
 
   /*
-   * Signifies the current material; when this doesn't match, a material change
-   * is made (different shader program)
-   * @type [MATERIAL_*]
-   */
-
-  ARERenderer._currentMaterial = "none";
-
-
-  /*
-   * Should 0, 0 always be the top left position?
-   */
-
-  ARERenderer.force_pos0_0 = true;
-
-
-  /*
-   * Should the screen be cleared every frame, or should the engine handle
-   * screen clearing. This option is only valid with the WGL renderer mode.
-   * @type [Boolean]
-   */
-
-  ARERenderer.alwaysClearScreen = false;
-
-
-  /*
    * Sets up the renderer, using either an existing canvas or creating a new one
    * If a canvasId is provided but the element is not a canvas, it is treated
    * as a parent. If it is a canvas, it is adopted as our canvas.
    *
    * Bails early if the GL context could not be created
    *
-   * @param [String] id canvas id or parent selector
-   * @param [Number] width canvas width
-   * @param [Number] height canvas height
+   * @param [Object] options renderer initialization options
+   * @option options [String] canvasId canvas id or parent selector
+   * @option options [Number] width canvas width
+   * @option options [Number] height canvas height
+   * @option options [Number] renderMode optional render mode, defaults to WebGL
+   * @option options [Boolean] antialias default true
+   * @option options [Boolean] alpha default true
+   * @option options [Boolean] premultipliedAlpha default true
+   * @option options [Boolean] depth default true
+   * @option options [Boolean] stencil default false
+   * @option options [Boolean] preserveDrawingBuffer manual clears, default false
+   *
    * @return [Boolean] success
    */
 
-  function ARERenderer(canvasId, _width, _height) {
-    var _createCanvas;
-    this._width = _width;
-    this._height = _height;
-    canvasId = param.optional(canvasId, "");
+  function ARERenderer(opts) {
+    var canvasId, renderMode, _createCanvas;
+    this._width = param.required(opts.width);
+    this._height = param.required(opts.height);
+    canvasId = opts.canvasId || "";
+    renderMode = opts.renderMode || ARERenderer.RENDER_MODE_WGL;
+    opts.premultipliedAlpha || (opts.premultipliedAlpha = true);
+    opts.antialias || (opts.antialias = true);
+    opts.alpha || (opts.alpha = true);
+    opts.depth || (opts.depth = true);
+    opts.stencil || (opts.stencil = false);
+    this._alwaysClearScreen = !!opts.preserveDrawingBuffer;
+    this._nextID = 0;
     this._defaultShader = null;
     this._canvas = null;
     this._ctx = null;
+    this._gl = null;
+    this._actors = [];
+    this._actor_hash = {};
+    this._textures = [];
+    this._currentMaterial = "none";
+    this._activeRendererMode = null;
+    this._cameraPosition = {
+      x: 0,
+      y: 0
+    };
     this._pickRenderRequested = false;
     this._pickRenderBuff = null;
     this._pickRenderSelectionRect = null;
     this._pickRenderCB = null;
-    this.initError = void 0;
-    if (canvasId.length === 0) {
-      canvasId = void 0;
-    }
-    if (ARERenderer.me !== null) {
-      throw new Error("Only one instance of ARERenderer can be created!");
-    } else {
-      ARERenderer.me = this;
-    }
-    this._width = param.optional(this._width, 800);
-    this._height = param.optional(this._height, 600);
-    if (this._width <= 1 || this._height <= 1) {
-      throw new Error("Canvas must be at least 2x2 in size");
-    }
-    _createCanvas = function(parent, id, w, h) {
-      var _c;
-      _c = ARERenderer.me._canvas = document.createElement("canvas");
-      _c.width = w;
-      _c.height = h;
-      _c.id = "are_canvas";
-      if (parent === "body") {
-        return document.getElementsByTagName(parent)[0].appendChild(_c);
-      } else {
-        return document.getElementById(parent).appendChild(_c);
-      }
-    };
-    if (canvasId === void 0 || canvasId === null) {
-      _createCanvas("body", "are_canvas", this._width, this._height);
-      ARELog.info("Creating canvas #are_canvas [" + this._width + "x" + this._height + "]");
-      this._canvas = document.getElementById("are_canvas");
+    this._clearColor = new AREColor3(255, 255, 255);
+    _createCanvas = (function(_this) {
+      return function(parent, id) {
+        _this._canvas = document.createElement("canvas");
+        _this._canvas.width = _this._width;
+        _this._canvas.height = _this._height;
+        _this._canvas.id = id;
+        document.querySelector(parent).appendChild(_this._canvas);
+        return ARELog.info("Creating canvas #" + id + " [" + _this._width + "x" + _this._height + "]");
+      };
+    })(this);
+    if (!canvasId) {
+      _createCanvas("body", "are_canvas");
     } else {
       this._canvas = document.getElementById(canvasId);
-      if (this._canvas === null) {
-        _createCanvas("body", canvasId, this._width, this._height);
-        ARELog.info("Creating canvas #" + canvasId + " [" + this._width + "x" + this._height + "]");
-        this._canvas = document.getElementById(canvasId);
+      if (!this._canvas) {
+        _createCanvas("body", canvasId);
       } else {
         if (this._canvas.nodeName.toLowerCase() === "canvas") {
-          ARELog.warn("Canvas exists, ignoring supplied dimensions");
-          this._width = this._canvas.width;
-          this._height = this._canvas.height;
-          ARELog.info("Using canvas #" + canvasId + " [" + this._width + "x" + this._height + "]");
+          this._canvas.width = this._width;
+          this._canvas.height = this._height;
         } else {
-          _createCanvas(canvasId, "are_canvas", this._width, this._height);
-          ARELog.info("Creating canvas #are_canvas [" + this._width + "x" + this._height + "]");
+          _createCanvas(canvasId, "are_canvas");
         }
       }
     }
-    if (this._canvas === null) {
-      return ARELog.error("Canvas does not exist!");
+    if (!this._canvas) {
+      throw new Error("Failed to create or find suitable canvas!");
     }
-    switch (ARERenderer.rendererMode) {
-      case ARERenderer.RENDERER_MODE_NULL:
-        this.initializeNullContext();
+    switch (renderMode) {
+      case ARERenderer.RENDER_MODE_NULL:
+        this._initializeNullRendering();
         break;
-      case ARERenderer.RENDERER_MODE_CANVAS:
-        this.initializeCanvasContext();
+      case ARERenderer.RENDER_MODE_CANVAS:
+        this._initializeCanvasRendering();
         break;
-      case ARERenderer.RENDERER_MODE_WGL:
-        if (!this.initializeWGLContext(this._canvas)) {
+      case ARERenderer.RENDER_MODE_WGL:
+        if (!this._initializeWebGLRendering(opts)) {
           ARELog.info("Falling back on regular canvas renderer");
-          this.initializeCanvasContext();
+          this._initializeCanvasRendering();
         }
         break;
       default:
-        ARELog.error("Invalid Renderer " + ARERenderer.rendererMode);
+        throw new Error("Invalid Renderer " + rendererMode);
     }
-    ARELog.info("Using the " + ARERenderer.activeRendererMode + " renderer mode");
+    ARELog.info("Using the " + this._activeRendererMode + " renderer mode");
     this.setClearColor(0, 0, 0);
     this.switchMaterial(ARERenderer.MATERIAL_FLAT);
   }
@@ -291,62 +171,59 @@ ARERenderer = (function() {
 
   /*
    * Initializes a WebGL renderer context
-   * @return [Boolean]
+   *
+   * @return [Boolean] success
    */
 
-  ARERenderer.prototype.initializeWGLContext = function(canvas) {
-    var gl, options, shaders, solidShader, textureShader, wireShader;
-    options = {
-      preserveDrawingBuffer: ARERenderer.alwaysClearScreen,
-      antialias: true,
-      alpha: true,
-      premultipliedAlpha: true,
-      depth: true,
-      stencil: false
-    };
-    gl = canvas.getContext("webgl", options);
-    if (gl === null) {
+  ARERenderer.prototype._initializeWebGLRendering = function(options) {
+    var b, g, r, shaders, solidShader, textureShader, wireShader;
+    this._gl = this._canvas.getContext("webgl", options);
+    if (!this._gl) {
       ARELog.warn("Continuing with experimental webgl support");
-      gl = canvas.getContext("experimental-webgl");
+      this._gl = this._canvas.getContext("experimental-webgl", options);
     }
-    if (gl === null) {
-      return;
+    if (!this._gl) {
+      ARELog.warn("Failed to obtain WebGL context");
+      return false;
     }
-    ARERenderer._gl = gl;
-    ARELog.info("Created WebGL context");
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.BLEND);
-    gl.depthFunc(gl.LEQUAL);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    ARELog.info("Renderer initialized");
+    ARELog.info("Obtained WebGL context");
+    this._gl.enable(this._gl.DEPTH_TEST);
+    this._gl.enable(this._gl.BLEND);
+    this._gl.depthFunc(this._gl.LEQUAL);
+    this._gl.blendFunc(this._gl.SRC_ALPHA, this._gl.ONE_MINUS_SRC_ALPHA);
+    r = this._clearColor.getR(true);
+    g = this._clearColor.getG(true);
+    b = this._clearColor.getB(true);
+    this._gl.clearColor(r, g, b, 1.0);
     shaders = AREShader.shaders;
     wireShader = shaders.wire;
     solidShader = shaders.solid;
     textureShader = shaders.texture;
-    this._defaultShader = new AREShader(solidShader.vertex, solidShader.fragment, gl, true);
+    this._defaultShader = new AREShader(solidShader.vertex, solidShader.fragment, this._gl, true);
     this._defaultShader.generateHandles();
-    this._wireShader = new AREShader(wireShader.vertex, wireShader.fragment, gl, true);
+    this._wireShader = new AREShader(wireShader.vertex, wireShader.fragment, this._gl, true);
     this._wireShader.generateHandles();
-    this._texShader = new AREShader(textureShader.vertex, textureShader.fragment, gl, true);
+    this._texShader = new AREShader(textureShader.vertex, textureShader.fragment, this._gl, true);
     this._texShader.generateHandles();
     ARELog.info("Initialized shaders");
-    ARELog.info("ARE WGL initialized");
-    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL;
+    this._activeRendererMode = ARERenderer.RENDER_MODE_WGL;
     this.render = this._wglRender;
+    ARELog.info("WebgL renderer initialized");
     return true;
   };
 
 
   /*
    * Initializes a canvas renderer context
+   *
    * @return [Boolean]
    */
 
-  ARERenderer.prototype.initializeCanvasContext = function() {
+  ARERenderer.prototype._initializeCanvasRendering = function() {
     this._ctx = this._canvas.getContext("2d");
-    ARELog.info("ARE CTX initialized");
-    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS;
+    this._activeRendererMode = ARERenderer.RENDER_MODE_CANVAS;
     this.render = this._cvRender;
+    ARELog.info("Canvas renderer initialized");
     return true;
   };
 
@@ -356,11 +233,11 @@ ARERenderer = (function() {
    * @return [Boolean]
    */
 
-  ARERenderer.prototype.initializeNullContext = function() {
+  ARERenderer.prototype._initializeNullRendering = function() {
     this._ctx = this._canvas.getContext("2d");
-    ARELog.info("ARE Null initialized");
-    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL;
+    this._activeRendererMode = ARERenderer.RENDER_MODE_NULL;
     this.render = this._nullRender;
+    ARELog.info("Null renderer initialized");
     return true;
   };
 
@@ -373,20 +250,7 @@ ARERenderer = (function() {
    * methods.
    */
 
-  ARERenderer.prototype.render = function() {
-    return this;
-  };
-
-
-  /*
-   * Returns instance (only one may exist, enforced in constructor)
-   *
-   * @return [ARERenderer] me
-   */
-
-  ARERenderer.getMe = function() {
-    return ARERenderer.me;
-  };
+  ARERenderer.prototype.render = function() {};
 
 
   /*
@@ -445,17 +309,6 @@ ARERenderer = (function() {
 
 
   /*
-   * Returns static gl object
-   *
-   * @return [Object] gl
-   */
-
-  ARERenderer.getGL = function() {
-    return ARERenderer._gl;
-  };
-
-
-  /*
    * Returns canvas width
    *
    * @return [Number] width
@@ -463,10 +316,6 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.getWidth = function() {
     return this._width;
-  };
-
-  ARERenderer.getWidth = function() {
-    return (this.me && this.me.getWidth()) || -1;
   };
 
 
@@ -480,8 +329,12 @@ ARERenderer = (function() {
     return this._height;
   };
 
-  ARERenderer.getHeight = function() {
-    return (this.me && this.me.getHeight()) || -1;
+  ARERenderer.prototype.setCameraPosition = function(_cameraPosition) {
+    this._cameraPosition = _cameraPosition;
+  };
+
+  ARERenderer.prototype.getCameraPosition = function() {
+    return this._cameraPosition;
   };
 
 
@@ -511,7 +364,8 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.setClearColor = function(colOrR, g, b) {
-    if (this._clearColor === void 0) {
+    var r;
+    if (!this._clearColor) {
       this._clearColor = new AREColor3;
     }
     if (colOrR instanceof AREColor3) {
@@ -521,14 +375,12 @@ ARERenderer = (function() {
       this._clearColor.setG(g || 0);
       this._clearColor.setB(b || 0);
     }
-    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
-      colOrR = this._clearColor.getR(true);
+    if (this._activeRendererMode === ARERenderer.RENDER_MODE_WGL) {
+      r = this._clearColor.getR(true);
       g = this._clearColor.getG(true);
       b = this._clearColor.getB(true);
-      if (ARERenderer._gl !== null && ARERenderer._gl !== void 0) {
-        ARERenderer._gl.clearColor(colOrR, g, b, 1.0);
-      } else {
-        ARELog.error("Can't set clear color, ARERenderer._gl not valid!");
+      if (this._gl) {
+        this._gl.clearColor(r, g, b, 1.0);
       }
     }
     return this;
@@ -546,8 +398,7 @@ ARERenderer = (function() {
     param.required(buffer);
     param.required(cb);
     if (this._pickRenderRequested) {
-      ARELog.warn("Pick render already requested! No request queue");
-      return;
+      return ARELog.warn("Pick render already requested! No request queue");
     }
     this._pickRenderBuff = buffer;
     this._pickRenderSelectionRect = null;
@@ -572,8 +423,7 @@ ARERenderer = (function() {
     param.required(selectionRect);
     param.required(cb);
     if (this._pickRenderRequested) {
-      ARELog.warn("Pick render already requested! No request queue");
-      return;
+      return ARELog.warn("Pick render already requested! No request queue");
     }
     this._pickRenderBuff = null;
     this._pickRenderSelectionRect = selectionRect;
@@ -591,17 +441,17 @@ ARERenderer = (function() {
 
   ARERenderer.prototype._wglRender = function() {
     var a, a_id, actorCount, gl, _id, _idSector, _savedColor, _savedOpacity;
-    gl = ARERenderer._gl;
+    gl = this._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
     }
-    if (ARERenderer.alwaysClearScreen) {
+    if (this._alwaysClearScreen) {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
-    actorCount = ARERenderer.actors.length;
+    actorCount = this._actors.length;
     if (this._pickRenderRequested) {
       while (actorCount--) {
-        a = ARERenderer.actors[actorCount];
+        a = this._actors[actorCount];
         a_id = a._id;
         _savedColor = a._color;
         _savedColor = {
@@ -627,11 +477,11 @@ ARERenderer = (function() {
       this.render();
     } else {
       while (actorCount--) {
-        a = ARERenderer.actors[actorCount];
+        a = this._actors[actorCount];
         if (a._attachedTexture) {
           a = a.updateAttachment();
         }
-        if (a._material !== ARERenderer._currentMaterial) {
+        if (a._material !== this._currentMaterial) {
           this.switchMaterial(a._material);
         }
         a.wglDraw(gl);
@@ -649,10 +499,10 @@ ARERenderer = (function() {
 
   ARERenderer.prototype._cvRender = function() {
     var a, ctx, material, r, _i, _id, _idSector, _len, _ref, _savedColor, _savedOpacity;
-    ctx = this._ctx;
-    if (ctx === void 0 || ctx === null) {
+    if (!this._ctx) {
       return;
     }
+    ctx = this._ctx;
     if (this._clearColor) {
       ctx.fillStyle = "rgb" + this._clearColor;
       ctx.fillRect(0, 0, this._width, this._height);
@@ -662,7 +512,7 @@ ARERenderer = (function() {
     ctx.save();
     ctx.translate(0, this._height);
     ctx.scale(1, -1);
-    _ref = ARERenderer.actors;
+    _ref = this._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       ctx.save();
@@ -684,7 +534,7 @@ ARERenderer = (function() {
         a.setOpacity(_savedOpacity);
       } else {
         a = a.updateAttachment();
-        if ((material = a.getMaterial()) !== ARERenderer._currentMaterial) {
+        if ((material = a.getMaterial()) !== this._currentMaterial) {
           this.switchMaterial(material);
         }
         a.cvDraw(ctx);
@@ -713,17 +563,17 @@ ARERenderer = (function() {
 
   ARERenderer.prototype._nullRender = function() {
     var a, ctx, _i, _len, _ref;
-    ctx = this._ctx;
-    if (ctx === void 0 || ctx === null) {
+    if (!this._ctx) {
       return;
     }
+    ctx = this._ctx;
     if (this._clearColor) {
       ctx.fillStyle = "rgb" + this._clearColor;
       ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
     } else {
       ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
     }
-    _ref = ARERenderer.actors;
+    _ref = this._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       a = a.updateAttachment();
@@ -740,20 +590,17 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.clearScreen = function() {
-    var ctx, gl;
-    switch (ARERenderer.activeRendererMode) {
-      case ARERenderer.RENDERER_MODE_CANVAS:
-        ctx = this._ctx;
+    switch (this._activeRendererMode) {
+      case ARERenderer.RENDER_MODE_CANVAS:
         if (this._clearColor) {
-          ctx.fillStyle = "rgb" + this._clearColor;
-          ctx.fillRect(0, 0, this._width, this._height);
+          this._ctx.fillStyle = "rgb" + this._clearColor;
+          this._ctx.fillRect(0, 0, this._width, this._height);
         } else {
-          ctx.clearRect(0, 0, this._width, this._height);
+          this._ctx.clearRect(0, 0, this._width, this._height);
         }
         break;
-      case ARERenderer.RENDERER_MODE_WGL:
-        gl = ARERenderer._gl;
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      case ARERenderer.RENDER_MODE_WGL:
+        this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
     }
     return this;
   };
@@ -765,7 +612,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.getActiveRendererMode = function() {
-    return ARERenderer.activeRendererMode;
+    return this._activeRendererMode;
   };
 
 
@@ -775,7 +622,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.isNullRendererActive = function() {
-    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_NULL;
+    return this._activeRendererMode === ARERenderer.RENDER_MODE_NULL;
   };
 
 
@@ -785,7 +632,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.isCanvasRendererActive = function() {
-    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_CANVAS;
+    return this._activeRendererMode === ARERenderer.RENDER_MODE_CANVAS;
   };
 
 
@@ -795,7 +642,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.isWGLRendererActive = function() {
-    return this.getActiveRendererMode() === ARERenderer.RENDERER_MODE_WGL;
+    return this._activeRendererMode === ARERenderer.RENDER_MODE_WGL;
   };
 
 
@@ -804,8 +651,19 @@ ARERenderer = (function() {
    * @return [Number] id unique id
    */
 
-  ARERenderer.getNextId = function() {
-    return ARERenderer._nextID++;
+  ARERenderer.prototype.getNextId = function() {
+    return this._nextID++;
+  };
+
+
+  /*
+   * Get GL context
+   *
+   * @return [Context] gl
+   */
+
+  ARERenderer.prototype.getGL = function() {
+    return this._gl;
   };
 
 
@@ -820,16 +678,13 @@ ARERenderer = (function() {
    * @return [ARERawActor] actor added actor
    */
 
-  ARERenderer.addActor = function(actor, layer) {
+  ARERenderer.prototype.addActor = function(actor, layer) {
     var layerIndex;
     param.required(actor);
-    layer = param.optional(layer, actor.layer);
-    if (actor.layer !== layer) {
-      actor.layer = layer;
-    }
-    layerIndex = _.sortedIndex(ARERenderer.actors, actor, "layer");
-    ARERenderer.actors.splice(layerIndex, 0, actor);
-    ARERenderer.actor_hash[actor.getId()] = actor;
+    actor.layer = layer || actor.layer;
+    layerIndex = _.sortedIndex(this._actors, actor, "layer");
+    this._actors.splice(layerIndex, 0, actor);
+    this._actor_hash[actor.getId()] = actor;
     return actor;
   };
 
@@ -837,31 +692,25 @@ ARERenderer = (function() {
   /*
    * Remove an actor from our render list by either actor, or id
    *
-   * @param [ARERawActor,Number] actor actor, or id of actor to remove
-   * @param [Boolean] nodestroy optional, defaults to false
+   * @param [ARERawActor, Number] actorId actor id, or actor
+   * @param [Boolean] noDestroy optional, defaults to false
    * @return [Boolean] success
    */
 
-  ARERenderer.removeActor = function(oactor, nodestroy) {
-    var a, actor, i, _i, _len, _ref;
-    param.required(oactor);
-    nodestroy = param.optional(nodestroy, false);
-    actor = oactor;
-    if (actor instanceof ARERawActor) {
-      actor = actor.getId();
+  ARERenderer.prototype.removeActor = function(actorId, noDestroy) {
+    var removedActor;
+    param.required(actorId);
+    noDestroy = !!noDestroy;
+    if (actorId instanceof ARERawActor) {
+      actorId = actorId.getId();
     }
-    _ref = ARERenderer.actors;
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      a = _ref[i];
-      if (a.getId() === actor) {
-        ARERenderer.actors.splice(i, 1);
-        if (!nodestroy) {
-          oactor.destroy();
-        }
-        return true;
-      }
+    removedActor = _.remove(this._actors, function(a) {
+      return a.getId() === actorId;
+    });
+    if (removedActor && !noDestroy) {
+      removedActor.destroy();
     }
-    return false;
+    return !!removedActor;
   };
 
 
@@ -874,13 +723,13 @@ ARERenderer = (function() {
   ARERenderer.prototype.switchMaterial = function(material) {
     var gl, handles, ortho;
     param.required(material);
-    if (material === ARERenderer._currentMaterial) {
-      return false;
+    if (material === this._currentMaterial) {
+      return;
     }
     if (this.isWGLRendererActive()) {
       ortho = Matrix4.makeOrtho(0, this._width, 0, this._height, -10, 10).flatten();
       ortho[15] = 1.0;
-      gl = ARERenderer._gl;
+      gl = this._gl;
       switch (material) {
         case ARERenderer.MATERIAL_FLAT:
           gl.useProgram(this._defaultShader.getProgram());
@@ -899,8 +748,8 @@ ARERenderer = (function() {
           throw new Error("Unknown material " + material);
       }
     }
-    ARERenderer._currentMaterial = material;
-    ARELog.info("ARERenderer Switched material " + ARERenderer._currentMaterial);
+    this._currentMaterial = material;
+    ARELog.info("Switched material " + this._currentMaterial);
     return this;
   };
 
@@ -911,16 +760,10 @@ ARERenderer = (function() {
    * @param [String] name texture name to check for
    */
 
-  ARERenderer.hasTexture = function(name) {
-    var t, _i, _len, _ref;
-    _ref = ARERenderer.textures;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      t = _ref[_i];
-      if (t.name === name) {
-        return true;
-      }
-    }
-    return false;
+  ARERenderer.prototype.hasTexture = function(name) {
+    return !!_.find(this._textures, function(t) {
+      return t.name === name;
+    });
   };
 
 
@@ -931,17 +774,11 @@ ARERenderer = (function() {
    * @param [Object] texture
    */
 
-  ARERenderer.getTexture = function(name) {
-    var t, _i, _len, _ref;
+  ARERenderer.prototype.getTexture = function(name) {
     param.required(name);
-    _ref = ARERenderer.textures;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      t = _ref[_i];
-      if (t.name === name) {
-        return t;
-      }
-    }
-    return null;
+    return _.find(this._textures, function(t) {
+      return t.name === name;
+    });
   };
 
 
@@ -952,7 +789,7 @@ ARERenderer = (function() {
    * @param [Object] size
    */
 
-  ARERenderer.getTextureSize = function(name) {
+  ARERenderer.prototype.getTextureSize = function(name) {
     var t;
     param.required(name);
     if (t = this.getTexture(name)) {
@@ -971,10 +808,11 @@ ARERenderer = (function() {
    * @param [Object] texture texture object with name and gl texture
    */
 
-  ARERenderer.addTexture = function(tex) {
+  ARERenderer.prototype.addTexture = function(tex) {
+    param.required(tex);
     param.required(tex.name);
     param.required(tex.texture);
-    ARERenderer.textures.push(tex);
+    this._textures.push(tex);
     return this;
   };
 

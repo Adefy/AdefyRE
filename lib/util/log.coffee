@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # Tiny logging class created to be able to selectively
 # silence all logging in production, or by level. Also supports tags
 # similar to the 'spew' npm module

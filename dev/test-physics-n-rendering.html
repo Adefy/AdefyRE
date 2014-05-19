@@ -43,26 +43,20 @@
     var width = window.innerWidth;
     var height = window.innerHeight - 30;
 
-    //ARERenderer.force_pos0_0 = false
-    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_NULL);
-    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_CANVAS);
-    ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_WGL);
-
-    window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
-      window.AdefyRE.Engine().wglFlipTextureY = true;
+    window.AdefyRE.Engine().initialize(width, height, function(engine) {
+      engine.wglFlipTextureY = true;
       window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
 
-        //window.engine.setClearColor(255, 255, 255);
-        window.AdefyRE.Engine().setClearColor(0, 128, 128);
+        var renderer = window.renderer = engine.getRenderer();
+        engine.setClearColor(0, 128, 128);
 
-        var ground = window.ground = new ARERectangleActor(width, height * 0.05);
+        var ground = new ARERectangleActor(renderer, width, height * 0.05);
         ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
-        //ground.setPosition({ x: width / 2, y: ground.getHeight() / 2 })
           .setTexture("metalGrate")
           .setTextureRepeat(20, 0.5)
           .createPhysicsBody(0, 0.7, 0.6);
 
-        new ARECircleActor(128)
+        new ARECircleActor(renderer, 128)
           .setTexture("roundThing")
           .setPosition({ x: width / 2, y: height / 2 })
           .createPhysicsBody(100, 0.8, 0.7);
@@ -75,7 +69,7 @@
           var friction = Math.random();
           var elasticity = Math.random() * 1.2;
 
-          var ball = new ARECircleActor(Math.round(Math.random() * 32) + 5)
+          var ball = new ARECircleActor(renderer, Math.round(Math.random() * 32) + 5)
             .setPosition({ x: x, y: y })
             .setTexture("roundThing")
             .setStrokeColor(0, 0, 0)
@@ -87,15 +81,15 @@
           setTimeout(function() {
             createBall();
             refreshActorCount();
-            //if(ARERenderer.actors.length < 600)
+            if(renderer._actors.length < 500)
               scheduleBallTimeout();
           }, Math.random() * 50);
         };
 
         var modestr = "N/A";
-        if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
+        if (renderer.isWGLRendererActive())
           modestr = "WebGL"
-        else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
+        else if (renderer.isCanvasRendererActive())
           modestr = "Canvas"
 
         document.getElementById("RendererMode").innerHTML = modestr;
@@ -105,13 +99,13 @@
         var ballGCTimeout = function() {
           setTimeout(function() {
             var to_remove = [];
-            for (var i = 0; i < ARERenderer.actors.length; i++) {
-              actor = ARERenderer.actors[i];
+            for (var i = 0; i < renderer._actors.length; i++) {
+              actor = renderer._actors[i];
               if (actor.getPosition().y < -height)
                 to_remove.push(actor);
             };
             for (var i = 0; i < to_remove.length; i++) {
-              ARERenderer.removeActor(to_remove[i]);
+              renderer.removeActor(to_remove[i]);
             };
             ballGCTimeout();
           }, 5000);

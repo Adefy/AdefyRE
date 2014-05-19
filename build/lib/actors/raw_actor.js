@@ -23,11 +23,13 @@ ARERawActor = (function(_super) {
    * @param [Array<Number>] texverts flat array of texture coords, optional
    */
 
-  function ARERawActor(verts, texverts) {
+  function ARERawActor(_renderer, verts, texverts) {
+    this._renderer = _renderer;
+    param.required(_renderer);
     param.required(verts);
-    texverts = param.optional(texverts, null);
     this._initializeValues();
-    this._registerWithRenderer();
+    this._id = this._renderer.getNextId();
+    this._renderer.addActor(this);
     this.updateVertices(verts, texverts);
     this.setColor(new AREColor3(255, 255, 255));
     this.clearTexture();
@@ -37,25 +39,13 @@ ARERawActor = (function(_super) {
 
 
   /*
-   * Gets an id and registers our existence with the renderer
-   * @private
-   */
-
-  ARERawActor.prototype._registerWithRenderer = function() {
-    this._id = ARERenderer.getNextId();
-    return ARERenderer.addActor(this);
-  };
-
-
-  /*
    * Sets up default values and initializes our data structures.
    * @private
    */
 
   ARERawActor.prototype._initializeValues = function() {
-    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
-      this._gl = ARERenderer._gl;
-      if (this._gl === void 0 || this._gl === null) {
+    if (this._renderer.isWGLRendererActive()) {
+      if (!(this._gl = this._renderer.getGL())) {
         throw new Error("GL context is required for actor initialization!");
       }
     }
@@ -64,7 +54,6 @@ ARERawActor = (function(_super) {
     this._strokeWidth = 1;
     this._colArray = null;
     this._opacity = 1.0;
-    this.lit = false;
     this._visible = true;
     this.layer = 0;
     this._physicsLayer = ~0;
@@ -177,8 +166,8 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setLayer = function(layer) {
     this.layer = param.required(layer);
-    ARERenderer.removeActor(this, true);
-    return ARERenderer.addActor(this);
+    this._renderer.removeActor(this, true);
+    return this._renderer.addActor(this);
   };
 
 
@@ -192,11 +181,11 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setTexture = function(name) {
     param.required(name);
-    if (!ARERenderer.hasTexture(name)) {
+    if (!this._renderer.hasTexture(name)) {
       throw new Error("No such texture loaded: " + name);
     }
-    this._texture = ARERenderer.getTexture(name);
-    this.setShader(ARERenderer.getMe().getTextureShader());
+    this._texture = this._renderer.getTexture(name);
+    this.setShader(this._renderer.getTextureShader());
     this._material = ARERenderer.MATERIAL_TEXTURE;
     return this;
   };
@@ -211,7 +200,7 @@ ARERawActor = (function(_super) {
     this._texture = void 0;
     this._texRepeatX = 1;
     this._texRepeatY = 1;
-    this.setShader(ARERenderer.getMe().getDefaultShader());
+    this.setShader(this._renderer.getDefaultShader());
     this._material = ARERenderer.MATERIAL_FLAT;
     return this;
   };
@@ -253,14 +242,14 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.setShader = function(shader) {
-    if (ARERenderer.activeRendererMode !== ARERenderer.RENDERER_MODE_WGL) {
+    if (this._renderer.isWGLRendererActive()) {
       return;
     }
     param.required(shader);
-    if (shader.getProgram() === null) {
+    if (!shader.getProgram()) {
       throw new Error("Shader has to be built before it can be used!");
     }
-    if (shader.getHandles() === null) {
+    if (!shader.getHandles()) {
       shader.generateHandles();
     }
     return this._sh_handles = shader.getHandles();
@@ -289,7 +278,7 @@ ARERawActor = (function(_super) {
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
-    if (!(this._mass !== null && this._mass !== void 0)) {
+    if (!this._mass) {
       return;
     }
     this._friction || (this._friction = ARERawActor.defaultFriction);
@@ -297,7 +286,7 @@ ARERawActor = (function(_super) {
     if (this._mass < 0) {
       this._mass = 0;
     }
-    if (this._friction < 0) {
+    if (this._friction) {
       this._friction = 0;
     }
     if (this._elasticity < 0) {
@@ -374,21 +363,18 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.destroyPhysicsBody = function() {
-    if (this._physics) {
-      this.broadcast({
-        id: this._id
-      }, "physics.shape.remove");
-      this.broadcast({
-        id: this._id
-      }, "physics.body.remove");
-      return this._physics = false;
+    if (!this._physics) {
+      return;
     }
+    this.broadcast({
+      id: this._id
+    }, "physics.shape.remove");
+    this.broadcast({
+      id: this._id
+    }, "physics.body.remove");
+    this._physics = false;
+    return this;
   };
-
-
-  /*
-   * @return [self]
-   */
 
   ARERawActor.prototype.enablePhysics = function() {
     if (!this.hasPhysics()) {
@@ -397,11 +383,6 @@ ARERawActor = (function(_super) {
     return this;
   };
 
-
-  /*
-   * @return [self]
-   */
-
   ARERawActor.prototype.disablePhysics = function() {
     if (this.hasPhysics()) {
       this.destroyPhysicsBody;
@@ -409,16 +390,12 @@ ARERawActor = (function(_super) {
     return this;
   };
 
-
-  /*
-   * @return [self]
-   */
-
   ARERawActor.prototype.refreshPhysics = function() {
-    if (this.hasPhysics()) {
-      this.destroyPhysicsBody();
-      return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    if (!this.hasPhysics()) {
+      return;
     }
+    this.destroyPhysicsBody();
+    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
   };
 
 
@@ -453,7 +430,6 @@ ARERawActor = (function(_super) {
    * Set Actor mass property
    *
    * @param [Number] mass
-   * @return [self]
    */
 
   ARERawActor.prototype.setMass = function(_mass) {
@@ -467,7 +443,6 @@ ARERawActor = (function(_super) {
    * Set Actor elasticity property
    *
    * @param [Number] elasticity
-   * @return [self]
    */
 
   ARERawActor.prototype.setElasticity = function(_elasticity) {
@@ -481,7 +456,6 @@ ARERawActor = (function(_super) {
    * Set Actor friction property
    *
    * @param [Number] friction
-   * @return [self]
    */
 
   ARERawActor.prototype.setFriction = function(_friction) {
@@ -490,16 +464,12 @@ ARERawActor = (function(_super) {
     return this;
   };
 
-
-  /*
-   * @return [self]
-   */
-
   ARERawActor.prototype.refreshPhysics = function() {
-    if (this.hasPhysics()) {
-      this.destroyPhysicsBody();
-      return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    if (!this.hasPhysics()) {
+      return;
     }
+    this.destroyPhysicsBody();
+    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
   };
 
 
@@ -534,7 +504,6 @@ ARERawActor = (function(_super) {
    * Set Actor mass property
    *
    * @param [Number] mass
-   * @return [self]
    */
 
   ARERawActor.prototype.setMass = function(_mass) {
@@ -548,7 +517,6 @@ ARERawActor = (function(_super) {
    * Set Actor elasticity property
    *
    * @param [Number] elasticity
-   * @return [self]
    */
 
   ARERawActor.prototype.setElasticity = function(_elasticity) {
@@ -562,7 +530,6 @@ ARERawActor = (function(_super) {
    * Set Actor friction property
    *
    * @param [Number] friction
-   * @return [self]
    */
 
   ARERawActor.prototype.setFriction = function(_friction) {
@@ -593,7 +560,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.setPhysicsLayer = function(layer) {
-    this._physicsLayer = 1 << param.required(layer, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    this._physicsLayer = 1 << param.required(layer, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     return this.broadcast({
       id: this._id,
       layer: this._physicsLayer
@@ -616,8 +583,8 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.updateVertices = function(vertices, texverts) {
     var newTexVerts, newVertices;
-    newVertices = param.optional(vertices, this._vertices);
-    newTexVerts = param.optional(texverts, this._texVerts);
+    newVertices = vertices || this._vertices;
+    newTexVerts = texverts || this._texVerts;
     if (newVertices.length < 6) {
       throw new Error("At least 3 vertices make up an actor");
     }
@@ -653,7 +620,7 @@ ARERawActor = (function(_super) {
     var i, mnx, mny, mxx, mxy, _i, _ref;
     this._vertices = _vertices;
     this._vertBufferFloats = new Float32Array(this._vertices);
-    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
+    if (this._renderer.isWGLRendererActive()) {
       this._vertBuffer = this._gl.createBuffer();
       this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertBuffer);
       this._gl.bufferData(this._gl.ARRAY_BUFFER, this._vertBufferFloats, this._gl.STATIC_DRAW);
@@ -664,13 +631,13 @@ ARERawActor = (function(_super) {
     mxx = 0;
     mxy = 0;
     for (i = _i = 1, _ref = this._vertices.length / 2; 1 <= _ref ? _i <= _ref : _i >= _ref; i = 1 <= _ref ? ++_i : --_i) {
-      if (this._vertices[i * 2] < mnx) {
+      if (mnx > this._vertices[i * 2]) {
         mnx = this._vertices[i * 2];
       }
       if (mxx < this._vertices[i * 2]) {
         mxx = this._vertices[i * 2];
       }
-      if (this._vertices[i * 2 + 1] < mny) {
+      if (mny > this._vertices[i * 2 + 1]) {
         mny = this._vertices[i * 2 + 1];
       }
       if (mxy < this._vertices[i * 2 + 1]) {
@@ -692,14 +659,15 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.updateUVBuffer = function(_texVerts) {
     this._texVerts = _texVerts;
-    if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL) {
-      this._origTexVerts = this._texVerts;
-      this._texVBufferFloats = new Float32Array(this._texVerts);
-      this._texBuffer = this._gl.createBuffer();
-      this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._texBuffer);
-      this._gl.bufferData(this._gl.ARRAY_BUFFER, this._texVBufferFloats, this._gl.STATIC_DRAW);
-      return this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
+    if (!this._renderer.isWGLRendererActive()) {
+      return;
     }
+    this._origTexVerts = this._texVerts;
+    this._texVBufferFloats = new Float32Array(this._texVerts);
+    this._texBuffer = this._gl.createBuffer();
+    this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._texBuffer);
+    this._gl.bufferData(this._gl.ARRAY_BUFFER, this._texVBufferFloats, this._gl.STATIC_DRAW);
+    return this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
   };
 
 
@@ -712,8 +680,8 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setTextureRepeat = function(x, y) {
     var i, uvs, _i, _ref;
-    x = param.optional(x, 1);
-    y = param.optional(y, 1);
+    x || (x = 1);
+    y || (y = 1);
     uvs = [];
     for (i = _i = 0, _ref = this._origTexVerts.length; _i < _ref; i = _i += 2) {
       uvs.push((this._origTexVerts[i] / this._texRepeatX) * x);
@@ -768,10 +736,10 @@ ARERawActor = (function(_super) {
     param.required(height);
     this.attachedTextureAnchor.width = width;
     this.attachedTextureAnchor.height = height;
-    this.attachedTextureAnchor.x = param.optional(offx, 0);
-    this.attachedTextureAnchor.y = param.optional(offy, 0);
-    this.attachedTextureAnchor.angle = param.optional(angle, 0);
-    if (!ARERenderer.hasTexture(texture)) {
+    this.attachedTextureAnchor.x = offx || 0;
+    this.attachedTextureAnchor.y = offy || 0;
+    this.attachedTextureAnchor.angle = angle || 0;
+    if (!this._renderer.hasTexture(texture)) {
       throw new Error("No such texture loaded: " + texture);
     }
     if (this._attachedTexture) {
@@ -793,7 +761,7 @@ ARERawActor = (function(_super) {
     if (!this._attachedTexture) {
       return false;
     }
-    ARERenderer.removeActor(this._attachedTexture);
+    this._renderer.removeActor(this._attachedTexture);
     this._attachedTexture = null;
     return true;
   };
@@ -808,7 +776,7 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setAttachmentVisibility = function(visible) {
     param.required(visible);
-    if (this._attachedTexture === null) {
+    if (!this._attachedTexture) {
       return false;
     }
     this._attachedTexture._visible = visible;
@@ -868,7 +836,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
-    ARERenderer._currentTexture = this._texture.texture;
+    this._renderer._currentTexture = this._texture.texture;
     gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
     gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE0);
@@ -895,10 +863,9 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype._updateModelMatrix = function() {
-    var c, camPos, pos, renderer, s;
-    renderer = ARERenderer;
+    var c, camPos, pos, s;
     pos = this._position;
-    camPos = ARERenderer.camPos;
+    camPos = this._renderer.getCameraPosition();
     s = Math.sin(-this._rotation);
     c = Math.cos(-this._rotation);
     this._modelM[0] = c;
@@ -906,8 +873,8 @@ ARERawActor = (function(_super) {
     this._modelM[4] = -s;
     this._modelM[5] = c;
     this._modelM[12] = pos.x - camPos.x;
-    if (renderer.force_pos0_0) {
-      return this._modelM[13] = renderer.getHeight() - pos.y + camPos.y;
+    if (this._renderer.force_pos0_0) {
+      return this._modelM[13] = this._renderer.getHeight() - pos.y + camPos.y;
     } else {
       return this._modelM[13] = pos.y - camPos.y;
     }
@@ -959,8 +926,8 @@ ARERawActor = (function(_super) {
       gl.uniform4fv(this._sh_handles.uClipRect, this._clipRect);
     }
     gl.uniform1f(this._sh_handles.uOpacity, this._opacity);
-    if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
-      if (ARERenderer._currentTexture !== this._texture.texture) {
+    if (this._renderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
+      if (this._renderer._currentTexture !== this._texture.texture) {
         this.wglBindTexture(gl);
       }
     }
@@ -1009,7 +976,7 @@ ARERawActor = (function(_super) {
     } else {
       context.strokeStyle = "#FFF";
     }
-    if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
+    if (this._renderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
 
     } else {
       if (this._color) {
@@ -1048,7 +1015,7 @@ ARERawActor = (function(_super) {
     }
     context.closePath();
     this.cvSetupStyle(context);
-    if (!ARERenderer.force_pos0_0) {
+    if (this._renderer.force_pos0_0) {
       context.scale(1, -1);
     }
     switch (this._renderMode) {
@@ -1061,7 +1028,7 @@ ARERawActor = (function(_super) {
           context.stroke();
         }
         if ((this._renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0) {
-          if (ARERenderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
+          if (this._renderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
             context.clip();
             context.drawImage(this._texture.texture, -this._size.x / 2, -this._size.y / 2, this._size.x, this._size.y);
           } else {
@@ -1099,8 +1066,8 @@ ARERawActor = (function(_super) {
    * @return [self]
    */
 
-  ARERawActor.prototype.setRenderMode = function(mode) {
-    this._renderMode = param.required(mode, ARERenderer.renderModes);
+  ARERawActor.prototype.setRenderMode = function(_renderMode) {
+    this._renderMode = _renderMode;
     return this;
   };
 
@@ -1113,8 +1080,8 @@ ARERawActor = (function(_super) {
    * @return [self]
    */
 
-  ARERawActor.prototype.setRenderStyle = function(mode) {
-    this._renderStyle = param.required(mode, ARERenderer.renderStyles);
+  ARERawActor.prototype.setRenderStyle = function(_renderStyle) {
+    this._renderStyle = _renderStyle;
     return this;
   };
 
@@ -1128,7 +1095,6 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setOpacity = function(_opacity) {
     this._opacity = _opacity;
-    param.required(this._opacity);
     return this;
   };
 
@@ -1163,7 +1129,7 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setRotation = function(rotation, radians) {
     param.required(rotation);
-    radians = param.optional(radians, false);
+    radians = !!radians;
     if (!radians) {
       rotation = Number(rotation) * 0.0174532925;
     }
@@ -1322,8 +1288,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.getRotation = function(radians) {
-    radians = param.optional(radians, false);
-    if (radians === false) {
+    if (!radians) {
       return this._rotation * 57.2957795;
     } else {
       return this._rotation;

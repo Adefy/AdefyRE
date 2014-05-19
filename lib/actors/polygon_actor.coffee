@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # @depend raw_actor.coffee
 
 # Polygon Actor implementation; allows for the creation of polygons with
@@ -14,10 +10,11 @@ class AREPolygonActor extends ARERawActor
   #
   # NOTE: Texture support is not available! No UVs! ;(
   #
+  # @param [ARERenderer] renderer
   # @param [Number] radius
   # @param [Number] segments
   ###
-  constructor: (@radius, @segments) ->
+  constructor: (renderer, @radius, @segments) ->
     param.required radius
 
     ##
@@ -37,7 +34,7 @@ class AREPolygonActor extends ARERawActor
       @radius = null
       uvs = @generateUVs @_verts
 
-      super @_verts, uvs
+      super renderer, @_verts, uvs
       @setPhysicsVertices @_verts
 
     else
@@ -50,7 +47,7 @@ class AREPolygonActor extends ARERawActor
       psyxVerts = @generateVertices mode: "physics"
       uvs = @generateUVs verts
 
-      super verts, uvs
+      super renderer, verts, uvs
       @setPhysicsVertices psyxVerts
 
     @setRenderMode ARERenderer.RENDER_MODE_TRIANGLE_FAN
@@ -63,7 +60,7 @@ class AREPolygonActor extends ARERawActor
   # @options options [Boolean] mode generation mode (normal, or for physics)
   ###
   generateVertices: (options) ->
-    options = param.optional options, {}
+    options ||= {}
 
     # Build vertices
     # Uses algo from http://slabode.exofire.net/circle_draw.shtml

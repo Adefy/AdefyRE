@@ -12,12 +12,13 @@ ARECircleActor = (function(_super) {
    *
    * NOTE: Texture support is not available! No UVs! ;(
    *
+   * @param [ARERenderer] renderer
    * @param [Number] radius
    */
 
-  function ARECircleActor(radius) {
+  function ARECircleActor(renderer, radius) {
     this.radius = radius;
-    ARECircleActor.__super__.constructor.call(this, radius, 32);
+    ARECircleActor.__super__.constructor.call(this, renderer, radius, 32);
     delete this.setSegments;
     delete this.getSegments;
   }

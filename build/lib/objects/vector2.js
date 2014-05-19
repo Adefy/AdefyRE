@@ -2,8 +2,8 @@ var AREVector2;
 
 AREVector2 = (function() {
   function AREVector2(x, y) {
-    this.x = param.optional(x, 0);
-    this.y = param.optional(y, 0);
+    this.x || (this.x = 0);
+    this.y || (this.y = 0);
   }
 
 
@@ -14,9 +14,9 @@ AREVector2 = (function() {
 
   AREVector2.prototype.random = function(options) {
     var bipolar, seed, x, y;
-    options = param.optional(options, {});
-    bipolar = param.optional(options.bipolar, false);
-    seed = param.optional(options.seed, Math.random() * 0xFFFF);
+    options || (options = {});
+    bipolar = !!options.bipolar;
+    seed = options.seed || Math.random() * 0xFFFF;
     x = Math.random() * this.x;
     y = Math.random() * this.y;
     if (bipolar) {

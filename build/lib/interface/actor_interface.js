@@ -1,7 +1,11 @@
 var AREActorInterface;
 
 AREActorInterface = (function() {
-  function AREActorInterface() {}
+  function AREActorInterface(masterInterface) {}
+
+  AREActorInterface.prototype.setEngine = function(engine) {
+    return this._renderer = engine.getRenderer();
+  };
 
 
   /*
@@ -12,7 +16,7 @@ AREActorInterface = (function() {
   AREActorInterface.prototype._findActor = function(id) {
     var a, _i, _len, _ref;
     param.required(id);
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id) {
@@ -33,7 +37,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.createRawActor = function(verts) {
     param.required(verts);
-    return new ARERawActor(JSON.parse(verts)).getId();
+    return new ARERawActor(this._renderer, JSON.parse(verts)).getId();
   };
 
 
@@ -46,12 +50,10 @@ AREActorInterface = (function() {
    */
 
   AREActorInterface.prototype.createPolygonActor = function(radius, segments) {
-    param.required(radius);
     if (typeof radius === "string") {
       return this.createRawActor(radius);
     } else {
-      param.required(segments);
-      return new AREPolygonActor(radius, segments).getId();
+      return new AREPolygonActor(this._renderer, radius, segments).getId();
     }
   };
 
@@ -65,9 +67,7 @@ AREActorInterface = (function() {
    */
 
   AREActorInterface.prototype.createRectangleActor = function(width, height) {
-    param.required(width);
-    param.required(height);
-    return new ARERectangleActor(width, height).getId();
+    return new ARERectangleActor(this._renderer, width, height).getId();
   };
 
 
@@ -79,8 +79,7 @@ AREActorInterface = (function() {
    */
 
   AREActorInterface.prototype.createCircleActor = function(radius) {
-    param.required(radius);
-    return new ARECircleActor(radius).getId();
+    return new ARECircleActor(this._renderer, radius).getId();
   };
 
 
@@ -125,7 +124,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getRectangleActorWidth = function(id) {
     var a, _i, _len, _ref;
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -145,7 +144,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getRectangleActorHeight = function(id) {
     var a, _i, _len, _ref;
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -165,7 +164,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getCircleActorRadius = function(id) {
     var a, _i, _len, _ref;
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof AREPolygonActor) {
@@ -185,7 +184,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorOpacity = function(id) {
     var a;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       return a.getOpacity();
     }
@@ -202,7 +200,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorVisible = function(id) {
     var a;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       return a.getVisible();
     }
@@ -220,7 +217,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorPosition = function(id) {
     var a, pos;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       pos = a.getPosition();
       return JSON.stringify({
@@ -242,10 +238,8 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorRotation = function(id, radians) {
     var a;
-    param.required(id);
-    radians = param.optional(radians, false);
     if ((a = this._findActor(id)) !== null) {
-      return a.getRotation(radians);
+      return a.getRotation(!!radians);
     }
     return 0.000001;
   };
@@ -261,7 +255,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorColor = function(id) {
     var a, color;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       color = a.getColor();
       return JSON.stringify({
@@ -318,7 +311,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setRectangleActorHeight = function(id, height) {
     var a, _i, _len, _ref;
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -340,7 +333,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setRectangleActorWidth = function(id, width) {
     var a, _i, _len, _ref;
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -362,7 +355,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setCircleActorRadius = function(id, radius) {
     var a, _i, _len, _ref;
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof AREPolygonActor) {
@@ -389,13 +382,9 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.attachTexture = function(texture, w, h, x, y, angle, id) {
     var a;
-    param.required(id);
-    param.required(texture);
-    param.required(w);
-    param.required(h);
-    x = param.optional(x, 0);
-    y = param.optional(y, 0);
-    angle = param.optional(angle, 0);
+    x || (x = 0);
+    y || (y = 0);
+    angle || (angle = 0);
     if ((a = this._findActor(id)) !== null) {
       a.attachTexture(texture, w, h, x, y, angle);
       return true;
@@ -415,8 +404,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorLayer = function(layer, id) {
     var a;
-    param.required(id);
-    param.required(layer);
     if ((a = this._findActor(id)) !== null) {
       a.setLayer(layer);
       return true;
@@ -437,8 +424,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorPhysicsLayer = function(layer, id) {
     var a;
-    param.required(id);
-    param.required(layer);
     if ((a = this._findActor(id)) !== null) {
       a.setPhysicsLayer(layer);
       return true;
@@ -456,7 +441,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.removeAttachment = function(id) {
     var a;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.removeAttachment();
       return true;
@@ -476,7 +460,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setAttachmentVisiblity = function(visible, id) {
     var a;
-    param.required(visible);
     if ((a = this._findActor(id)) !== null) {
       return a.setAttachmentVisibility(visible);
     }
@@ -494,8 +477,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.updateVertices = function(verts, id) {
     var a;
-    param.required(verts);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.updateVertices(JSON.parse(verts));
       return true;
@@ -513,7 +494,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getVertices = function(id) {
     var a;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       return JSON.stringify(a.getVertices());
     }
@@ -531,10 +511,9 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.destroyActor = function(id) {
     var a;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.destroyPhysicsBody();
-      ARERenderer.removeActor(a);
+      this._renderer.removeActor(a);
       return true;
     }
     return false;
@@ -554,8 +533,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setPhysicsVertices = function(verts, id) {
     var a;
-    param.required(verts);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setPhysicsVertices(JSON.parse(verts));
       return true;
@@ -576,8 +553,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setRenderMode = function(mode, id) {
     var a;
-    mode = param.required(mode, ARERenderer.renderModes);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setRenderMode(mode);
       return true;
@@ -596,8 +571,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorOpacity = function(opacity, id) {
     var a;
-    param.required(opacity);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setOpacity(opacity);
       return true;
@@ -616,8 +589,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorVisible = function(visible, id) {
     var a;
-    param.required(visible);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setVisible(visible);
       return true;
@@ -637,9 +608,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorPosition = function(x, y, id) {
     var a;
-    param.required(x);
-    param.required(y);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setPosition(new cp.v(x, y));
       return true;
@@ -659,11 +627,8 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorRotation = function(angle, id, radians) {
     var a;
-    param.required(angle);
-    param.required(id);
-    radians = param.optional(radians, false);
     if ((a = this._findActor(id)) !== null) {
-      a.setRotation(angle, radians);
+      a.setRotation(angle, !!radians);
       return true;
     }
     return false;
@@ -682,10 +647,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorColor = function(r, g, b, id) {
     var a;
-    param.required(r);
-    param.required(g);
-    param.required(b);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setColor(new AREColor3(r, g, b));
       return true;
@@ -705,8 +666,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorTexture = function(name, id) {
     var a;
-    param.required(name);
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.setTexture(name);
       return true;
@@ -726,9 +685,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setActorTextureRepeat = function(x, y, id) {
     var a;
-    param.required(x);
-    param.required(id);
-    y = param.optional(y, 1);
+    y || (y = 1);
     if ((a = this._findActor(id)) !== null) {
       a.setTextureRepeat(x, y);
       return true;
@@ -750,10 +707,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.enableActorPhysics = function(mass, friction, elasticity, id) {
     var a;
-    param.required(id);
-    param.required(mass);
-    param.required(friction);
-    param.required(elasticity);
     if ((a = this._findActor(id)) !== null) {
       a.createPhysicsBody(mass, friction, elasticity);
       return true;
@@ -771,7 +724,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.destroyPhysicsBody = function(id) {
     var a;
-    param.required(id);
     if ((a = this._findActor(id)) !== null) {
       a.destroyPhysicsBody();
       return true;

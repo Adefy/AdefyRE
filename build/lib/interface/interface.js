@@ -2,9 +2,9 @@ var AREInterface;
 
 AREInterface = (function() {
   function AREInterface() {
-    this._Actors = new AREActorInterface();
-    this._Engine = new AREEngineInterface();
-    this._Animations = new AREAnimationInterface();
+    this._Actors = new AREActorInterface(this);
+    this._Engine = new AREEngineInterface(this);
+    this._Animations = new AREAnimationInterface(this);
   }
 
   AREInterface.prototype.Actors = function() {
@@ -17,6 +17,11 @@ AREInterface = (function() {
 
   AREInterface.prototype.Animations = function() {
     return this._Animations;
+  };
+
+  AREInterface.prototype.setEngine = function(engine) {
+    this._Actors.setEngine(engine);
+    return this._Animations.setEngine(engine);
   };
 
   return AREInterface;

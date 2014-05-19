@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # AREPsyxAnimation
 #
 # Class to handle actor physics updates

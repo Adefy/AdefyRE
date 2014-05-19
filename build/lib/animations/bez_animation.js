@@ -25,15 +25,14 @@ AREBezAnimation = (function() {
    */
   function AREBezAnimation(actor, options, dryRun) {
     this.actor = actor;
-    dryRun = param.optional(dryRun, false);
+    dryRun = !!dryRun;
     this.options = param.required(options);
     this._duration = param.required(options.duration);
     param.required(options.endVal);
     this._property = param.required(options.property);
-    options.controlPoints = param.optional(options.controlPoints, []);
-    this._fps = param.optional(options.fps, 30);
+    options.controlPoints = options.controlPoints || [];
+    this._fps = options.fps || 30;
     if (dryRun) {
-      param.optional(this.actor);
       param.required(options.startVal);
     } else {
       param.required(this.actor);
@@ -95,7 +94,7 @@ AREBezAnimation = (function() {
   AREBezAnimation.prototype._update = function(t, apply) {
     var val, _Mt, _Mt2, _Mt3, _t2, _t3;
     param.required(t);
-    apply = param.optional(apply, true);
+    apply || (apply = true);
     if (t > 1 || t < 0) {
       throw new Error("t out of bounds! " + t);
     }

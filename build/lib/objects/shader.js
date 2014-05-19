@@ -18,7 +18,7 @@ AREShader = (function() {
     param.required(this._vertSrc);
     param.required(this._fragSrc);
     param.required(this._gl);
-    build = param.optional(build, false);
+    build = !!build;
     this.errors = [];
     this._prog = null;
     this._vertShader = null;

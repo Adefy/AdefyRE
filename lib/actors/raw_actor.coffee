@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # Raw actor class, handles rendering and physics simulation. Offers a base
 # for the specialized actor classes.
 #
@@ -22,12 +18,14 @@ class ARERawActor extends Koon
   # @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
   # @param [Array<Number>] texverts flat array of texture coords, optional
   ###
-  constructor: (verts, texverts) ->
+  constructor: (@_renderer, verts, texverts) ->
+    param.required _renderer
     param.required verts
-    texverts = param.optional texverts, null
 
     @_initializeValues()
-    @_registerWithRenderer()
+
+    @_id = @_renderer.getNextId()
+    @_renderer.addActor @
 
     @updateVertices verts, texverts
     @setColor new AREColor3 255, 255, 255
@@ -39,22 +37,13 @@ class ARERawActor extends Koon
     window.AREMessages.registerKoon @, /^actor\..*/
 
   ###
-  # Gets an id and registers our existence with the renderer
-  # @private
-  ###
-  _registerWithRenderer: ->
-    @_id = ARERenderer.getNextId()
-    ARERenderer.addActor @
-
-  ###
   # Sets up default values and initializes our data structures.
   # @private
   ###
   _initializeValues: ->
 
-    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
-      @_gl = ARERenderer._gl
-      if @_gl == undefined or @_gl == null
+    if @_renderer.isWGLRendererActive()
+      if !(@_gl = @_renderer.getGL())
         throw new Error "GL context is required for actor initialization!"
 
     # Color used for drawing, colArray is pre-computed for the render routine
@@ -65,7 +54,6 @@ class ARERawActor extends Koon
 
     @_opacity = 1.0
 
-    @lit = false
     @_visible = true
     @layer = 0
     @_physicsLayer = ~0
@@ -77,7 +65,7 @@ class ARERawActor extends Koon
     @_initializeModelMatrix()
     @_updateModelMatrix()
 
-    ## size calculated by from verticies
+    ## size calculated from vertices
     @_size = new AREVector2 0, 0
 
     ###
@@ -171,8 +159,8 @@ class ARERawActor extends Koon
     @layer = param.required layer
 
     # Re-insert ourselves with new layer
-    ARERenderer.removeActor @, true
-    ARERenderer.addActor @
+    @_renderer.removeActor @, true
+    @_renderer.addActor @
 
   ###
   # We support a single texture per actor for the time being. UV coords are
@@ -184,11 +172,11 @@ class ARERawActor extends Koon
   setTexture: (name) ->
     param.required name
 
-    if not ARERenderer.hasTexture name
+    unless @_renderer.hasTexture name
       throw new Error "No such texture loaded: #{name}"
 
-    @_texture = ARERenderer.getTexture name
-    @setShader ARERenderer.getMe().getTextureShader()
+    @_texture = @_renderer.getTexture name
+    @setShader @_renderer.getTextureShader()
     @_material = ARERenderer.MATERIAL_TEXTURE
     @
 
@@ -202,7 +190,7 @@ class ARERawActor extends Koon
     @_texRepeatX = 1
     @_texRepeatY = 1
 
-    @setShader ARERenderer.getMe().getDefaultShader()
+    @setShader @_renderer.getDefaultShader()
     @_material = ARERenderer.MATERIAL_FLAT
     @
 
@@ -234,15 +222,14 @@ class ARERawActor extends Koon
   # @return [this]
   ###
   setShader: (shader) ->
-    return if ARERenderer.activeRendererMode != ARERenderer.RENDERER_MODE_WGL
+    return if @_renderer.isWGLRendererActive()
     param.required shader
 
     # Ensure shader is built, and generate handles if not already done
-    if shader.getProgram() == null
+    if !shader.getProgram()
       throw new Error "Shader has to be built before it can be used!"
 
-    shader.generateHandles() if shader.getHandles() == null
-
+    shader.generateHandles() if !shader.getHandles()
     @_sh_handles = shader.getHandles()
 
   ###
@@ -258,14 +245,14 @@ class ARERawActor extends Koon
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
-    return unless @_mass != null and @_mass != undefined
+    return unless !!@_mass
 
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
 
-    if @_mass < 0 then @_mass = 0
-    if @_friction < 0 then @_friction = 0
-    if @_elasticity < 0 then @_elasticity = 0
+    @_mass = 0 if @_mass < 0
+    @_friction = 0 if @_friction
+    @_elasticity = 0 if @_elasticity < 0
 
     # Convert vertices
     verts = []
@@ -330,36 +317,26 @@ class ARERawActor extends Koon
   # Destroys the physics body if one exists
   ###
   destroyPhysicsBody: ->
-    if @_physics
-      @broadcast id: @_id, "physics.shape.remove"
-      @broadcast id: @_id, "physics.body.remove"
-      @_physics = false
+    return unless @_physics
 
-  ###
-  # @return [self]
-  ###
+    @broadcast id: @_id, "physics.shape.remove"
+    @broadcast id: @_id, "physics.body.remove"
+    @_physics = false
+    @
+
   enablePhysics: ->
-    unless @hasPhysics()
-      @createPhysicsBody()
-
+    @createPhysicsBody() unless @hasPhysics()
     @
 
-  ###
-  # @return [self]
-  ###
   disablePhysics: ->
-    if @hasPhysics()
-      @destroyPhysicsBody
-
+    @destroyPhysicsBody if @hasPhysics()
     @
 
-  ###
-  # @return [self]
-  ###
   refreshPhysics: ->
-    if @hasPhysics()
-      @destroyPhysicsBody()
-      @createPhysicsBody @_mass, @_friction, @_elasticity
+    return unless @hasPhysics()
+
+    @destroyPhysicsBody()
+    @createPhysicsBody @_mass, @_friction, @_elasticity
 
   ###
   # @return [Number] mass
@@ -380,7 +357,6 @@ class ARERawActor extends Koon
   # Set Actor mass property
   #
   # @param [Number] mass
-  # @return [self]
   ###
   setMass: (@_mass) ->
     @refreshPhysics()
@@ -390,7 +366,6 @@ class ARERawActor extends Koon
   # Set Actor elasticity property
   #
   # @param [Number] elasticity
-  # @return [self]
   ###
   setElasticity: (@_elasticity) ->
     @refreshPhysics()
@@ -400,19 +375,16 @@ class ARERawActor extends Koon
   # Set Actor friction property
   #
   # @param [Number] friction
-  # @return [self]
   ###
   setFriction: (@_friction) ->
     @refreshPhysics()
     @
 
-  ###
-  # @return [self]
-  ###
   refreshPhysics: ->
-    if @hasPhysics()
-      @destroyPhysicsBody()
-      @createPhysicsBody @_mass, @_friction, @_elasticity
+    return unless @hasPhysics()
+
+    @destroyPhysicsBody()
+    @createPhysicsBody @_mass, @_friction, @_elasticity
 
   ###
   # @return [Number] mass
@@ -433,7 +405,6 @@ class ARERawActor extends Koon
   # Set Actor mass property
   #
   # @param [Number] mass
-  # @return [self]
   ###
   setMass: (@_mass) ->
     @refreshPhysics()
@@ -443,7 +414,6 @@ class ARERawActor extends Koon
   # Set Actor elasticity property
   #
   # @param [Number] elasticity
-  # @return [self]
   ###
   setElasticity: (@_elasticity) ->
     @refreshPhysics()
@@ -453,7 +423,6 @@ class ARERawActor extends Koon
   # Set Actor friction property
   #
   # @param [Number] friction
-  # @return [self]
   ###
   setFriction: (@_friction) ->
     @refreshPhysics()
@@ -465,9 +434,7 @@ class ARERawActor extends Koon
   # @return [Number] physicsLayer
   ###
   getPhysicsLayer: ->
-
-    # Extract 1 bit position, un-shift
-    @_physicsLayer.toString(2).length - 1
+    @_physicsLayer.toString(2).length - 1 # Extract 1 bit position, un-shift
 
   ###
   # Set physics layer. If we have a physics body, applies immediately. Value
@@ -498,8 +465,8 @@ class ARERawActor extends Koon
   # @param [Array<Number>] texverts flat array of texture coords
   ###
   updateVertices: (vertices, texverts) ->
-    newVertices = param.optional vertices, @_vertices
-    newTexVerts = param.optional texverts, @_texVerts
+    newVertices = vertices or @_vertices
+    newTexVerts = texverts or @_texVerts
 
     if newVertices.length < 6
       throw new Error "At least 3 vertices make up an actor"
@@ -513,8 +480,8 @@ class ARERawActor extends Koon
         if @_vertices.length != newTexVerts.length
           throw new Error "Vert and UV count must match!"
 
-    if newVertices != @_vertices then @updateVertBuffer newVertices
-    if newTexVerts != @_texVerts then @updateUVBuffer newTexVerts
+    @updateVertBuffer newVertices if newVertices != @_vertices
+    @updateUVBuffer newTexVerts if newTexVerts != @_texVerts
 
   ###
   # Updates vertex buffer
@@ -526,7 +493,7 @@ class ARERawActor extends Koon
   updateVertBuffer: (@_vertices) ->
     @_vertBufferFloats = new Float32Array(@_vertices)
 
-    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
+    if @_renderer.isWGLRendererActive()
       @_vertBuffer = @_gl.createBuffer()
       @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
       @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
@@ -538,14 +505,10 @@ class ARERawActor extends Koon
     mxy = 0
 
     for i in [1..(@_vertices.length / 2)]
-      if @_vertices[i * 2] < mnx
-        mnx = @_vertices[i * 2]
-      if mxx < @_vertices[i * 2]
-        mxx = @_vertices[i * 2]
-      if @_vertices[i * 2 + 1] < mny
-        mny = @_vertices[i * 2 + 1]
-      if mxy < @_vertices[i * 2 + 1]
-        mxy = @_vertices[i * 2 + 1]
+      mnx = @_vertices[i * 2]     if mnx > @_vertices[i * 2]
+      mxx = @_vertices[i * 2]     if mxx < @_vertices[i * 2]
+      mny = @_vertices[i * 2 + 1] if mny > @_vertices[i * 2 + 1]
+      mxy = @_vertices[i * 2 + 1] if mxy < @_vertices[i * 2 + 1]
 
     @_size.x = mxx - mnx
     @_size.y = mxy - mny
@@ -558,13 +521,14 @@ class ARERawActor extends Koon
   # @param [Array<Number>] vertices
   ###
   updateUVBuffer: (@_texVerts) ->
-    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
-      @_origTexVerts = @_texVerts
-      @_texVBufferFloats = new Float32Array(@_texVerts)
-      @_texBuffer = @_gl.createBuffer()
-      @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
-      @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
-      @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+    return unless @_renderer.isWGLRendererActive()
+
+    @_origTexVerts = @_texVerts
+    @_texVBufferFloats = new Float32Array(@_texVerts)
+    @_texBuffer = @_gl.createBuffer()
+    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
+    @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
+    @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
 
   ###
   # Set texture repeat per coordinate axis
@@ -573,8 +537,8 @@ class ARERawActor extends Koon
   # @param [Number] y vertical repeat (default 1)
   ###
   setTextureRepeat: (x, y) ->
-    x = param.optional x, 1
-    y = param.optional y, 1
+    x ||= 1
+    y ||= 1
 
     uvs = []
 
@@ -627,27 +591,20 @@ class ARERawActor extends Koon
     param.required height
     @attachedTextureAnchor.width = width
     @attachedTextureAnchor.height = height
-    @attachedTextureAnchor.x = param.optional offx, 0
-    @attachedTextureAnchor.y = param.optional offy, 0
-    @attachedTextureAnchor.angle = param.optional angle, 0
+    @attachedTextureAnchor.x = offx or 0
+    @attachedTextureAnchor.y = offy or 0
+    @attachedTextureAnchor.angle = angle or 0
 
     # Sanity check
-    if not ARERenderer.hasTexture texture
+    unless @_renderer.hasTexture texture
       throw new Error "No such texture loaded: #{texture}"
 
-    # If we already have an attachment, discard it
-    if @_attachedTexture
-      @removeAttachment()
+    @removeAttachment() if @_attachedTexture
 
     # this will force the actor to render with attachment parameters
     @_attachedTexture = new ARERectangleActor width, height
     @_attachedTexture.setTexture texture
     @_attachedTexture
-
-    # Now we replace the active texture, with the attached one
-    #@_attachedTexture = texture
-    #@setTexture texture
-    #@
 
 
   ###
@@ -658,7 +615,7 @@ class ARERawActor extends Koon
   removeAttachment: ->
     return false unless @_attachedTexture
 
-    ARERenderer.removeActor @_attachedTexture
+    @_renderer.removeActor @_attachedTexture
     @_attachedTexture = null
     true
 
@@ -670,8 +627,7 @@ class ARERawActor extends Koon
   ###
   setAttachmentVisibility: (visible) ->
     param.required visible
-
-    if @_attachedTexture == null then return false
+    return false unless @_attachedTexture
 
     @_attachedTexture._visible = visible
     true
@@ -725,15 +681,11 @@ class ARERawActor extends Koon
   # @param [Object] gl WebGL Context
   ###
   wglBindTexture: (gl) ->
-    ARERenderer._currentTexture = @_texture.texture
+    @_renderer._currentTexture = @_texture.texture
 
-    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
-
-    gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-    #gl.vertexAttrib2f @_sh_handles.aUVScale,
-    #  @_texture.scaleX, @_texture.scaleY
     # We apparently don't need uUVScale in webgl
-    #gl.uniform2f @_sh_handles.uUVScale, @_texture.scaleX, @_texture.scaleY
+    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+    gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
 
     gl.activeTexture gl.TEXTURE0
     gl.bindTexture gl.TEXTURE_2D, @_texture.texture
@@ -759,9 +711,8 @@ class ARERawActor extends Koon
   _updateModelMatrix: ->
 
     # Make some variables local to speed up access
-    renderer = ARERenderer
     pos = @_position
-    camPos = ARERenderer.camPos
+    camPos = @_renderer.getCameraPosition()
 
     s = Math.sin(-@_rotation)
     c = Math.cos(-@_rotation)
@@ -773,8 +724,8 @@ class ARERawActor extends Koon
 
     @_modelM[12] = pos.x - camPos.x
 
-    if renderer.force_pos0_0
-      @_modelM[13] = renderer.getHeight() - pos.y + camPos.y
+    if @_renderer.force_pos0_0
+      @_modelM[13] = @_renderer.getHeight() - pos.y + camPos.y
     else
       @_modelM[13] = pos.y - camPos.y
 
@@ -823,8 +774,8 @@ class ARERawActor extends Koon
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
 
     # Texture rendering, if needed
-    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
-      if ARERenderer._currentTexture != @_texture.texture
+    if @_renderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
+      if @_renderer._currentTexture != @_texture.texture
         @wglBindTexture gl
 
     ###
@@ -869,7 +820,7 @@ class ARERawActor extends Koon
     else
       context.strokeStyle = "#FFF"
 
-    if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
+    if @_renderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
       #
     else
 
@@ -906,7 +857,7 @@ class ARERawActor extends Koon
 
     @cvSetupStyle context
 
-    unless ARERenderer.force_pos0_0
+    if @_renderer.force_pos0_0
       context.scale 1, -1
 
     switch @_renderMode
@@ -922,7 +873,7 @@ class ARERawActor extends Koon
           context.stroke()
 
         if (@_renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0
-          if ARERenderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
+          if @_renderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
             context.clip()
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
@@ -952,8 +903,7 @@ class ARERawActor extends Koon
   # @paran [Number] mode
   # @return [self]
   ###
-  setRenderMode: (mode) ->
-    @_renderMode = param.required mode, ARERenderer.renderModes
+  setRenderMode: (@_renderMode) ->
     @
 
   ###
@@ -963,8 +913,7 @@ class ARERawActor extends Koon
   # @paran [Number] mode
   # @return [self]
   ###
-  setRenderStyle: (mode) ->
-    @_renderStyle = param.required mode, ARERenderer.renderStyles
+  setRenderStyle: (@_renderStyle) ->
     @
 
   ###
@@ -974,7 +923,6 @@ class ARERawActor extends Koon
   # @return [self]
   ###
   setOpacity: (@_opacity) ->
-    param.required @_opacity
     @
 
   ###
@@ -1005,7 +953,7 @@ class ARERawActor extends Koon
   ###
   setRotation: (rotation, radians) ->
     param.required rotation
-    radians = param.optional radians, false
+    radians = !!radians
 
     rotation = Number(rotation) * 0.0174532925 unless radians
     @_rotation = rotation
@@ -1152,8 +1100,7 @@ class ARERawActor extends Koon
   # @return [Number] angle rotation in degrees on z axis
   ###
   getRotation: (radians) ->
-    radians = param.optional radians, false
-    if radians == false
+    unless !!radians
       return @_rotation * 57.2957795
     else
       return @_rotation

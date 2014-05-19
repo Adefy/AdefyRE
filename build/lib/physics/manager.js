@@ -5,7 +5,9 @@ var PhysicsManager,
 PhysicsManager = (function(_super) {
   __extends(PhysicsManager, _super);
 
-  function PhysicsManager(depPaths) {
+  function PhysicsManager(_renderer, depPaths) {
+    this._renderer = _renderer;
+    param.required(_renderer);
     param.required(depPaths);
     PhysicsManager.__super__.constructor.call(this, "PhysicsManager", [
       {
@@ -37,7 +39,7 @@ PhysicsManager = (function(_super) {
           _results = [];
           while (l--) {
             dataPacket = data[l];
-            actor = ARERenderer.actor_hash[dataPacket[ID_INDEX]];
+            actor = _this._renderer._actor_hash[dataPacket[ID_INDEX]];
             actor._position = dataPacket[POS_INDEX];
             actor._rotation = dataPacket[ROT_INDEX];
             _results.push(actor._updateModelMatrix());

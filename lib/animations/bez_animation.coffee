@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # AREBezAnimation
 #
 # Class to handle bezier animations
@@ -31,18 +27,18 @@ class AREBezAnimation
   # @param [Boolean] dryRun sets up for preCalculate only! Actor optional.
   ###
   constructor: (@actor, options, dryRun) ->
-    dryRun = param.optional dryRun, false
+    dryRun = !!dryRun
     @options = param.required options
     @_duration = param.required options.duration
     param.required options.endVal
     @_property = param.required options.property
-    options.controlPoints = param.optional options.controlPoints, []
-    @_fps = param.optional options.fps, 30
+    options.controlPoints = options.controlPoints or []
+    @_fps = options.fps or 30
 
     if dryRun
-      param.optional @actor
       param.required options.startVal
-    else param.required @actor
+    else
+      param.required @actor
 
     # Guards against multiple exeuctions
     @_animated = false
@@ -98,7 +94,7 @@ class AREBezAnimation
   ###
   _update: (t, apply) ->
     param.required t
-    apply = param.optional apply, true
+    apply ||= true
 
     # Throw an error if t is out of bounds. We could just cap it, but it should
     # never be provided out of bounds. If it is, something is wrong with the

@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # @depend raw_actor.coffee
 
 # Simple rectangle actor; allows for creation using a width and height, and
@@ -12,10 +8,11 @@ class ARERectangleActor extends ARERawActor
   # Sets us up with the supplied width and height, generating both our vertex
   # and UV sets.
   #
+  # @param [ARERenderer] renderer
   # @param [Number] width
   # @param [Number] height
   ###
-  constructor: (@width, @height) ->
+  constructor: (renderer, @width, @height) ->
     param.required width
     param.required height
 
@@ -25,7 +22,7 @@ class ARERectangleActor extends ARERawActor
     verts = @generateVertices()
     uvs = @generateUVs()
 
-    super verts, uvs
+    super renderer, verts, uvs
 
   ###
   # Generate array of vertices using our dimensions

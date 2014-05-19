@@ -10,11 +10,12 @@ ARETriangleActor = (function(_super) {
    * Sets us up with the supplied base and height, generating both our vertex
    * and UV sets.
    *
+   * @param [ARERenderer] renderer
    * @param [Number] base
    * @param [Number] height
    */
 
-  function ARETriangleActor(base, height) {
+  function ARETriangleActor(renderer, base, height) {
     var uvs, verts;
     this.base = base;
     this.height = height;
@@ -28,7 +29,7 @@ ARETriangleActor = (function(_super) {
     }
     verts = this.generateVertices();
     uvs = this.generateUVs();
-    ARETriangleActor.__super__.constructor.call(this, verts, uvs);
+    ARETriangleActor.__super__.constructor.call(this, renderer, verts, uvs);
   }
 
 

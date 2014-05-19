@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # Shader class
 class AREShader
 
@@ -18,7 +14,7 @@ class AREShader
     param.required @_vertSrc
     param.required @_fragSrc
     param.required @_gl
-    build = param.optional build, false
+    build = !!build
 
     # errors generated errors are pushed into this
     @errors = []

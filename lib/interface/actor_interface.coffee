@@ -1,9 +1,11 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # Actor interface class
 class AREActorInterface
+
+  constructor: (masterInterface) ->
+
+  # Set the target ARE instance
+  setEngine: (engine) ->
+    @_renderer = engine.getRenderer()
 
   ###
   # Fails with null
@@ -12,7 +14,7 @@ class AREActorInterface
   _findActor: (id) ->
     param.required id
 
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == id then return a
 
     null
@@ -27,7 +29,7 @@ class AREActorInterface
   createRawActor: (verts) ->
     param.required verts
 
-    new ARERawActor(JSON.parse verts).getId()
+    new ARERawActor(@_renderer, JSON.parse verts).getId()
 
   ###
   # Create a variable sided actor of the specified radius
@@ -37,7 +39,6 @@ class AREActorInterface
   # @return [Number] id created actor handle
   ###
   createPolygonActor: (radius, segments) ->
-    param.required radius
 
     ##
     ## NOTE: Things are a bit fucked up at the moment. The android engine
@@ -48,8 +49,7 @@ class AREActorInterface
     if typeof radius == "string"
       @createRawActor radius
     else
-      param.required segments
-      new AREPolygonActor(radius, segments).getId()
+      new AREPolygonActor(@_renderer, radius, segments).getId()
 
   ###
   # Creates a rectangle actor of the specified width and height
@@ -59,10 +59,7 @@ class AREActorInterface
   # @return [Number] id created actor handle
   ###
   createRectangleActor: (width, height) ->
-    param.required width
-    param.required height
-
-    new ARERectangleActor(width, height).getId()
+    new ARERectangleActor(@_renderer, width, height).getId()
 
   ###
   # Creates a circle actor with the specified radius
@@ -71,9 +68,7 @@ class AREActorInterface
   # @return [Number] id created actor handle
   ###
   createCircleActor: (radius) ->
-    param.required radius
-
-    new ARECircleActor(radius).getId()
+    new ARECircleActor(@_renderer, radius).getId()
 
   ###
   # Get actor render layer
@@ -106,7 +101,7 @@ class AREActorInterface
   # @return [Number] width
   ###
   getRectangleActorWidth: (id) ->
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == id and a instanceof ARERectangleActor
         return a.getWidth()
 
@@ -119,7 +114,7 @@ class AREActorInterface
   # @return [Number] height
   ###
   getRectangleActorHeight: (id) ->
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == id and a instanceof ARERectangleActor
         return a.getHeight()
 
@@ -133,7 +128,7 @@ class AREActorInterface
   # @return [Number] radius
   ###
   getCircleActorRadius: (id) ->
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == id and a instanceof AREPolygonActor
         return a.getRadius()
 
@@ -147,8 +142,6 @@ class AREActorInterface
   # @return [Number] opacity
   ###
   getActorOpacity: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       return a.getOpacity()
 
@@ -161,8 +154,6 @@ class AREActorInterface
   # @return [Boolean] visible
   ###
   getActorVisible: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       return a.getVisible()
 
@@ -177,8 +168,6 @@ class AREActorInterface
   # @return [String] position
   ###
   getActorPosition: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       pos = a.getPosition()
 
@@ -196,11 +185,8 @@ class AREActorInterface
   # @return [Number] angle in degrees or radians
   ###
   getActorRotation: (id, radians) ->
-    param.required id
-    radians = param.optional radians, false
-
     if (a = @_findActor(id)) != null
-      return a.getRotation radians
+      return a.getRotation !!radians
 
     0.000001
 
@@ -212,8 +198,6 @@ class AREActorInterface
   # @return [String] col
   ###
   getActorColor: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       color = a.getColor()
       return JSON.stringify
@@ -257,7 +241,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setRectangleActorHeight: (id, height) ->
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == id and a instanceof ARERectangleActor
         a.setHeight height
         return true
@@ -272,7 +256,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setRectangleActorWidth: (id, width) ->
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == id and a instanceof ARERectangleActor
         a.setWidth width
         return true
@@ -287,7 +271,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setCircleActorRadius: (id, radius) ->
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == id and a instanceof AREPolygonActor
         a.setRadius radius
         return true
@@ -307,13 +291,9 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   attachTexture: (texture, w, h, x, y, angle, id) ->
-    param.required id
-    param.required texture
-    param.required w
-    param.required h
-    x = param.optional x, 0
-    y = param.optional y, 0
-    angle = param.optional angle, 0
+    x ||= 0
+    y ||= 0
+    angle ||= 0
 
     if (a = @_findActor(id)) != null
       a.attachTexture texture, w, h, x, y, angle
@@ -330,9 +310,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorLayer: (layer, id) ->
-    param.required id
-    param.required layer
-
     if (a = @_findActor(id)) != null
       a.setLayer layer
       return true
@@ -349,9 +326,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorPhysicsLayer: (layer, id) ->
-    param.required id
-    param.required layer
-
     if (a = @_findActor(id)) != null
       a.setPhysicsLayer layer
       return true
@@ -365,8 +339,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   removeAttachment: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.removeAttachment()
       return true
@@ -382,8 +354,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setAttachmentVisiblity: (visible, id) ->
-    param.required visible
-
     if (a = @_findActor(id)) != null
       return a.setAttachmentVisibility visible
 
@@ -397,9 +367,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   updateVertices: (verts, id) ->
-    param.required verts
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.updateVertices JSON.parse verts
       return true
@@ -413,8 +380,6 @@ class AREActorInterface
   # @return [String] vertices
   ###
   getVertices: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       return JSON.stringify a.getVertices()
 
@@ -428,11 +393,9 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   destroyActor: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.destroyPhysicsBody()
-      ARERenderer.removeActor a
+      @_renderer.removeActor a
       return true
 
     false
@@ -448,9 +411,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setPhysicsVertices: (verts, id) ->
-    param.required verts
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.setPhysicsVertices JSON.parse verts
       return true
@@ -467,9 +427,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setRenderMode: (mode, id) ->
-    mode = param.required mode, ARERenderer.renderModes
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.setRenderMode mode
       return true
@@ -484,9 +441,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorOpacity: (opacity, id) ->
-    param.required opacity
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.setOpacity opacity
       return true
@@ -501,9 +455,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorVisible: (visible, id) ->
-    param.required visible
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.setVisible visible
       return true
@@ -519,10 +470,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorPosition: (x, y, id) ->
-    param.required x
-    param.required y
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.setPosition new cp.v x, y
       return true
@@ -538,12 +485,8 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorRotation: (angle, id, radians) ->
-    param.required angle
-    param.required id
-    radians = param.optional radians, false
-
     if (a = @_findActor(id)) != null
-      a.setRotation angle, radians
+      a.setRotation angle, !!radians
       return true
 
     false
@@ -558,11 +501,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorColor: (r, g, b, id) ->
-    param.required r
-    param.required g
-    param.required b
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.setColor new AREColor3 r, g, b
       return true
@@ -578,9 +516,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorTexture: (name, id) ->
-    param.required name
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.setTexture name
       return true
@@ -596,9 +531,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setActorTextureRepeat: (x, y, id) ->
-    param.required x
-    param.required id
-    y = param.optional y, 1
+    y ||= 1
 
     if (a = @_findActor(id)) != null
       a.setTextureRepeat x, y
@@ -617,11 +550,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   enableActorPhysics: (mass, friction, elasticity, id) ->
-    param.required id
-    param.required mass
-    param.required friction
-    param.required elasticity
-
     if (a = @_findActor(id)) != null
       a.createPhysicsBody mass, friction, elasticity
       return true
@@ -635,8 +563,6 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   destroyPhysicsBody: (id) ->
-    param.required id
-
     if (a = @_findActor(id)) != null
       a.destroyPhysicsBody()
       return true

@@ -1,15 +1,15 @@
 refreshRendererMode = function() {
   var modestr = "N/A";
-  if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_WGL)
+  if (window.renderer.isWGLRendererActive())
     modestr = "WebGL";
-  else if (ARERenderer.activeRendererMode === ARERenderer.RENDERER_MODE_CANVAS)
+  else if(window.renderer.isCanvasRendererActive())
     modestr = "Canvas";
 
   document.getElementById("RendererMode").innerHTML = modestr;
 }
 
 refreshActorCount = function() {
-  document.getElementById("ActorCount").innerHTML = ARERenderer.actors.length;
+  document.getElementById("ActorCount").innerHTML = window.renderer._actors.length;
 }
 
 startActorCountInterval = function() {

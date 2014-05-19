@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # Animation interface class
 class AREAnimationInterface
 
@@ -25,29 +21,32 @@ class AREAnimationInterface
     # AREVertAnimation
     "vertices": AREVertAnimation
 
+  constructor: (masterInterface) ->
+
+  # Set the target ARE instance
+  setEngine: (engine) ->
+    @_renderer = engine.getRenderer()
+
   # Check if we know how to directly animate the property provided
   #
   # @param [String] property property name, parent name if composite
   # @return [Boolean] canAnimate
   canAnimate: (property) ->
-
-    if AREAnimationInterface._animationMap[property] == undefined
-      return false
-    true
+    !!AREAnimationInterface._animationMap[property]
 
   # Grab animation target for a property, if we support it. Null otherwise.
   #
   # @param [String] property property name, arent name if composite
   # @return [String] name
   getAnimationName: (property) ->
-    if AREAnimationInterface._animationMap[property] == undefined
+    if !AREAnimationInterface._animationMap[property]
       return false
     else
-      type = AREAnimationInterface._animationMap[property]
-
-      if type == AREBezAnimation then return "bezier"
-      else if type == AREPsyxAnimation then return "psyx"
-      else if type == AREVertAnimation then return "vert"
+      switch AREAnimationInterface._animationMap[property]
+        when AREBezAnimation then return "bezier"
+        when AREPsyxAnimation then return "psyx"
+        when AREVertAnimation then return "vert"
+        else return false
 
   # Top-level animate method for ARE, creates specific animations internally
   # depending on the requirements of the input. Fails with null if the property
@@ -63,14 +62,13 @@ class AREAnimationInterface
   # @param [String] property property array, second element is component
   # @param [String] options options to pass to animation, varies by property
   animate: (actorID, property, options) ->
-    param.required actorID
     property = JSON.parse param.required property
     options = JSON.parse param.required options
-    options.start = param.optional options.start, 0
+    options.start ||= 0
 
     actor = null
 
-    for a in ARERenderer.actors
+    for a in @_renderer.actors
       if a.getId() == actorID
         actor = a
         break
@@ -113,12 +111,8 @@ class AREAnimationInterface
   # @return [String] bezValues
   preCalculateBez: (options) ->
     options = JSON.parse param.required options
-
-    param.required options.startVal
-    param.required options.endVal
-    param.required options.duration
-    options.controlPoints = param.required options.controlPoints, []
-    options.fps = param.required options.fps, 30
+    options.controlPoints ||= 0
+    options.fps ||= 30
 
     ret = new AREBezAnimation(null, options, true).preCalculate()
     JSON.stringify ret

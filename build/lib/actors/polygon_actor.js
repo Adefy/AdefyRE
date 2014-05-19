@@ -12,11 +12,12 @@ AREPolygonActor = (function(_super) {
    *
    * NOTE: Texture support is not available! No UVs! ;(
    *
+   * @param [ARERenderer] renderer
    * @param [Number] radius
    * @param [Number] segments
    */
 
-  function AREPolygonActor(radius, segments) {
+  function AREPolygonActor(renderer, radius, segments) {
     var psyxVerts, uvs, verts;
     this.radius = radius;
     this.segments = segments;
@@ -25,7 +26,7 @@ AREPolygonActor = (function(_super) {
       this._verts = this.radius;
       this.radius = null;
       uvs = this.generateUVs(this._verts);
-      AREPolygonActor.__super__.constructor.call(this, this._verts, uvs);
+      AREPolygonActor.__super__.constructor.call(this, renderer, this._verts, uvs);
       this.setPhysicsVertices(this._verts);
     } else {
       param.required(segments);
@@ -40,7 +41,7 @@ AREPolygonActor = (function(_super) {
         mode: "physics"
       });
       uvs = this.generateUVs(verts);
-      AREPolygonActor.__super__.constructor.call(this, verts, uvs);
+      AREPolygonActor.__super__.constructor.call(this, renderer, verts, uvs);
       this.setPhysicsVertices(psyxVerts);
     }
     this.setRenderMode(ARERenderer.RENDER_MODE_TRIANGLE_FAN);
@@ -57,7 +58,7 @@ AREPolygonActor = (function(_super) {
 
   AREPolygonActor.prototype.generateVertices = function(options) {
     var i, radFactor, tanFactor, theta, tx, ty, verts, x, y, _i, _j, _ref, _ref1, _tv;
-    options = param.optional(options, {});
+    options || (options = {});
     x = this.radius;
     y = 0;
     theta = (2.0 * 3.1415926) / this.segments;

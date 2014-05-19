@@ -10,11 +10,12 @@ ARERectangleActor = (function(_super) {
    * Sets us up with the supplied width and height, generating both our vertex
    * and UV sets.
    *
+   * @param [ARERenderer] renderer
    * @param [Number] width
    * @param [Number] height
    */
 
-  function ARERectangleActor(width, height) {
+  function ARERectangleActor(renderer, width, height) {
     var uvs, verts;
     this.width = width;
     this.height = height;
@@ -28,7 +29,7 @@ ARERectangleActor = (function(_super) {
     }
     verts = this.generateVertices();
     uvs = this.generateUVs();
-    ARERectangleActor.__super__.constructor.call(this, verts, uvs);
+    ARERectangleActor.__super__.constructor.call(this, renderer, verts, uvs);
   }
 
 

@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # Color class, holds r/g/b components
 #
 # Serves to provide a consistent structure for defining colors, and offers
@@ -16,9 +12,9 @@ class AREColor3
   # @param [Number] b blue component
   ###
   constructor: (colOrR, g, b) ->
-    colOrR = param.optional colOrR, 0
-    g = param.optional g, 0
-    b = param.optional b, 0
+    colOrR ||= 0
+    g ||= 0
+    b ||= 0
 
     if colOrR instanceof AREColor3
       @_r = colOrR.getR()

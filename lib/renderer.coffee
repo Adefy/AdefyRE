@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # ARERenderer
 #
 # @depend objects/color3.coffee
@@ -14,49 +10,6 @@
 class ARERenderer
 
   ###
-  # @type [Number]
-  ###
-  @_nextID: 0
-
-  ###
-  # GL Context
-  # @type [Context]
-  ###
-  @_gl: null
-
-  ###
-  # @property [Array<Object>] actors for rendering
-  ###
-  @actors: []
-
-  ###
-  # @property [Object] actor_hash actor objects stored by id, for faster access
-  ###
-  @actor_hash: {}
-
-  ###
-  # @property [Array<Object>] texture objects, with names and gl textures
-  ###
-  @textures: []
-
-  ###
-  # This is a tad ugly, but it works well. We need to be able to create
-  # instance objects in the constructor, and provide one resulting object
-  # to any class that asks for it, without an instance avaliable. @me is set
-  # in the constructor, and an error is thrown if it is not already null.
-  #
-  # @property [ARERenderer] instance reference, enforced const in constructor
-  ###
-  @me: null
-
-  ###
-  # @property [Object] camPos Camera position, with x and y keys
-  ###
-  @camPos:
-    x: 0
-    y: 0
-
-  ###
   # Renderer Modes
   # 0: null
   #    The null renderer is the same as the canvas renderer, however
@@ -67,64 +20,34 @@ class ARERenderer
   #    All rendering will be done using WebGL
   # @enum
   ###
-  @RENDERER_MODE_NULL: 0
-  @RENDERER_MODE_CANVAS: 1
-  @RENDERER_MODE_WGL: 2
-
-  ###
-  # @type [Array<Number>]
-  ###
-  @rendererModes: [0, 1, 2]
-
-  ###
-  # This denote the rendererMode that is wanted by the user
-  # @type [Number]
-  ###
-  @rendererMode: @RENDERER_MODE_WGL
-  @setRendererMode: (mode) ->
-    @rendererMode = param.optional mode, null, @rendererModes
-
-  ###
-  # denotes the currently chosen internal Renderer, this value may be different
-  # from the rendererMode, especially if webgl failed to load.
-  # @type [Number]
-  ###
-  @activeRendererMode: null
+  @RENDER_MODE_NULL: 0
+  @RENDER_MODE_CANVAS: 1
+  @RENDER_MODE_WGL: 2
 
   ###
   # Render Modes
   # This affects the method GL will use to render a WGL element
   # @enum
   ###
-  @RENDER_MODE_LINE_LOOP: 0
-  @RENDER_MODE_TRIANGLE_FAN: 1
-  @RENDER_MODE_TRIANGLE_STRIP: 2
+  @GL_MODE_LINE_LOOP: 0
+  @GL_MODE_TRIANGLE_FAN: 1
+  @GL_MODE_TRIANGLE_STRIP: 2
 
   ###
-  # @type [Array<Number>]
-  ###
-  @renderModes: [0, 1, 2]
-
-  ###
-  # Render Style
   # A render style determines how a canvas element is drawn, this can
   # also be used for WebGL elements as well, as they fine tune the drawing
   # process.
+
   # STROKE will work with all RENDER_MODE*.
-  # FILL will work with RENDER_MODE_TRIANGLE_FAN and
-  # RENDER_MODE_TRIANGLE_STRIP only.
+  # FILL will work with GL_MODE_TRIANGLE_FAN and
+  # GL_MODE_TRIANGLE_STRIP only.
   # FILL_AND_STROKE will work with all current render modes, however
-  # RENDER_MODE_LINE_LOOP will only use STROKE
+  # GL_MODE_LINE_LOOP will only use STROKE
   # @enum
   ###
   @RENDER_STYLE_STROKE: 1
   @RENDER_STYLE_FILL: 2
   @RENDER_STYLE_FILL_AND_STROKE: 3
-
-  ###
-  # @type [Array<Number>]
-  ###
-  @renderStyles: [0, 1, 2, 3]
 
   ###
   # Render Modes
@@ -136,186 +59,144 @@ class ARERenderer
   @MATERIAL_TEXTURE: "texture"
 
   ###
-  # Signifies the current material; when this doesn't match, a material change
-  # is made (different shader program)
-  # @type [MATERIAL_*]
-  ###
-  @_currentMaterial: "none"
-
-  ###
-  # Should 0, 0 always be the top left position?
-  ###
-  @force_pos0_0: true
-
-  ###
-  # Should the screen be cleared every frame, or should the engine handle
-  # screen clearing. This option is only valid with the WGL renderer mode.
-  # @type [Boolean]
-  ###
-  @alwaysClearScreen: false
-
-  ###
   # Sets up the renderer, using either an existing canvas or creating a new one
   # If a canvasId is provided but the element is not a canvas, it is treated
   # as a parent. If it is a canvas, it is adopted as our canvas.
   #
   # Bails early if the GL context could not be created
   #
-  # @param [String] id canvas id or parent selector
-  # @param [Number] width canvas width
-  # @param [Number] height canvas height
+  # @param [Object] options renderer initialization options
+  # @option options [String] canvasId canvas id or parent selector
+  # @option options [Number] width canvas width
+  # @option options [Number] height canvas height
+  # @option options [Number] renderMode optional render mode, defaults to WebGL
+  # @option options [Boolean] antialias default true
+  # @option options [Boolean] alpha default true
+  # @option options [Boolean] premultipliedAlpha default true
+  # @option options [Boolean] depth default true
+  # @option options [Boolean] stencil default false
+  # @option options [Boolean] preserveDrawingBuffer manual clears, default false
+  #
   # @return [Boolean] success
   ###
-  constructor: (canvasId, @_width, @_height) ->
-    canvasId = param.optional canvasId, ""
+  constructor: (opts) ->
+    @_width = param.required opts.width
+    @_height = param.required opts.height
+    canvasId = opts.canvasId or ""
+    renderMode = opts.renderMode or ARERenderer.RENDER_MODE_WGL
 
+    opts.premultipliedAlpha ||= true
+    opts.antialias ||= true
+    opts.alpha ||= true
+    opts.depth ||= true
+    opts.stencil ||= false
+    @_alwaysClearScreen = !!opts.preserveDrawingBuffer
+
+    @_nextID = 0            # Counter we use for unique actor Ids
     @_defaultShader = null  # Default shader used for drawing actors
     @_canvas = null         # HTML <canvas> element
-    @_ctx = null            # Drawing context
+    @_ctx = null            # Canvas drawing context
+    @_gl = null             # WebGL drawing context
+    @_actors = []           # Internal actors collection
+    @_actor_hash = {}       # Actors keyed by id for faster access
+    @_textures = []         # Texture objects, with names and gl textures
 
-    @_pickRenderRequested = false   # When true, triggers a pick render
+    @_currentMaterial = "none" # When this changes, the shader program changes
+    @_activeRendererMode = null
+    @_cameraPosition = x: 0, y: 0
 
     # Pick render parameters
-    @_pickRenderBuff = null          # used for WGL renderer
-    @_pickRenderSelectionRect = null # used for canvas renderer
-    @_pickRenderCB = null
+    @_pickRenderRequested = false    # When true, triggers a pick render
+    @_pickRenderBuff = null          # Used for WGL renderer
+    @_pickRenderSelectionRect = null # Used for canvas renderer
+    @_pickRenderCB = null            # Callback for successful pick render
 
-    # defined if there was an error during initialization
-    @initError = undefined
-
-    # Treat empty canvasId as undefined
-    if canvasId.length == 0 then canvasId = undefined
-
-    # Two renderers cannot exist at the same time, or else we lose track of
-    # the default shaders actor-side. Specifically, we grab the default shader
-    # from the @me object, and if it ever changes, future actors will switch
-    # to the new @me, without any warning. Blegh.
-    #
-    # TODO: fugly
-    if ARERenderer.me != null
-      throw new Error "Only one instance of ARERenderer can be created!"
-    else
-      ARERenderer.me = @
-
-    @_width = param.optional @_width, 800
-    @_height = param.optional @_height, 600
-
-    if @_width <= 1 or @_height <= 1
-      throw new Error "Canvas must be at least 2x2 in size"
+    @_clearColor = new AREColor3 255, 255, 255
 
     # Helper method
-    _createCanvas = (parent, id, w, h) ->
-      _c = ARERenderer.me._canvas = document.createElement "canvas"
-      _c.width = w
-      _c.height = h
-      _c.id = "are_canvas"
+    _createCanvas = (parent, id) =>
+      @_canvas = document.createElement "canvas"
+      @_canvas.width = @_width
+      @_canvas.height = @_height
+      @_canvas.id = id
 
-      # TODO: Refactor this, it's terrible
-      if parent == "body"
-        document.getElementsByTagName(parent)[0].appendChild _c
-      else
-        document.getElementById(parent).appendChild _c
+      document.querySelector(parent).appendChild @_canvas
+      ARELog.info "Creating canvas ##{id} [#{@_width}x#{@_height}]"
 
     # Create a new canvas if no id is supplied
-    if canvasId == undefined or canvasId == null
+    if !canvasId
+      _createCanvas "body", "are_canvas"
 
-      _createCanvas "body", "are_canvas", @_width, @_height
-      ARELog.info "Creating canvas #are_canvas [#{@_width}x#{@_height}]"
-      @_canvas = document.getElementById "are_canvas"
-
+    # Attempt to use existing canvas
     else
-
       @_canvas = document.getElementById canvasId
 
-      # Create canvas on the body with id canvasId
-      if @_canvas == null
+      # Canvas not found
+      if !@_canvas
+        _createCanvas "body", canvasId
 
-        _createCanvas "body", canvasId, @_width, @_height
-        ARELog.info "Creating canvas ##{canvasId} [#{@_width}x#{@_height}]"
-        @_canvas = document.getElementById canvasId
-
+      # Canvas found, validate
       else
 
-        # Element exists, see if it is a canvas
         if @_canvas.nodeName.toLowerCase() == "canvas"
-          ARELog.warn "Canvas exists, ignoring supplied dimensions"
-          @_width = @_canvas.width
-          @_height = @_canvas.height
-          ARELog.info "Using canvas ##{canvasId} [#{@_width}x#{@_height}]"
+          @_canvas.width = @_width
+          @_canvas.height = @_height
+
+        # Create canvas using element as a parent
         else
+          _createCanvas canvasId, "are_canvas"
 
-          # Create canvas using element as a parent
-          _createCanvas canvasId, "are_canvas", @_width, @_height
-          ARELog.info "Creating canvas #are_canvas [#{@_width}x#{@_height}]"
+    throw new Error "Failed to create or find suitable canvas!" if !@_canvas
 
-    if @_canvas is null
-      return ARELog.error "Canvas does not exist!"
+    switch renderMode
+      when ARERenderer.RENDER_MODE_NULL
+        @_initializeNullRendering()
 
-    # Initialize Null Context
-    switch ARERenderer.rendererMode
-      when ARERenderer.RENDERER_MODE_NULL
-        @initializeNullContext()
+      when ARERenderer.RENDER_MODE_CANVAS
+        @_initializeCanvasRendering()
 
-    # Initialize Canvas context
-      when ARERenderer.RENDERER_MODE_CANVAS
-        @initializeCanvasContext()
-
-    # Initialize GL context
-      when ARERenderer.RENDERER_MODE_WGL
-        unless @initializeWGLContext(@_canvas)
+      when ARERenderer.RENDER_MODE_WGL
+        unless @_initializeWebGLRendering opts
           ARELog.info "Falling back on regular canvas renderer"
-          @initializeCanvasContext()
+          @_initializeCanvasRendering()
 
-      else
+      else throw new Error "Invalid Renderer #{rendererMode}"
 
-        ARELog.error "Invalid Renderer #{ARERenderer.rendererMode}"
-
-    ARELog.info "Using the #{ARERenderer.activeRendererMode} renderer mode"
+    ARELog.info "Using the #{@_activeRendererMode} renderer mode"
 
     @setClearColor 0, 0, 0
-
     @switchMaterial ARERenderer.MATERIAL_FLAT
 
   ###
   # Initializes a WebGL renderer context
-  # @return [Boolean]
+  #
+  # @return [Boolean] success
   ###
-  initializeWGLContext: (canvas) ->
+  _initializeWebGLRendering: (options) ->
 
-    ##
-    # Grab the webgl context
-    options =
-      # preserveDrawingBuffer set to false will cause WebGL to clear the
-      # screen automatically.
-      preserveDrawingBuffer: ARERenderer.alwaysClearScreen
-      antialias: true
-      alpha: true
-      premultipliedAlpha: true
-      depth: true
-      stencil: false
+    @_gl = @_canvas.getContext "webgl", options
 
-    gl = canvas.getContext "webgl", options
-
-    # If null, use experimental-webgl
-    if gl is null
+    if !@_gl
       ARELog.warn "Continuing with experimental webgl support"
-      gl = canvas.getContext "experimental-webgl"
+      @_gl = @_canvas.getContext "experimental-webgl", options
 
-    # If still null, switch to canvas rendering
-    if gl is null then return
+    if !@_gl
+      ARELog.warn "Failed to obtain WebGL context"
+      return false
 
-    ARERenderer._gl = gl
-
-    ARELog.info "Created WebGL context"
+    ARELog.info "Obtained WebGL context"
 
     # Perform rendering setup
-    gl.enable gl.DEPTH_TEST
-    gl.enable gl.BLEND
+    @_gl.enable @_gl.DEPTH_TEST
+    @_gl.enable @_gl.BLEND
 
-    gl.depthFunc gl.LEQUAL
-    gl.blendFunc gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA
+    @_gl.depthFunc @_gl.LEQUAL
+    @_gl.blendFunc @_gl.SRC_ALPHA, @_gl.ONE_MINUS_SRC_ALPHA
 
-    ARELog.info "Renderer initialized"
+    r = @_clearColor.getR true
+    g = @_clearColor.getG true
+    b = @_clearColor.getB true
+    @_gl.clearColor r, g, b, 1.0
 
     shaders = AREShader.shaders
     wireShader = shaders.wire
@@ -325,7 +206,7 @@ class ARERenderer
     @_defaultShader = new AREShader(
       solidShader.vertex,
       solidShader.fragment,
-      gl,
+      @_gl,
       true
     )
     @_defaultShader.generateHandles()
@@ -333,7 +214,7 @@ class ARERenderer
     @_wireShader = new AREShader(
       wireShader.vertex,
       wireShader.fragment,
-      gl,
+      @_gl,
       true
     )
     @_wireShader.generateHandles()
@@ -341,47 +222,44 @@ class ARERenderer
     @_texShader = new AREShader(
       textureShader.vertex,
       textureShader.fragment,
-      gl,
+      @_gl,
       true
     )
     @_texShader.generateHandles()
 
     ARELog.info "Initialized shaders"
-    ARELog.info "ARE WGL initialized"
 
-    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_WGL
+    @_activeRendererMode = ARERenderer.RENDER_MODE_WGL
     @render = @_wglRender
 
+    ARELog.info "WebgL renderer initialized"
     true
 
   ###
   # Initializes a canvas renderer context
+  #
   # @return [Boolean]
   ###
-  initializeCanvasContext: ->
-
+  _initializeCanvasRendering: ->
     @_ctx = @_canvas.getContext "2d"
 
-    ARELog.info "ARE CTX initialized"
-
-    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_CANVAS
+    @_activeRendererMode = ARERenderer.RENDER_MODE_CANVAS
     @render = @_cvRender
 
+    ARELog.info "Canvas renderer initialized"
     true
 
   ###
   # Initializes a null renderer context
   # @return [Boolean]
   ###
-  initializeNullContext: ->
-
+  _initializeNullRendering: ->
     @_ctx = @_canvas.getContext "2d"
 
-    ARELog.info "ARE Null initialized"
-
-    ARERenderer.activeRendererMode = ARERenderer.RENDERER_MODE_NULL
+    @_activeRendererMode = ARERenderer.RENDER_MODE_NULL
     @render = @_nullRender
 
+    ARELog.info "Null renderer initialized"
     true
 
   ###
@@ -392,14 +270,6 @@ class ARERenderer
   # methods.
   ###
   render: ->
-    @
-
-  ###
-  # Returns instance (only one may exist, enforced in constructor)
-  #
-  # @return [ARERenderer] me
-  ###
-  @getMe: -> ARERenderer.me
 
   ###
   # Returns the internal default shader
@@ -437,19 +307,11 @@ class ARERenderer
   getContext: -> @_ctx
 
   ###
-  # Returns static gl object
-  #
-  # @return [Object] gl
-  ###
-  @getGL: -> ARERenderer._gl
-
-  ###
   # Returns canvas width
   #
   # @return [Number] width
   ###
   getWidth: -> @_width
-  @getWidth: -> (@me && @me.getWidth()) || -1
 
   ###
   # Returns canvas height
@@ -457,7 +319,12 @@ class ARERenderer
   # @return [Number] height
   ###
   getHeight: -> @_height
-  @getHeight: -> (@me && @me.getHeight()) || -1
+
+  # @param [Object] position hash with x, y values
+  setCameraPosition: (@_cameraPosition) ->
+
+  # @return [Object] position hash with x, y values
+  getCameraPosition: -> @_cameraPosition
 
   ###
   # Returns the clear color
@@ -480,8 +347,7 @@ class ARERenderer
   #   @param [Number] b blue component
   ###
   setClearColor: (colOrR, g, b) ->
-
-    if @_clearColor == undefined then @_clearColor = new AREColor3
+    @_clearColor = new AREColor3 if !@_clearColor
 
     if colOrR instanceof AREColor3
       @_clearColor = colOrR
@@ -490,15 +356,13 @@ class ARERenderer
       @_clearColor.setG g || 0
       @_clearColor.setB b || 0
 
-    if ARERenderer.activeRendererMode == ARERenderer.RENDERER_MODE_WGL
-      colOrR = @_clearColor.getR true
+    if @_activeRendererMode == ARERenderer.RENDER_MODE_WGL
+      r = @_clearColor.getR true
       g = @_clearColor.getG true
       b = @_clearColor.getB true
+
       # Actually set the color if possible
-      if ARERenderer._gl != null and ARERenderer._gl != undefined
-        ARERenderer._gl.clearColor colOrR, g, b, 1.0
-      else
-        ARELog.error "Can't set clear color, ARERenderer._gl not valid!"
+      @_gl.clearColor r, g, b, 1.0 if @_gl
 
     @
 
@@ -513,8 +377,7 @@ class ARERenderer
     param.required cb
 
     if @_pickRenderRequested
-      ARELog.warn "Pick render already requested! No request queue"
-      return
+      return ARELog.warn "Pick render already requested! No request queue"
 
     @_pickRenderBuff = buffer
     @_pickRenderSelectionRect = null
@@ -538,8 +401,7 @@ class ARERenderer
     param.required cb
 
     if @_pickRenderRequested
-      ARELog.warn "Pick render already requested! No request queue"
-      return
+      return ARELog.warn "Pick render already requested! No request queue"
 
     @_pickRenderBuff = null
     @_pickRenderSelectionRect = selectionRect
@@ -554,7 +416,7 @@ class ARERenderer
   # @private
   ###
   _wglRender: ->
-    gl = ARERenderer._gl
+    gl = @_gl # Local var is faster
 
     # Render to an off-screen buffer for screen picking if requested to do so.
     # The resulting render is used to pick visible objects. We render in a
@@ -566,26 +428,26 @@ class ARERenderer
     if @_pickRenderRequested
       gl.bindFramebuffer gl.FRAMEBUFFER, @_pickRenderBuff
 
-    # Clear the screen
+    # Did you know? If preserveDrawingBuffer is false WebGL clears the screen
+    # by itself.
+    # 
+    # However a bit of dragging occurs when rendering, probaly some fake motion
+    # blur?
     #
-    # Did you know? WebGL actually clears the screen by itself:
-    # if preserveDrawingBuffer is false
-    # However a bit of dragging occurs when rendering, probaly some fake
-    # motion blur?
-    #
-    # Get rid of this and manually requests clears from the editor when hiding
+    # Get rid of this and manually request clears from the editor when hiding
     # actors.
-    if ARERenderer.alwaysClearScreen
+    if @_alwaysClearScreen
       gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
     # Draw everything!
-    actorCount = ARERenderer.actors.length
+    actorCount = @_actors.length
+
     if @_pickRenderRequested
       while actorCount--
-        a = ARERenderer.actors[actorCount]
+        a = @_actors[actorCount]
         a_id = a._id
-        # If rendering for picking, we need to temporarily change the color
-        # of the actor. Blue key is 248
+
+        # Change the color for picking. Blue key is 248
         _savedColor = a._color
         _savedColor =
           r: _savedColor._r
@@ -605,23 +467,18 @@ class ARERenderer
         a.setColor _savedColor.r, _savedColor.g, _savedColor.b
         a.setOpacity _savedOpacity
 
-      # Switch back to a normal rendering mode, and immediately re-render to the
-      # actual screen
-      # Call cb
       @_pickRenderCB()
-
-      # Unset vars
       @_pickRenderRequested = false
       @_pickRenderBuff = null
       @_pickRenderCB = null
 
-      # Switch back to normal framebuffer, re-render
+      # Switch back to normal framebuffer, re-render true frame
       gl.bindFramebuffer gl.FRAMEBUFFER, null
       @render()
 
     else
       while actorCount--
-        a = ARERenderer.actors[actorCount]
+        a = @_actors[actorCount]
         a = a.updateAttachment() if a._attachedTexture
 
         ##
@@ -629,8 +486,9 @@ class ARERenderer
         ##       will cause the draw to fail! Pass in a custom shader if
         ##       switching to a different material.
         ##
-        if a._material != ARERenderer._currentMaterial
+        if a._material != @_currentMaterial
           @switchMaterial a._material
+
         a.wglDraw gl
 
     @
@@ -641,8 +499,8 @@ class ARERenderer
   # @private
   ###
   _cvRender: ->
-    ctx = @_ctx
-    if ctx == undefined or ctx == null then return
+    return if !@_ctx
+    ctx = @_ctx # Local var is faster
 
     if @_clearColor
       ctx.fillStyle = "rgb#{@_clearColor}"
@@ -652,17 +510,15 @@ class ARERenderer
 
     # Draw everything!
     ctx.save()
-    # cursed inverted scene!
-    #unless ARERenderer.force_pos0_0
     ctx.translate 0, @_height
     ctx.scale 1, -1
 
-    for a in ARERenderer.actors
+    for a in @_actors
       ctx.save()
 
       if @_pickRenderRequested
-        # If rendering for picking, we need to temporarily change the color
-        # of the actor. Blue key is 248
+
+        # Change the color for picking. Blue key is 248
         _savedColor = a._color
         _savedColor =
           r: _savedColor._r
@@ -685,7 +541,7 @@ class ARERenderer
       else
         a = a.updateAttachment()
 
-        if (material = a.getMaterial()) != ARERenderer._currentMaterial
+        if (material = a.getMaterial()) != @_currentMaterial
           @switchMaterial material
 
         a.cvDraw ctx
@@ -694,15 +550,13 @@ class ARERenderer
 
     ctx.restore()
 
-    # Switch back to a normal rendering mode, and immediately re-render to the
-    # actual screen
+    # Switch back to a normal rendering mode, and render to the actual screen
     if @_pickRenderRequested
 
       # Call cb
       r = @_pickRenderSelectionRect
       @_pickRenderCB ctx.getImageData(r.x, r.y, r.width, r.height)
 
-      # Unset vars
       @_pickRenderRequested = false
       @_pickRenderBuff = null
       @_pickRenderSelectionRect = null
@@ -718,10 +572,8 @@ class ARERenderer
   # @private
   ###
   _nullRender: ->
-
-    ctx = @_ctx
-
-    if ctx == undefined or ctx == null then return
+    return if !@_ctx
+    ctx = @_ctx # Local var is faster
 
     if @_clearColor
       ctx.fillStyle = "rgb#{@_clearColor}"
@@ -729,11 +581,8 @@ class ARERenderer
     else
       ctx.clearRect 0, 0, @_canvas.width, @_canvas.height
 
-    # Draw everything!
-    for a in ARERenderer.actors
-
+    for a in @_actors
       a = a.updateAttachment()
-
       a.nullDraw ctx
 
     @
@@ -744,19 +593,17 @@ class ARERenderer
   # @return [Void]
   ###
   clearScreen: ->
-    switch ARERenderer.activeRendererMode
-      when ARERenderer.RENDERER_MODE_CANVAS
+    switch @_activeRendererMode
+      when ARERenderer.RENDER_MODE_CANVAS
 
-        ctx = @_ctx
         if @_clearColor
-          ctx.fillStyle = "rgb#{@_clearColor}"
-          ctx.fillRect 0, 0, @_width, @_height
+          @_ctx.fillStyle = "rgb#{@_clearColor}"
+          @_ctx.fillRect 0, 0, @_width, @_height
         else
-          ctx.clearRect 0, 0, @_width, @_height
+          @_ctx.clearRect 0, 0, @_width, @_height
 
-      when ARERenderer.RENDERER_MODE_WGL
-        gl = ARERenderer._gl # Code asthetics
-        gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
+      when ARERenderer.RENDER_MODE_WGL
+        @_gl.clear @_gl.COLOR_BUFFER_BIT | @_gl.DEPTH_BUFFER_BIT
 
     @
 
@@ -764,35 +611,41 @@ class ARERenderer
   # Returns the currently active renderer mode
   # @return [Number] rendererMode
   ###
-  getActiveRendererMode: ->
-    ARERenderer.activeRendererMode
+  getActiveRendererMode: -> @_activeRendererMode
 
   ###
   # Is the null renderer active?
   # @return [Boolean] is_active
   ###
   isNullRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_NULL
+    @_activeRendererMode == ARERenderer.RENDER_MODE_NULL
 
   ###
   # Is the canvas renderer active?
   # @return [Boolean] is_active
   ###
   isCanvasRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_CANVAS
+    @_activeRendererMode == ARERenderer.RENDER_MODE_CANVAS
 
   ###
   # Is the WebGL renderer active?
   # @return [Boolean] is_active
   ###
   isWGLRendererActive: ->
-    @getActiveRendererMode() == ARERenderer.RENDERER_MODE_WGL
+    @_activeRendererMode == ARERenderer.RENDER_MODE_WGL
 
   ###
   # Returns a unique id, used by actors
   # @return [Number] id unique id
   ###
-  @getNextId: -> ARERenderer._nextID++
+  getNextId: -> @_nextID++
+
+  ###
+  # Get GL context
+  #
+  # @return [Context] gl
+  ###
+  getGL: -> @_gl
 
   ###
   # Add an actor to our render list. A layer can be optionally specified, at
@@ -804,44 +657,36 @@ class ARERenderer
   # @param [Number] layer
   # @return [ARERawActor] actor added actor
   ###
-  @addActor: (actor, layer) ->
+  addActor: (actor, layer) ->
     param.required actor
-    layer = param.optional layer, actor.layer
-
-    if actor.layer != layer then actor.layer = layer
+    actor.layer = layer or actor.layer
 
     # Find index to insert at to maintain layer order
-    layerIndex = _.sortedIndex ARERenderer.actors, actor, "layer"
+    layerIndex = _.sortedIndex @_actors, actor, "layer"
 
     # Insert!
-    ARERenderer.actors.splice layerIndex, 0, actor
-    ARERenderer.actor_hash[actor.getId()] = actor
+    @_actors.splice layerIndex, 0, actor
+    @_actor_hash[actor.getId()] = actor
 
     actor
 
   ###
   # Remove an actor from our render list by either actor, or id
   #
-  # @param [ARERawActor,Number] actor actor, or id of actor to remove
-  # @param [Boolean] nodestroy optional, defaults to false
+  # @param [ARERawActor, Number] actorId actor id, or actor
+  # @param [Boolean] noDestroy optional, defaults to false
   # @return [Boolean] success
   ###
-  @removeActor: (oactor, nodestroy) ->
-    param.required oactor
-    nodestroy = param.optional nodestroy, false
+  removeActor: (actorId, noDestroy) ->
+    param.required actorId
+    noDestroy = !!noDestroy
 
-    # Extract id
-    actor = oactor
-    if actor instanceof ARERawActor then actor = actor.getId()
+    # Extract id if given actor
+    actorId = actorId.getId() if actorId instanceof ARERawActor
 
-    # Attempt to find and remove actor
-    for a, i in ARERenderer.actors
-      if a.getId() == actor
-        ARERenderer.actors.splice i, 1
-        if not nodestroy then oactor.destroy()
-        return true
-
-    false
+    removedActor = _.remove @_actors, (a) -> a.getId() == actorId
+    removedActor.destroy() if removedActor and !noDestroy
+    !!removedActor
 
   ###
   # Switch material (shader program)
@@ -850,18 +695,17 @@ class ARERenderer
   ###
   switchMaterial: (material) ->
     param.required material
-
-    return false if material == ARERenderer._currentMaterial
+    return if material == @_currentMaterial
 
     if @isWGLRendererActive()
 
       ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+
       ##
       # Its a "Gotcha" from using EWGL
       ortho[15] = 1.0
 
-      gl = ARERenderer._gl
-
+      gl = @_gl
 
       switch material
         when ARERenderer.MATERIAL_FLAT
@@ -869,11 +713,9 @@ class ARERenderer
 
           handles = @_defaultShader.getHandles()
           gl.uniformMatrix4fv handles.uProjection, false, ortho
-
           gl.enableVertexAttribArray handles.aPosition
 
         when ARERenderer.MATERIAL_TEXTURE
-
           gl.useProgram @_texShader.getProgram()
 
           handles = @_texShader.getHandles()
@@ -885,10 +727,8 @@ class ARERenderer
         else
           throw new Error "Unknown material #{material}"
 
-    ARERenderer._currentMaterial = material
-
-    ARELog.info "ARERenderer Switched material #{ARERenderer._currentMaterial}"
-
+    @_currentMaterial = material
+    ARELog.info "Switched material #{@_currentMaterial}"
     @
 
   ###
@@ -896,11 +736,8 @@ class ARERenderer
   #
   # @param [String] name texture name to check for
   ###
-  @hasTexture: (name) ->
-    for t in ARERenderer.textures
-      return true if t.name == name
-
-    return false
+  hasTexture: (name) ->
+    !!_.find @_textures, (t) -> t.name == name
 
   ###
   # Fetches a texture by name
@@ -908,13 +745,9 @@ class ARERenderer
   # @param [String] name name of texture to fetch
   # @param [Object] texture
   ###
-  @getTexture: (name) ->
+  getTexture: (name) ->
     param.required name
-
-    for t in ARERenderer.textures
-      return t if t.name == name
-
-    return null
+    _.find @_textures, (t) -> t.name == name
 
   ###
   # Fetches texture size
@@ -922,11 +755,11 @@ class ARERenderer
   # @param [String] name name of texture
   # @param [Object] size
   ###
-  @getTextureSize: (name) ->
+  getTextureSize: (name) ->
     param.required name
 
-    if t = @getTexture(name)
-      return { w: t.width * t.scaleX, h: t.height * t.scaleY }
+    if t = @getTexture name
+      return w: t.width * t.scaleX, h: t.height * t.scaleY
 
     return null
 
@@ -935,10 +768,10 @@ class ARERenderer
   #
   # @param [Object] texture texture object with name and gl texture
   ###
-  @addTexture: (tex) ->
+  addTexture: (tex) ->
+    param.required tex
     param.required tex.name
     param.required tex.texture
 
-    ARERenderer.textures.push tex
-
+    @_textures.push tex
     @

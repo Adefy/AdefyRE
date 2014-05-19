@@ -84,7 +84,6 @@ AREVertAnimation = (function() {
   AREVertAnimation.prototype._setTimeout = function(deltaSet, delay, udata, last) {
     param.required(deltaSet);
     param.required(delay);
-    udata = param.optional(udata, null);
     return setTimeout(((function(_this) {
       return function() {
         _this._applyDeltas(deltaSet, udata);

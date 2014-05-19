@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # AREVertAnimation
 #
 # Class to handle actor vertices updates
@@ -86,7 +82,6 @@ class AREVertAnimation
   _setTimeout: (deltaSet, delay, udata, last) ->
     param.required deltaSet
     param.required delay
-    udata = param.optional udata, null
 
     setTimeout (=>
       @_applyDeltas deltaSet, udata

@@ -1,8 +1,6 @@
 var AREAnimationInterface;
 
 AREAnimationInterface = (function() {
-  function AREAnimationInterface() {}
-
   AREAnimationInterface._animationMap = {
     "position": AREBezAnimation,
     "color": AREBezAnimation,
@@ -14,37 +12,40 @@ AREAnimationInterface = (function() {
     "vertices": AREVertAnimation
   };
 
+  function AREAnimationInterface(masterInterface) {}
+
+  AREAnimationInterface.prototype.setEngine = function(engine) {
+    return this._renderer = engine.getRenderer();
+  };
+
   AREAnimationInterface.prototype.canAnimate = function(property) {
-    if (AREAnimationInterface._animationMap[property] === void 0) {
-      return false;
-    }
-    return true;
+    return !!AREAnimationInterface._animationMap[property];
   };
 
   AREAnimationInterface.prototype.getAnimationName = function(property) {
-    var type;
-    if (AREAnimationInterface._animationMap[property] === void 0) {
+    if (!AREAnimationInterface._animationMap[property]) {
       return false;
     } else {
-      type = AREAnimationInterface._animationMap[property];
-      if (type === AREBezAnimation) {
-        return "bezier";
-      } else if (type === AREPsyxAnimation) {
-        return "psyx";
-      } else if (type === AREVertAnimation) {
-        return "vert";
+      switch (AREAnimationInterface._animationMap[property]) {
+        case AREBezAnimation:
+          return "bezier";
+        case AREPsyxAnimation:
+          return "psyx";
+        case AREVertAnimation:
+          return "vert";
+        default:
+          return false;
       }
     }
   };
 
   AREAnimationInterface.prototype.animate = function(actorID, property, options) {
     var a, actor, name, _i, _len, _ref, _spawnAnim;
-    param.required(actorID);
     property = JSON.parse(param.required(property));
     options = JSON.parse(param.required(options));
-    options.start = param.optional(options.start, 0);
+    options.start || (options.start = 0);
     actor = null;
-    _ref = ARERenderer.actors;
+    _ref = this._renderer.actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === actorID) {
@@ -82,11 +83,8 @@ AREAnimationInterface = (function() {
   AREAnimationInterface.prototype.preCalculateBez = function(options) {
     var ret;
     options = JSON.parse(param.required(options));
-    param.required(options.startVal);
-    param.required(options.endVal);
-    param.required(options.duration);
-    options.controlPoints = param.required(options.controlPoints, []);
-    options.fps = param.required(options.fps, 30);
+    options.controlPoints || (options.controlPoints = 0);
+    options.fps || (options.fps = 30);
     ret = new AREBezAnimation(null, options, true).preCalculate();
     return JSON.stringify(ret);
   };

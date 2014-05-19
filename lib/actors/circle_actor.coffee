@@ -1,7 +1,3 @@
-##
-## Copyright © 2013 Spectrum IT Solutions Gmbh - All Rights Reserved
-##
-
 # @depend polygon_actor.coffee
 
 # Circle helper, wraps the polygon actor and creates one with 32 sides. Allows
@@ -14,11 +10,11 @@ class ARECircleActor extends AREPolygonActor
   #
   # NOTE: Texture support is not available! No UVs! ;(
   #
+  # @param [ARERenderer] renderer
   # @param [Number] radius
   ###
-  constructor: (@radius) ->
-
-    super radius, 32
+  constructor: (renderer, @radius) ->
+    super renderer, radius, 32
 
     # Clear out segment control
     delete @setSegments

@@ -1,6 +1,7 @@
 class PhysicsManager extends BazarShop
 
-  constructor: (depPaths) ->
+  constructor: (@_renderer, depPaths) ->
+    param.required _renderer
     param.required depPaths
 
     super "PhysicsManager", [
@@ -37,7 +38,7 @@ class PhysicsManager extends BazarShop
         while l--
           dataPacket = data[l]
 
-          actor = ARERenderer.actor_hash[dataPacket[ID_INDEX]]
+          actor = @_renderer._actor_hash[dataPacket[ID_INDEX]]
           actor._position = dataPacket[POS_INDEX]
           actor._rotation = dataPacket[ROT_INDEX]
           actor._updateModelMatrix()
