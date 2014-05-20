@@ -724,10 +724,10 @@ ARERenderer = (function() {
     var gl, handles, ortho;
     param.required(material);
     if (material === this._currentMaterial) {
-      return;
+      return false;
     }
     if (this.isWGLRendererActive()) {
-      ortho = Matrix4.makeOrtho(0, this._width, 0, this._height, -10, 10).flatten();
+      ortho = Matrix4.makeOrtho(0, this._width, this._height, 0, -10, 10).flatten();
       ortho[15] = 1.0;
       gl = this._gl;
       switch (material) {
@@ -735,14 +735,11 @@ ARERenderer = (function() {
           gl.useProgram(this._defaultShader.getProgram());
           handles = this._defaultShader.getHandles();
           gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-          gl.enableVertexAttribArray(handles.aPosition);
           break;
         case ARERenderer.MATERIAL_TEXTURE:
           gl.useProgram(this._texShader.getProgram());
           handles = this._texShader.getHandles();
           gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-          gl.enableVertexAttribArray(handles.aPosition);
-          gl.enableVertexAttribArray(handles.aTexCoord);
           break;
         default:
           throw new Error("Unknown material " + material);

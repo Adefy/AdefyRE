@@ -44,7 +44,7 @@ AREPolygonActor = (function(_super) {
       AREPolygonActor.__super__.constructor.call(this, renderer, verts, uvs);
       this.setPhysicsVertices(psyxVerts);
     }
-    this.setRenderMode(ARERenderer.RENDER_MODE_TRIANGLE_FAN);
+    this.setRenderMode(ARERenderer.GL_MODE_TRIANGLE_FAN);
   }
 
 

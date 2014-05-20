@@ -103,9 +103,9 @@ class ARERawActor extends Koon
 
     ###
     # Render modes decide how the vertices are treated.
-    # @see AREREnderer.RENDER_MODE_*
+    # @see AREREnderer.GL_MODE_*
     ###
-    @_renderMode = ARERenderer.RENDER_MODE_TRIANGLE_FAN
+    @_renderMode = ARERenderer.GL_MODE_TRIANGLE_FAN
 
     ###
     # Render styles decide how the object is filled/stroked
@@ -190,7 +190,7 @@ class ARERawActor extends Koon
     @_texRepeatX = 1
     @_texRepeatY = 1
 
-    @setShader @_renderer.getDefaultShader()
+    @setShader @_renderer.getDefaultShader() if @_renderer.getDefaultShader()
     @_material = ARERenderer.MATERIAL_FLAT
     @
 
@@ -222,7 +222,7 @@ class ARERawActor extends Koon
   # @return [this]
   ###
   setShader: (shader) ->
-    return if @_renderer.isWGLRendererActive()
+    return unless @_renderer.isWGLRendererActive()
     param.required shader
 
     # Ensure shader is built, and generate handles if not already done
@@ -245,7 +245,7 @@ class ARERawActor extends Koon
   # @param [Number] elasticity 0.0 - unbound
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
-    return unless !!@_mass
+    return unless @_mass != null and @_mass != undefined
 
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
@@ -685,6 +685,7 @@ class ARERawActor extends Koon
 
     # We apparently don't need uUVScale in webgl
     gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
+    gl.enableVertexAttribArray @_sh_handles.aTexCoord
     gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
 
     gl.activeTexture gl.TEXTURE0
@@ -723,11 +724,7 @@ class ARERawActor extends Koon
     @_modelM[5] = c
 
     @_modelM[12] = pos.x - camPos.x
-
-    if @_renderer.force_pos0_0
-      @_modelM[13] = @_renderer.getHeight() - pos.y + camPos.y
-    else
-      @_modelM[13] = pos.y - camPos.y
+    @_modelM[13] = pos.y - camPos.y
 
   ###
   # Sets the constant values in our model matrix so that calls to
@@ -766,7 +763,9 @@ class ARERawActor extends Koon
       @_sh_handles = shader.getHandles()
 
     gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
+    gl.enableVertexAttribArray @_sh_handles.aPosition
     gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
+
     gl.uniformMatrix4fv @_sh_handles.uModelView, false, @_modelM
 
     gl.uniform4f @_sh_handles.uColor, @_colArray[0], @_colArray[1], @_colArray[2], 1.0
@@ -782,13 +781,13 @@ class ARERawActor extends Koon
     # @TODO, actually apply the RENDER_STYLE_*
     ###
     switch @_renderMode
-      when ARERenderer.RENDER_MODE_LINE_LOOP
+      when ARERenderer.GL_MODE_LINE_LOOP
         gl.drawArrays gl.LINE_LOOP, 0, @_vertices.length / 2
 
-      when ARERenderer.RENDER_MODE_TRIANGLE_FAN
+      when ARERenderer.GL_MODE_TRIANGLE_FAN
         gl.drawArrays gl.TRIANGLE_FAN, 0, @_vertices.length / 2
 
-      when ARERenderer.RENDER_MODE_TRIANGLE_STRIP
+      when ARERenderer.GL_MODE_TRIANGLE_STRIP
         gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
 
       else throw new Error "Invalid render mode! #{@_renderMode}"
@@ -852,22 +851,21 @@ class ARERawActor extends Koon
 
     for i in [1..(@_vertices.length / 2)]
       context.lineTo(@_vertices[i * 2], @_vertices[i * 2 + 1])
+
     context.closePath()
-    #context.fill()
 
     @cvSetupStyle context
 
-    if @_renderer.force_pos0_0
-      context.scale 1, -1
+    context.scale 1, -1 # Flip things rightside-up
 
     switch @_renderMode
-      when ARERenderer.RENDER_MODE_LINE_LOOP # stroke
+      when ARERenderer.GL_MODE_LINE_LOOP # stroke
         # regardless of your current renderStyle, this will forever outline.
         context.stroke()
 
       # canvas doesn't really know what a strip or a fan is...
-      when ARERenderer.RENDER_MODE_TRIANGLE_STRIP, \
-           ARERenderer.RENDER_MODE_TRIANGLE_FAN # fill
+      when ARERenderer.GL_MODE_TRIANGLE_STRIP, \
+           ARERenderer.GL_MODE_TRIANGLE_FAN # fill
 
         if (@_renderStyle & ARERenderer.RENDER_STYLE_STROKE) > 0
           context.stroke()
@@ -877,6 +875,7 @@ class ARERawActor extends Koon
             context.clip()
             context.drawImage @_texture.texture,
                               -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+
           else
             context.fill()
 
@@ -898,7 +897,7 @@ class ARERawActor extends Koon
 
   ###
   # Set actor render mode, decides how the vertices are perceived
-  # @see ARERenderer.RENDER_MODE_*
+  # @see ARERenderer.GL_MODE_*
   #
   # @paran [Number] mode
   # @return [self]

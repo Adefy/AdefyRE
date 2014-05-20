@@ -695,11 +695,11 @@ class ARERenderer
   ###
   switchMaterial: (material) ->
     param.required material
-    return if material == @_currentMaterial
+    return false if material == @_currentMaterial
 
     if @isWGLRendererActive()
 
-      ortho = Matrix4.makeOrtho(0, @_width, 0, @_height, -10, 10).flatten()
+      ortho = Matrix4.makeOrtho(0, @_width, @_height, 0, -10, 10).flatten()
 
       ##
       # Its a "Gotcha" from using EWGL
@@ -713,16 +713,13 @@ class ARERenderer
 
           handles = @_defaultShader.getHandles()
           gl.uniformMatrix4fv handles.uProjection, false, ortho
-          gl.enableVertexAttribArray handles.aPosition
+          
 
         when ARERenderer.MATERIAL_TEXTURE
           gl.useProgram @_texShader.getProgram()
 
           handles = @_texShader.getHandles()
           gl.uniformMatrix4fv handles.uProjection, false, ortho
-          gl.enableVertexAttribArray handles.aPosition
-          gl.enableVertexAttribArray handles.aTexCoord
-          #gl.enableVertexAttribArray handles.aUVScale
 
         else
           throw new Error "Unknown material #{material}"

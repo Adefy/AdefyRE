@@ -2447,7 +2447,6 @@ ARERawActor = (function(_super) {
     this._renderer = _renderer;
     param.required(_renderer);
     param.required(verts);
-    param.required(texverts);
     this._initializeValues();
     this._id = this._renderer.getNextId();
     this._renderer.addActor(this);
@@ -2523,9 +2522,9 @@ ARERawActor = (function(_super) {
 
     /*
      * Render modes decide how the vertices are treated.
-     * @see AREREnderer.RENDER_MODE_*
+     * @see AREREnderer.GL_MODE_*
      */
-    this._renderMode = ARERenderer.RENDER_MODE_TRIANGLE_FAN;
+    this._renderMode = ARERenderer.GL_MODE_TRIANGLE_FAN;
 
     /*
      * Render styles decide how the object is filled/stroked
@@ -2621,7 +2620,9 @@ ARERawActor = (function(_super) {
     this._texture = void 0;
     this._texRepeatX = 1;
     this._texRepeatY = 1;
-    this.setShader(this._renderer.getDefaultShader());
+    if (this._renderer.getDefaultShader()) {
+      this.setShader(this._renderer.getDefaultShader());
+    }
     this._material = ARERenderer.MATERIAL_FLAT;
     return this;
   };
@@ -2663,7 +2664,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.setShader = function(shader) {
-    if (this._renderer.isWGLRendererActive()) {
+    if (!this._renderer.isWGLRendererActive()) {
       return;
     }
     param.required(shader);
@@ -2699,7 +2700,7 @@ ARERawActor = (function(_super) {
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
-    if (!this._mass) {
+    if (!(this._mass !== null && this._mass !== void 0)) {
       return;
     }
     this._friction || (this._friction = ARERawActor.defaultFriction);
@@ -3259,6 +3260,7 @@ ARERawActor = (function(_super) {
   ARERawActor.prototype.wglBindTexture = function(gl) {
     this._renderer._currentTexture = this._texture.texture;
     gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
+    gl.enableVertexAttribArray(this._sh_handles.aTexCoord);
     gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
@@ -3294,11 +3296,7 @@ ARERawActor = (function(_super) {
     this._modelM[4] = -s;
     this._modelM[5] = c;
     this._modelM[12] = pos.x - camPos.x;
-    if (this._renderer.force_pos0_0) {
-      return this._modelM[13] = this._renderer.getHeight() - pos.y + camPos.y;
-    } else {
-      return this._modelM[13] = pos.y - camPos.y;
-    }
+    return this._modelM[13] = pos.y - camPos.y;
   };
 
 
@@ -3340,6 +3338,7 @@ ARERawActor = (function(_super) {
       this._sh_handles = shader.getHandles();
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
+    gl.enableVertexAttribArray(this._sh_handles.aPosition);
     gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
     gl.uniformMatrix4fv(this._sh_handles.uModelView, false, this._modelM);
     gl.uniform4f(this._sh_handles.uColor, this._colArray[0], this._colArray[1], this._colArray[2], 1.0);
@@ -3357,13 +3356,13 @@ ARERawActor = (function(_super) {
      * @TODO, actually apply the RENDER_STYLE_*
      */
     switch (this._renderMode) {
-      case ARERenderer.RENDER_MODE_LINE_LOOP:
+      case ARERenderer.GL_MODE_LINE_LOOP:
         gl.drawArrays(gl.LINE_LOOP, 0, this._vertices.length / 2);
         break;
-      case ARERenderer.RENDER_MODE_TRIANGLE_FAN:
+      case ARERenderer.GL_MODE_TRIANGLE_FAN:
         gl.drawArrays(gl.TRIANGLE_FAN, 0, this._vertices.length / 2);
         break;
-      case ARERenderer.RENDER_MODE_TRIANGLE_STRIP:
+      case ARERenderer.GL_MODE_TRIANGLE_STRIP:
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, this._vertices.length / 2);
         break;
       default:
@@ -3436,15 +3435,13 @@ ARERawActor = (function(_super) {
     }
     context.closePath();
     this.cvSetupStyle(context);
-    if (this._renderer.force_pos0_0) {
-      context.scale(1, -1);
-    }
+    context.scale(1, -1);
     switch (this._renderMode) {
-      case ARERenderer.RENDER_MODE_LINE_LOOP:
+      case ARERenderer.GL_MODE_LINE_LOOP:
         context.stroke();
         break;
-      case ARERenderer.RENDER_MODE_TRIANGLE_STRIP:
-      case ARERenderer.RENDER_MODE_TRIANGLE_FAN:
+      case ARERenderer.GL_MODE_TRIANGLE_STRIP:
+      case ARERenderer.GL_MODE_TRIANGLE_FAN:
         if ((this._renderStyle & ARERenderer.RENDER_STYLE_STROKE) > 0) {
           context.stroke();
         }
@@ -3481,7 +3478,7 @@ ARERawActor = (function(_super) {
 
   /*
    * Set actor render mode, decides how the vertices are perceived
-   * @see ARERenderer.RENDER_MODE_*
+   * @see ARERenderer.GL_MODE_*
    *
    * @paran [Number] mode
    * @return [self]
@@ -3930,7 +3927,7 @@ AREPolygonActor = (function(_super) {
       AREPolygonActor.__super__.constructor.call(this, renderer, verts, uvs);
       this.setPhysicsVertices(psyxVerts);
     }
-    this.setRenderMode(ARERenderer.RENDER_MODE_TRIANGLE_FAN);
+    this.setRenderMode(ARERenderer.GL_MODE_TRIANGLE_FAN);
   }
 
 
@@ -5347,10 +5344,10 @@ ARERenderer = (function() {
     var gl, handles, ortho;
     param.required(material);
     if (material === this._currentMaterial) {
-      return;
+      return false;
     }
     if (this.isWGLRendererActive()) {
-      ortho = Matrix4.makeOrtho(0, this._width, 0, this._height, -10, 10).flatten();
+      ortho = Matrix4.makeOrtho(0, this._width, this._height, 0, -10, 10).flatten();
       ortho[15] = 1.0;
       gl = this._gl;
       switch (material) {
@@ -5358,14 +5355,11 @@ ARERenderer = (function() {
           gl.useProgram(this._defaultShader.getProgram());
           handles = this._defaultShader.getHandles();
           gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-          gl.enableVertexAttribArray(handles.aPosition);
           break;
         case ARERenderer.MATERIAL_TEXTURE:
           gl.useProgram(this._texShader.getProgram());
           handles = this._texShader.getHandles();
           gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-          gl.enableVertexAttribArray(handles.aPosition);
-          gl.enableVertexAttribArray(handles.aTexCoord);
           break;
         default:
           throw new Error("Unknown material " + material);

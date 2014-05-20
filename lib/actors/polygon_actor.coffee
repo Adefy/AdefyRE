@@ -50,7 +50,7 @@ class AREPolygonActor extends ARERawActor
       super renderer, verts, uvs
       @setPhysicsVertices psyxVerts
 
-    @setRenderMode ARERenderer.RENDER_MODE_TRIANGLE_FAN
+    @setRenderMode ARERenderer.GL_MODE_TRIANGLE_FAN
 
   ###
   # @private
