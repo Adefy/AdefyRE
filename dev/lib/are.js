@@ -99,6 +99,7 @@ ARE = (function() {
     ARELog.info("Starting render loop");
     renderer = this._renderer;
     render = function() {
+      renderer.update();
       renderer.render();
       return window.requestAnimationFrame(render);
     };

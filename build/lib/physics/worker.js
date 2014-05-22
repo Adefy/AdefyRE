@@ -28,7 +28,7 @@ AREPhysicsWorker = (function(_super) {
     this._world = null;
     this._densityRatio = 1 / 10000;
     this._gravity = new cp.v(0, 9.8);
-    this._frameTime = 1.0 / 60.0;
+    this._frameTime = 1.0 / 30.0;
     this._posIterations = 4;
     this._velIterations = 4;
     return this._PPM = 128;
@@ -37,7 +37,7 @@ AREPhysicsWorker = (function(_super) {
   AREPhysicsWorker.prototype._createWorld = function() {
     this._world = new cp.Space;
     this._world.gravity = this._gravity;
-    this._world.iterations = 60;
+    this._world.iterations = 30;
     this._world.collisionSlop = 0.5;
     return this._world.sleepTimeThreshold = 0.5;
   };

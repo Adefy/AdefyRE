@@ -208,6 +208,9 @@ ARERenderer = (function() {
     ARELog.info("Initialized shaders");
     this._activeRendererMode = ARERenderer.RENDER_MODE_WGL;
     this.render = this._wglRender;
+    this._pendingVBORefresh = false;
+    this._vertexDataBuffer = this._gl.createBuffer();
+    this.requestVBORefresh();
     ARELog.info("WebgL renderer initialized");
     return true;
   };
@@ -251,6 +254,61 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.render = function() {};
+
+
+  /*
+   * Called once per frame, we perform various internal updates if needed
+   */
+
+  ARERenderer.prototype.update = function() {
+    var VBOData, absBaseIndex, absI, actor, baseIndex, compiledVertices, currentOffset, i, indices, totalVertCount, vData, _i, _j, _k, _len, _len1, _ref, _ref1, _ref2;
+    if (this._pendingVBORefresh && this.isWGLRendererActive()) {
+      currentOffset = 0;
+      indices = [];
+      compiledVertices = [];
+      totalVertCount = 0;
+      _ref = this._actors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        actor = _ref[_i];
+        if (actor.hasOwnIndiceBuffer()) {
+          totalVertCount += actor.getRawVertexData().length;
+        }
+      }
+      VBOData = new Float32Array(totalVertCount);
+      _ref1 = this._actors;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        actor = _ref1[_j];
+        if (actor.hasOwnIndiceBuffer()) {
+          vData = actor.getRawVertexData();
+          indices = [];
+          for (i = _k = 0, _ref2 = vData.length / 4; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+            baseIndex = currentOffset + i;
+            indices.push(baseIndex);
+            absBaseIndex = baseIndex * 4;
+            absI = i * 4;
+            VBOData[absBaseIndex] = vData[absI];
+            VBOData[absBaseIndex + 1] = vData[absI + 1];
+            VBOData[absBaseIndex + 2] = vData[absI + 2];
+            VBOData[absBaseIndex + 3] = vData[absI + 3];
+          }
+          currentOffset += vData.length / 4;
+          actor.updateIndices(indices);
+        }
+      }
+      this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexDataBuffer);
+      this._gl.bufferData(this._gl.ARRAY_BUFFER, VBOData, this._gl.STATIC_DRAW);
+      return this._pendingVBORefresh = false;
+    }
+  };
+
+
+  /*
+   * Request VBO regeneration to be performed on next update
+   */
+
+  ARERenderer.prototype.requestVBORefresh = function() {
+    return this._pendingVBORefresh = true;
+  };
 
 
   /*
@@ -440,7 +498,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype._wglRender = function() {
-    var a, a_id, actorCount, gl, _id, _idSector, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, bottomEdge, gl, leftEdge, rightEdge, topEdge, _id, _idSector, _savedColor, _savedOpacity;
     gl = this._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
@@ -453,11 +511,10 @@ ARERenderer = (function() {
       while (actorCount--) {
         a = this._actors[actorCount];
         a_id = a._id;
-        _savedColor = a._color;
         _savedColor = {
-          r: _savedColor._r,
-          g: _savedColor._g,
-          b: _savedColor._b
+          r: a._color._r,
+          g: a._color._g,
+          b: a._color._b
         };
         _savedOpacity = a._opacity;
         _id = a_id - (Math.floor(a_id / 255) * 255);
@@ -476,15 +533,22 @@ ARERenderer = (function() {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       this.render();
     } else {
+      leftEdge = rightEdge = topEdge = bottomEdge = true;
       while (actorCount--) {
         a = this._actors[actorCount];
-        if (a._attachedTexture) {
-          a = a.updateAttachment();
+        leftEdge = a._position.x + (a._size.x / 2) < 0;
+        rightEdge = a._position.x - (a._size.x / 2) > window.innerWidth;
+        topEdge = a._position.y + (a._size.y / 2) < 0;
+        bottomEdge = a._position.y - (a._size.y / 2) > window.innerHeight;
+        if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
+          if (a._attachedTexture) {
+            a = a.updateAttachment();
+          }
+          if (a._material !== this._currentMaterial) {
+            this.switchMaterial(a._material);
+          }
+          a.wglDraw(gl);
         }
-        if (a._material !== this._currentMaterial) {
-          this.switchMaterial(a._material);
-        }
-        a.wglDraw(gl);
       }
     }
     return this;

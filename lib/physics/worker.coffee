@@ -25,7 +25,7 @@ class AREPhysicsWorker extends Koon
 
     @_densityRatio = 1 / 10000
     @_gravity = new cp.v 0, 9.8
-    @_frameTime = 1.0 / 60.0
+    @_frameTime = 1.0 / 30.0
     @_posIterations = 4
     @_velIterations = 4
 
@@ -34,7 +34,7 @@ class AREPhysicsWorker extends Koon
   _createWorld: ->
     @_world = new cp.Space
     @_world.gravity = @_gravity
-    @_world.iterations = 60
+    @_world.iterations = 30
     @_world.collisionSlop = 0.5
     @_world.sleepTimeThreshold = 0.5
 

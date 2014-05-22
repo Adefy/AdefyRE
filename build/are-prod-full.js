@@ -2450,6 +2450,12 @@ ARERawActor = (function(_super) {
     this._initializeValues();
     this._id = this._renderer.getNextId();
     this._renderer.addActor(this);
+    this._indiceBuffer = this._gl.createBuffer();
+    this._ownIndiceBuffer = this._indiceBuffer;
+    this._hasOwnIndiceBuffer = true;
+    this._vertexData = null;
+    this._vertStride = 4 * Float32Array.BYTES_PER_ELEMENT;
+    this._uvOffset = 2 * Float32Array.BYTES_PER_ELEMENT;
     this.updateVertices(verts, texverts);
     this.setColor(new AREColor3(255, 255, 255));
     this.clearTexture();
@@ -2485,7 +2491,10 @@ ARERawActor = (function(_super) {
     this._rotation = 0;
     this._initializeModelMatrix();
     this._updateModelMatrix();
-    this._size = new AREVector2(0, 0);
+    this._size = {
+      x: 0,
+      y: 0
+    };
 
     /*
      * Physics values
@@ -2553,6 +2562,54 @@ ARERawActor = (function(_super) {
   ARERawActor.prototype.destroy = function() {
     this.destroyPhysicsBody();
     return null;
+  };
+
+
+  /*
+   * Get the WebGL pointer to our indice buffer
+   *
+   * @return [Number]
+   */
+
+  ARERawActor.prototype.getIndiceBuffer = function() {
+    return this._ownIndiceBuffer;
+  };
+
+
+  /*
+   * Useful method allowing us to re-use another actor's indice buffer. This
+   * helps keep renderer VBO size down.
+   *
+   * @param [Number] buffer
+   */
+
+  ARERawActor.prototype.setHostIndiceBuffer = function(buffer) {
+    this._indiceBuffer = buffer;
+    this._hasOwnIndiceBuffer = false;
+    return this._renderer.requestVBORefresh();
+  };
+
+
+  /*
+   * Clears any indice buffer host we may have. NOTE: This requires a VBO
+   * refresh!
+   */
+
+  ARERawActor.prototype.clearHostIndiceBuffer = function() {
+    this._indiceBuffer = this._ownIndiceBuffer;
+    this._hasOwnIndiceBuffer = true;
+    return this._renderer.requestVBORefresh();
+  };
+
+
+  /*
+   * Check if we have our own indice buffer
+   *
+   * @return [Boolean] hasOwn
+   */
+
+  ARERawActor.prototype.hasOwnIndiceBuffer = function() {
+    return this._hasOwnIndiceBuffer;
   };
 
 
@@ -3004,7 +3061,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.updateVertices = function(vertices, texverts) {
-    var newTexVerts, newVertices;
+    var i, mnx, mny, mxx, mxy, newTexVerts, newVertices, _i, _j, _ref, _ref1;
     newVertices = vertices || this._vertices;
     newTexVerts = texverts || this._texVerts;
     if (newVertices.length < 6) {
@@ -3021,38 +3078,22 @@ ARERawActor = (function(_super) {
         }
       }
     }
-    if (newVertices !== this._vertices) {
-      this.updateVertBuffer(newVertices);
+    this._vertices = newVertices;
+    this._texVerts = newTexVerts;
+    this._origTexVerts = newTexVerts;
+    this._vertexData = [];
+    for (i = _i = 0, _ref = this._vertices.length / 2; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      this._vertexData.push(this._vertices[i * 2]);
+      this._vertexData.push(this._vertices[i * 2 + 1]);
+      this._vertexData.push(this._texVerts[i * 2]);
+      this._vertexData.push(this._texVerts[i * 2 + 1]);
     }
-    if (newTexVerts !== this._texVerts) {
-      return this.updateUVBuffer(newTexVerts);
-    }
-  };
-
-
-  /*
-   * Updates vertex buffer
-   * NOTE: No check is made as to the validity of the supplied data!
-   *
-   * @private
-   * @param [Array<Number>] vertices
-   */
-
-  ARERawActor.prototype.updateVertBuffer = function(_vertices) {
-    var i, mnx, mny, mxx, mxy, _i, _ref;
-    this._vertices = _vertices;
-    this._vertBufferFloats = new Float32Array(this._vertices);
-    if (this._renderer.isWGLRendererActive()) {
-      this._vertBuffer = this._gl.createBuffer();
-      this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertBuffer);
-      this._gl.bufferData(this._gl.ARRAY_BUFFER, this._vertBufferFloats, this._gl.STATIC_DRAW);
-      this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
-    }
+    this._vertCount = this._vertexData.length / 4;
     mnx = 0;
     mny = 0;
     mxx = 0;
     mxy = 0;
-    for (i = _i = 1, _ref = this._vertices.length / 2; 1 <= _ref ? _i <= _ref : _i >= _ref; i = 1 <= _ref ? ++_i : --_i) {
+    for (i = _j = 1, _ref1 = this._vertices.length / 2; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 1 <= _ref1 ? ++_j : --_j) {
       if (mnx > this._vertices[i * 2]) {
         mnx = this._vertices[i * 2];
       }
@@ -3066,30 +3107,39 @@ ARERawActor = (function(_super) {
         mxy = this._vertices[i * 2 + 1];
       }
     }
-    this._size.x = mxx - mnx;
-    return this._size.y = mxy - mny;
+    this._size = {
+      x: mxx - mnx,
+      y: mxy - mny
+    };
+    return this._renderer.requestVBORefresh();
   };
 
 
   /*
-   * Updates UV buffer (should only be called by updateVertices())
-   * NOTE: No check is made as to the validity of the supplied data!
+   * Called when the renderer has new vertex indices for us. We must regenerate
+   * our indice buffer.
    *
-   * @private
-   * @param [Array<Number>] vertices
+   * @param [Array<Number>] indices
    */
 
-  ARERawActor.prototype.updateUVBuffer = function(_texVerts) {
-    this._texVerts = _texVerts;
-    if (!this._renderer.isWGLRendererActive()) {
-      return;
-    }
-    this._origTexVerts = this._texVerts;
-    this._texVBufferFloats = new Float32Array(this._texVerts);
-    this._texBuffer = this._gl.createBuffer();
-    this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._texBuffer);
-    this._gl.bufferData(this._gl.ARRAY_BUFFER, this._texVBufferFloats, this._gl.STATIC_DRAW);
-    return this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
+  ARERawActor.prototype.updateIndices = function(indices) {
+    var rawIndices;
+    rawIndices = new Uint16Array(indices);
+    this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indiceBuffer);
+    return this._gl.bufferData(this._gl.ELEMENT_ARRAY_BUFFER, rawIndices, this._gl.STATIC_DRAW);
+  };
+
+
+  /*
+   * Get raw vertex data, used by the renderer for VBO generation. Array is in
+   * the form of <X1, Y1, U1, V1>, <X2, Y2, U2, V2>, ..., <Xn, Yn, Un, Vn> for
+   * n vertices.
+   *
+   * @return [Array<Number>] data
+   */
+
+  ARERawActor.prototype.getRawVertexData = function() {
+    return this._vertexData;
   };
 
 
@@ -3111,7 +3161,7 @@ ARERawActor = (function(_super) {
     }
     this._texRepeatX = x;
     this._texRepeatY = y;
-    this.updateUVBuffer(uvs);
+    this.updateVertices(this._vertices, uvs);
     return this;
   };
 
@@ -3259,9 +3309,6 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
     this._renderer._currentTexture = this._texture.texture;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
-    gl.enableVertexAttribArray(this._sh_handles.aTexCoord);
-    gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
     gl.uniform1i(this._sh_handles.uSampler, 0);
@@ -3337,33 +3384,37 @@ ARERawActor = (function(_super) {
       _sh_handles_backup = this._sh_handles;
       this._sh_handles = shader.getHandles();
     }
-    gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
-    gl.enableVertexAttribArray(this._sh_handles.aPosition);
-    gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
     gl.uniformMatrix4fv(this._sh_handles.uModelView, false, this._modelM);
     gl.uniform4f(this._sh_handles.uColor, this._colArray[0], this._colArray[1], this._colArray[2], 1.0);
     if (this._sh_handles.uClipRect) {
       gl.uniform4fv(this._sh_handles.uClipRect, this._clipRect);
     }
     gl.uniform1f(this._sh_handles.uOpacity, this._opacity);
+    gl.enableVertexAttribArray(this._sh_handles.aPosition);
+    gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, this._vertStride, 0);
+    if (this._sh_handles.aTexCoord !== void 0) {
+      gl.enableVertexAttribArray(this._sh_handles.aTexCoord);
+      gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, this._vertStride, this._uvOffset);
+    }
     if (this._renderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
       if (this._renderer._currentTexture !== this._texture.texture) {
         this.wglBindTexture(gl);
       }
     }
+    this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indiceBuffer);
 
     /*
      * @TODO, actually apply the RENDER_STYLE_*
      */
     switch (this._renderMode) {
       case ARERenderer.GL_MODE_LINE_LOOP:
-        gl.drawArrays(gl.LINE_LOOP, 0, this._vertices.length / 2);
+        gl.drawElements(gl.LINE_LOOP, this._vertCount, gl.UNSIGNED_SHORT, 0);
         break;
       case ARERenderer.GL_MODE_TRIANGLE_FAN:
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, this._vertices.length / 2);
+        gl.drawElements(gl.TRIANGLE_FAN, this._vertCount, gl.UNSIGNED_SHORT, 0);
         break;
       case ARERenderer.GL_MODE_TRIANGLE_STRIP:
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, this._vertices.length / 2);
+        gl.drawElements(gl.TRIANGLE_STRIP, this._vertCount, gl.UNSIGNED_SHORT, 0);
         break;
       default:
         throw new Error("Invalid render mode! " + this._renderMode);
@@ -3888,6 +3939,12 @@ ARERectangleActor = (function(_super) {
 AREPolygonActor = (function(_super) {
   __extends(AREPolygonActor, _super);
 
+  AREPolygonActor._INDICE_BUFFER_CACHE = {};
+
+  AREPolygonActor._VERTEX_CACHE = {};
+
+  AREPolygonActor._UV_CACHE = {};
+
 
   /*
    * Sets us up with the supplied radius and segment count, generating our
@@ -3928,6 +3985,7 @@ AREPolygonActor = (function(_super) {
       this.setPhysicsVertices(psyxVerts);
     }
     this.setRenderMode(ARERenderer.GL_MODE_TRIANGLE_FAN);
+    this.validateCacheEntry();
   }
 
 
@@ -3940,8 +3998,13 @@ AREPolygonActor = (function(_super) {
    */
 
   AREPolygonActor.prototype.generateVertices = function(options) {
-    var i, radFactor, tanFactor, theta, tx, ty, verts, x, y, _i, _j, _ref, _ref1, _tv;
+    var cacheLookup, cachedVertexSet, i, radFactor, tanFactor, theta, tx, ty, verts, x, y, _i, _j, _ref, _ref1, _tv;
     options || (options = {});
+    cacheLookup = "" + this.radius + "." + this.segments + "." + options.mode;
+    cachedVertexSet = AREPolygonActor._VERTEX_CACHE[cacheLookup];
+    if (cachedVertexSet) {
+      return cachedVertexSet;
+    }
     x = this.radius;
     y = 0;
     theta = (2.0 * 3.1415926) / this.segments;
@@ -3970,6 +4033,7 @@ AREPolygonActor = (function(_super) {
       verts.push(0);
       verts.push(0);
     }
+    AREPolygonActor._VERTEX_CACHE[cacheLookup] = verts;
     return verts;
   };
 
@@ -3981,13 +4045,19 @@ AREPolygonActor = (function(_super) {
    */
 
   AREPolygonActor.prototype.generateUVs = function(vertices) {
-    var uvs, v, _i, _len;
+    var cacheLookup, cachedUVSet, uvs, v, _i, _len;
     param.required(vertices);
+    cacheLookup = "" + this.radius + "." + this.segments;
+    cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup];
+    if (cachedUVSet) {
+      return cachedUVSet;
+    }
     uvs = [];
     for (_i = 0, _len = vertices.length; _i < _len; _i++) {
       v = vertices[_i];
       uvs.push(((v / this.radius) / 2) + 0.5);
     }
+    AREPolygonActor._UV_CACHE[cacheLookup] = uvs;
     return uvs;
   };
 
@@ -4006,6 +4076,24 @@ AREPolygonActor = (function(_super) {
     uvs = this.generateUVs(verts);
     this.updateVertices(verts, uvs);
     return this.setPhysicsVertices(psyxVerts);
+  };
+
+
+  /*
+   * Ensure we are in the cache under our radius/segments pair, if no other poly
+   * is.
+   */
+
+  AREPolygonActor.prototype.validateCacheEntry = function() {
+    var cacheLookup, cachedActor;
+    cacheLookup = "" + this.radius + "." + this.segments;
+    if (AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]) {
+      cachedActor = AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup];
+      return this.setHostIndiceBuffer(cachedActor.getIndiceBuffer());
+    } else {
+      AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = this;
+      return this.clearHostIndiceBuffer();
+    }
   };
 
 
@@ -4042,7 +4130,8 @@ AREPolygonActor = (function(_super) {
     if (radius <= 0) {
       throw new Error("Invalid radius: " + radius);
     }
-    return this.fullVertRefresh();
+    this.fullVertRefresh();
+    return this.validateCacheEntry();
   };
 
 
@@ -4057,7 +4146,8 @@ AREPolygonActor = (function(_super) {
     if (segments <= 2) {
       throw new ERror("Invalid segment count: " + segments);
     }
-    return this.fullVertRefresh();
+    this.fullVertRefresh();
+    return this.validateCacheEntry();
   };
 
   return AREPolygonActor;
@@ -4616,9 +4706,9 @@ AREShader.shaders.solid.vertex = AREShader.shaders.wire.vertex;
 
 AREShader.shaders.solid.fragment = "" + precision_declaration + "\n\nuniform vec4 uColor;\nuniform float uOpacity;\n\nvoid main() {\n  vec4 frag = uColor;\n  frag.a *= uOpacity;\n  gl_FragColor = frag;\n}";
 
-AREShader.shaders.texture.vertex = "" + precision_declaration + "\n\nattribute vec2 aPosition;\nattribute vec2 aTexCoord;\n/* attribute vec2 aUVScale; */\n\nuniform mat4 uProjection;\nuniform mat4 uModelView;\n\nvarying " + varying_precision + " vec2 vTexCoord;\n/* varying " + varying_precision + " vec2 vUVScale; */\n\nvoid main() {\n  gl_Position = uProjection * uModelView * vec4(aPosition, 1, 1);\n  vTexCoord = aTexCoord;\n  /* vUVScale = aUVScale; */\n}";
+AREShader.shaders.texture.vertex = "" + precision_declaration + "\n\nattribute vec2 aPosition;\nattribute vec2 aTexCoord;\n\nuniform mat4 uProjection;\nuniform mat4 uModelView;\n\nvarying " + varying_precision + " vec2 vTexCoord;\n\nvoid main() {\n  gl_Position = uProjection * uModelView * vec4(aPosition, 1, 1);\n  vTexCoord = aTexCoord;\n}";
 
-AREShader.shaders.texture.fragment = "" + precision_declaration + "\n\nuniform sampler2D uSampler;\nuniform vec4 uColor;\nuniform float uOpacity;\n/* uniform " + varying_precision + " vec2 uUVScale; */\nuniform vec4 uClipRect;\n\nvarying " + varying_precision + " vec2 vTexCoord;\n/* varying " + varying_precision + " vec2 vUVScale; */\n\nvoid main() {\n  vec4 baseColor = texture2D(uSampler,\n                             uClipRect.xy +\n                             vTexCoord * uClipRect.zw);\n                             //vTexCoord * uClipRect.zw * uUVScale);\n  baseColor *= uColor;\n\n  if(baseColor.rgb == vec3(1.0, 0.0, 1.0))\n    discard;\n\n  baseColor.a *= uOpacity;\n  gl_FragColor = baseColor;\n}";
+AREShader.shaders.texture.fragment = "" + precision_declaration + "\n\nuniform sampler2D uSampler;\nuniform vec4 uColor;\nuniform float uOpacity;\nuniform vec4 uClipRect;\n\nvarying " + varying_precision + " vec2 vTexCoord;\n\nvoid main() {\n  vec4 baseColor = texture2D(uSampler,\n                             uClipRect.xy +\n                             vTexCoord * uClipRect.zw);\n  baseColor *= uColor;\n  baseColor.a *= uOpacity;\n\n  gl_FragColor = baseColor;\n}";
 
 ARERenderer = (function() {
 
@@ -4828,6 +4918,9 @@ ARERenderer = (function() {
     ARELog.info("Initialized shaders");
     this._activeRendererMode = ARERenderer.RENDER_MODE_WGL;
     this.render = this._wglRender;
+    this._pendingVBORefresh = false;
+    this._vertexDataBuffer = this._gl.createBuffer();
+    this.requestVBORefresh();
     ARELog.info("WebgL renderer initialized");
     return true;
   };
@@ -4871,6 +4964,61 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.render = function() {};
+
+
+  /*
+   * Called once per frame, we perform various internal updates if needed
+   */
+
+  ARERenderer.prototype.update = function() {
+    var VBOData, absBaseIndex, absI, actor, baseIndex, compiledVertices, currentOffset, i, indices, totalVertCount, vData, _i, _j, _k, _len, _len1, _ref, _ref1, _ref2;
+    if (this._pendingVBORefresh && this.isWGLRendererActive()) {
+      currentOffset = 0;
+      indices = [];
+      compiledVertices = [];
+      totalVertCount = 0;
+      _ref = this._actors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        actor = _ref[_i];
+        if (actor.hasOwnIndiceBuffer()) {
+          totalVertCount += actor.getRawVertexData().length;
+        }
+      }
+      VBOData = new Float32Array(totalVertCount);
+      _ref1 = this._actors;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        actor = _ref1[_j];
+        if (actor.hasOwnIndiceBuffer()) {
+          vData = actor.getRawVertexData();
+          indices = [];
+          for (i = _k = 0, _ref2 = vData.length / 4; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+            baseIndex = currentOffset + i;
+            indices.push(baseIndex);
+            absBaseIndex = baseIndex * 4;
+            absI = i * 4;
+            VBOData[absBaseIndex] = vData[absI];
+            VBOData[absBaseIndex + 1] = vData[absI + 1];
+            VBOData[absBaseIndex + 2] = vData[absI + 2];
+            VBOData[absBaseIndex + 3] = vData[absI + 3];
+          }
+          currentOffset += vData.length / 4;
+          actor.updateIndices(indices);
+        }
+      }
+      this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertexDataBuffer);
+      this._gl.bufferData(this._gl.ARRAY_BUFFER, VBOData, this._gl.STATIC_DRAW);
+      return this._pendingVBORefresh = false;
+    }
+  };
+
+
+  /*
+   * Request VBO regeneration to be performed on next update
+   */
+
+  ARERenderer.prototype.requestVBORefresh = function() {
+    return this._pendingVBORefresh = true;
+  };
 
 
   /*
@@ -5060,7 +5208,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype._wglRender = function() {
-    var a, a_id, actorCount, gl, _id, _idSector, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, bottomEdge, gl, leftEdge, rightEdge, topEdge, _id, _idSector, _savedColor, _savedOpacity;
     gl = this._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
@@ -5073,11 +5221,10 @@ ARERenderer = (function() {
       while (actorCount--) {
         a = this._actors[actorCount];
         a_id = a._id;
-        _savedColor = a._color;
         _savedColor = {
-          r: _savedColor._r,
-          g: _savedColor._g,
-          b: _savedColor._b
+          r: a._color._r,
+          g: a._color._g,
+          b: a._color._b
         };
         _savedOpacity = a._opacity;
         _id = a_id - (Math.floor(a_id / 255) * 255);
@@ -5096,15 +5243,22 @@ ARERenderer = (function() {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       this.render();
     } else {
+      leftEdge = rightEdge = topEdge = bottomEdge = true;
       while (actorCount--) {
         a = this._actors[actorCount];
-        if (a._attachedTexture) {
-          a = a.updateAttachment();
+        leftEdge = a._position.x + (a._size.x / 2) < 0;
+        rightEdge = a._position.x - (a._size.x / 2) > window.innerWidth;
+        topEdge = a._position.y + (a._size.y / 2) < 0;
+        bottomEdge = a._position.y - (a._size.y / 2) > window.innerHeight;
+        if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
+          if (a._attachedTexture) {
+            a = a.updateAttachment();
+          }
+          if (a._material !== this._currentMaterial) {
+            this.switchMaterial(a._material);
+          }
+          a.wglDraw(gl);
         }
-        if (a._material !== this._currentMaterial) {
-          this.switchMaterial(a._material);
-        }
-        a.wglDraw(gl);
       }
     }
     return this;
@@ -7332,6 +7486,7 @@ ARE = (function() {
     ARELog.info("Starting render loop");
     renderer = this._renderer;
     render = function() {
+      renderer.update();
       renderer.render();
       return window.requestAnimationFrame(render);
     };

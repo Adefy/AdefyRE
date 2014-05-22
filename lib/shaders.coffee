@@ -56,18 +56,15 @@ AREShader.shaders.texture.vertex = """
 
 attribute vec2 aPosition;
 attribute vec2 aTexCoord;
-/* attribute vec2 aUVScale; */
 
 uniform mat4 uProjection;
 uniform mat4 uModelView;
 
 varying #{varying_precision} vec2 vTexCoord;
-/* varying #{varying_precision} vec2 vUVScale; */
 
 void main() {
   gl_Position = uProjection * uModelView * vec4(aPosition, 1, 1);
   vTexCoord = aTexCoord;
-  /* vUVScale = aUVScale; */
 }
 """
 
@@ -77,23 +74,17 @@ AREShader.shaders.texture.fragment = """
 uniform sampler2D uSampler;
 uniform vec4 uColor;
 uniform float uOpacity;
-/* uniform #{varying_precision} vec2 uUVScale; */
 uniform vec4 uClipRect;
 
 varying #{varying_precision} vec2 vTexCoord;
-/* varying #{varying_precision} vec2 vUVScale; */
 
 void main() {
   vec4 baseColor = texture2D(uSampler,
                              uClipRect.xy +
                              vTexCoord * uClipRect.zw);
-                             //vTexCoord * uClipRect.zw * uUVScale);
   baseColor *= uColor;
-
-  if(baseColor.rgb == vec3(1.0, 0.0, 1.0))
-    discard;
-
   baseColor.a *= uOpacity;
+
   gl_FragColor = baseColor;
 }
 """

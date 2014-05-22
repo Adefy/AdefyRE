@@ -69,7 +69,7 @@
           var friction = Math.random();
           var elasticity = Math.random() * 1.2;
 
-          var ball = new ARECircleActor(renderer, Math.round(Math.random() * 32) + 5)
+          var ball = new ARECircleActor(renderer, 16)
             .setPosition({ x: x, y: y })
             .setTexture("roundThing")
             .setStrokeColor(0, 0, 0)
@@ -81,9 +81,9 @@
           setTimeout(function() {
             createBall();
             refreshActorCount();
-            if(renderer._actors.length < 500)
+            if(renderer._actors.length < 1000)
               scheduleBallTimeout();
-          }, Math.random() * 50);
+          }, 25);
         };
 
         var modestr = "N/A";

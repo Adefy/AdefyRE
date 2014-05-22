@@ -115,6 +115,7 @@ class ARE
 
     renderer = @_renderer
     render = ->
+      renderer.update()
       renderer.render()
       window.requestAnimationFrame render
 

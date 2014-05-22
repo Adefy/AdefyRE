@@ -30,6 +30,12 @@ ARERawActor = (function(_super) {
     this._initializeValues();
     this._id = this._renderer.getNextId();
     this._renderer.addActor(this);
+    this._indiceBuffer = this._gl.createBuffer();
+    this._ownIndiceBuffer = this._indiceBuffer;
+    this._hasOwnIndiceBuffer = true;
+    this._vertexData = null;
+    this._vertStride = 4 * Float32Array.BYTES_PER_ELEMENT;
+    this._uvOffset = 2 * Float32Array.BYTES_PER_ELEMENT;
     this.updateVertices(verts, texverts);
     this.setColor(new AREColor3(255, 255, 255));
     this.clearTexture();
@@ -65,7 +71,10 @@ ARERawActor = (function(_super) {
     this._rotation = 0;
     this._initializeModelMatrix();
     this._updateModelMatrix();
-    this._size = new AREVector2(0, 0);
+    this._size = {
+      x: 0,
+      y: 0
+    };
 
     /*
      * Physics values
@@ -133,6 +142,54 @@ ARERawActor = (function(_super) {
   ARERawActor.prototype.destroy = function() {
     this.destroyPhysicsBody();
     return null;
+  };
+
+
+  /*
+   * Get the WebGL pointer to our indice buffer
+   *
+   * @return [Number]
+   */
+
+  ARERawActor.prototype.getIndiceBuffer = function() {
+    return this._ownIndiceBuffer;
+  };
+
+
+  /*
+   * Useful method allowing us to re-use another actor's indice buffer. This
+   * helps keep renderer VBO size down.
+   *
+   * @param [Number] buffer
+   */
+
+  ARERawActor.prototype.setHostIndiceBuffer = function(buffer) {
+    this._indiceBuffer = buffer;
+    this._hasOwnIndiceBuffer = false;
+    return this._renderer.requestVBORefresh();
+  };
+
+
+  /*
+   * Clears any indice buffer host we may have. NOTE: This requires a VBO
+   * refresh!
+   */
+
+  ARERawActor.prototype.clearHostIndiceBuffer = function() {
+    this._indiceBuffer = this._ownIndiceBuffer;
+    this._hasOwnIndiceBuffer = true;
+    return this._renderer.requestVBORefresh();
+  };
+
+
+  /*
+   * Check if we have our own indice buffer
+   *
+   * @return [Boolean] hasOwn
+   */
+
+  ARERawActor.prototype.hasOwnIndiceBuffer = function() {
+    return this._hasOwnIndiceBuffer;
   };
 
 
@@ -584,7 +641,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.updateVertices = function(vertices, texverts) {
-    var newTexVerts, newVertices;
+    var i, mnx, mny, mxx, mxy, newTexVerts, newVertices, _i, _j, _ref, _ref1;
     newVertices = vertices || this._vertices;
     newTexVerts = texverts || this._texVerts;
     if (newVertices.length < 6) {
@@ -601,38 +658,22 @@ ARERawActor = (function(_super) {
         }
       }
     }
-    if (newVertices !== this._vertices) {
-      this.updateVertBuffer(newVertices);
+    this._vertices = newVertices;
+    this._texVerts = newTexVerts;
+    this._origTexVerts = newTexVerts;
+    this._vertexData = [];
+    for (i = _i = 0, _ref = this._vertices.length / 2; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      this._vertexData.push(this._vertices[i * 2]);
+      this._vertexData.push(this._vertices[i * 2 + 1]);
+      this._vertexData.push(this._texVerts[i * 2]);
+      this._vertexData.push(this._texVerts[i * 2 + 1]);
     }
-    if (newTexVerts !== this._texVerts) {
-      return this.updateUVBuffer(newTexVerts);
-    }
-  };
-
-
-  /*
-   * Updates vertex buffer
-   * NOTE: No check is made as to the validity of the supplied data!
-   *
-   * @private
-   * @param [Array<Number>] vertices
-   */
-
-  ARERawActor.prototype.updateVertBuffer = function(_vertices) {
-    var i, mnx, mny, mxx, mxy, _i, _ref;
-    this._vertices = _vertices;
-    this._vertBufferFloats = new Float32Array(this._vertices);
-    if (this._renderer.isWGLRendererActive()) {
-      this._vertBuffer = this._gl.createBuffer();
-      this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._vertBuffer);
-      this._gl.bufferData(this._gl.ARRAY_BUFFER, this._vertBufferFloats, this._gl.STATIC_DRAW);
-      this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
-    }
+    this._vertCount = this._vertexData.length / 4;
     mnx = 0;
     mny = 0;
     mxx = 0;
     mxy = 0;
-    for (i = _i = 1, _ref = this._vertices.length / 2; 1 <= _ref ? _i <= _ref : _i >= _ref; i = 1 <= _ref ? ++_i : --_i) {
+    for (i = _j = 1, _ref1 = this._vertices.length / 2; 1 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 1 <= _ref1 ? ++_j : --_j) {
       if (mnx > this._vertices[i * 2]) {
         mnx = this._vertices[i * 2];
       }
@@ -646,30 +687,39 @@ ARERawActor = (function(_super) {
         mxy = this._vertices[i * 2 + 1];
       }
     }
-    this._size.x = mxx - mnx;
-    return this._size.y = mxy - mny;
+    this._size = {
+      x: mxx - mnx,
+      y: mxy - mny
+    };
+    return this._renderer.requestVBORefresh();
   };
 
 
   /*
-   * Updates UV buffer (should only be called by updateVertices())
-   * NOTE: No check is made as to the validity of the supplied data!
+   * Called when the renderer has new vertex indices for us. We must regenerate
+   * our indice buffer.
    *
-   * @private
-   * @param [Array<Number>] vertices
+   * @param [Array<Number>] indices
    */
 
-  ARERawActor.prototype.updateUVBuffer = function(_texVerts) {
-    this._texVerts = _texVerts;
-    if (!this._renderer.isWGLRendererActive()) {
-      return;
-    }
-    this._origTexVerts = this._texVerts;
-    this._texVBufferFloats = new Float32Array(this._texVerts);
-    this._texBuffer = this._gl.createBuffer();
-    this._gl.bindBuffer(this._gl.ARRAY_BUFFER, this._texBuffer);
-    this._gl.bufferData(this._gl.ARRAY_BUFFER, this._texVBufferFloats, this._gl.STATIC_DRAW);
-    return this._gl.bindBuffer(this._gl.ARRAY_BUFFER, null);
+  ARERawActor.prototype.updateIndices = function(indices) {
+    var rawIndices;
+    rawIndices = new Uint16Array(indices);
+    this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indiceBuffer);
+    return this._gl.bufferData(this._gl.ELEMENT_ARRAY_BUFFER, rawIndices, this._gl.STATIC_DRAW);
+  };
+
+
+  /*
+   * Get raw vertex data, used by the renderer for VBO generation. Array is in
+   * the form of <X1, Y1, U1, V1>, <X2, Y2, U2, V2>, ..., <Xn, Yn, Un, Vn> for
+   * n vertices.
+   *
+   * @return [Array<Number>] data
+   */
+
+  ARERawActor.prototype.getRawVertexData = function() {
+    return this._vertexData;
   };
 
 
@@ -691,7 +741,7 @@ ARERawActor = (function(_super) {
     }
     this._texRepeatX = x;
     this._texRepeatY = y;
-    this.updateUVBuffer(uvs);
+    this.updateVertices(this._vertices, uvs);
     return this;
   };
 
@@ -839,9 +889,6 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.wglBindTexture = function(gl) {
     this._renderer._currentTexture = this._texture.texture;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this._texBuffer);
-    gl.enableVertexAttribArray(this._sh_handles.aTexCoord);
-    gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._texture.texture);
     gl.uniform1i(this._sh_handles.uSampler, 0);
@@ -917,33 +964,37 @@ ARERawActor = (function(_super) {
       _sh_handles_backup = this._sh_handles;
       this._sh_handles = shader.getHandles();
     }
-    gl.bindBuffer(gl.ARRAY_BUFFER, this._vertBuffer);
-    gl.enableVertexAttribArray(this._sh_handles.aPosition);
-    gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0);
     gl.uniformMatrix4fv(this._sh_handles.uModelView, false, this._modelM);
     gl.uniform4f(this._sh_handles.uColor, this._colArray[0], this._colArray[1], this._colArray[2], 1.0);
     if (this._sh_handles.uClipRect) {
       gl.uniform4fv(this._sh_handles.uClipRect, this._clipRect);
     }
     gl.uniform1f(this._sh_handles.uOpacity, this._opacity);
+    gl.enableVertexAttribArray(this._sh_handles.aPosition);
+    gl.vertexAttribPointer(this._sh_handles.aPosition, 2, gl.FLOAT, false, this._vertStride, 0);
+    if (this._sh_handles.aTexCoord !== void 0) {
+      gl.enableVertexAttribArray(this._sh_handles.aTexCoord);
+      gl.vertexAttribPointer(this._sh_handles.aTexCoord, 2, gl.FLOAT, false, this._vertStride, this._uvOffset);
+    }
     if (this._renderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
       if (this._renderer._currentTexture !== this._texture.texture) {
         this.wglBindTexture(gl);
       }
     }
+    this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, this._indiceBuffer);
 
     /*
      * @TODO, actually apply the RENDER_STYLE_*
      */
     switch (this._renderMode) {
       case ARERenderer.GL_MODE_LINE_LOOP:
-        gl.drawArrays(gl.LINE_LOOP, 0, this._vertices.length / 2);
+        gl.drawElements(gl.LINE_LOOP, this._vertCount, gl.UNSIGNED_SHORT, 0);
         break;
       case ARERenderer.GL_MODE_TRIANGLE_FAN:
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, this._vertices.length / 2);
+        gl.drawElements(gl.TRIANGLE_FAN, this._vertCount, gl.UNSIGNED_SHORT, 0);
         break;
       case ARERenderer.GL_MODE_TRIANGLE_STRIP:
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, this._vertices.length / 2);
+        gl.drawElements(gl.TRIANGLE_STRIP, this._vertCount, gl.UNSIGNED_SHORT, 0);
         break;
       default:
         throw new Error("Invalid render mode! " + this._renderMode);

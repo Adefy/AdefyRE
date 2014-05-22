@@ -232,6 +232,11 @@ class ARERenderer
     @_activeRendererMode = ARERenderer.RENDER_MODE_WGL
     @render = @_wglRender
 
+    # VBO. We merge all actor vertex data into a single VBO for faster rendering
+    @_pendingVBORefresh = false
+    @_vertexDataBuffer = @_gl.createBuffer()
+    @requestVBORefresh()
+
     ARELog.info "WebgL renderer initialized"
     true
 
@@ -270,6 +275,62 @@ class ARERenderer
   # methods.
   ###
   render: ->
+
+  ###
+  # Called once per frame, we perform various internal updates if needed
+  ###
+  update: ->
+
+    # Regenerate VBO
+    if @_pendingVBORefresh and @isWGLRendererActive()
+
+      currentOffset = 0
+      indices = []
+      compiledVertices = []
+      totalVertCount = 0
+      for actor in @_actors
+        if actor.hasOwnIndiceBuffer()
+          totalVertCount += actor.getRawVertexData().length
+
+      VBOData = new Float32Array totalVertCount
+
+      # Go through and build up an array of vertex data, passing correct indices
+      for actor in @_actors
+        if actor.hasOwnIndiceBuffer()
+          vData = actor.getRawVertexData()
+
+          # Generate indices
+          indices = []
+          for i in [0...vData.length / 4]
+
+            baseIndex = currentOffset + i
+            indices.push baseIndex
+
+            # Faster references into arrays
+            absBaseIndex = baseIndex * 4
+            absI = i * 4
+
+            VBOData[absBaseIndex] = vData[absI]
+            VBOData[absBaseIndex + 1] = vData[absI + 1]
+            VBOData[absBaseIndex + 2] = vData[absI + 2]
+            VBOData[absBaseIndex + 3] = vData[absI + 3]
+
+          currentOffset += vData.length / 4
+          actor.updateIndices indices
+
+      # Upload new VBO
+      # NOTE! We leave the buffer bound for rendering, no other array buffer is
+      # ever bound!
+      @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertexDataBuffer
+      @_gl.bufferData @_gl.ARRAY_BUFFER, VBOData, @_gl.STATIC_DRAW
+
+      @_pendingVBORefresh = false
+
+  ###
+  # Request VBO regeneration to be performed on next update
+  ###
+  requestVBORefresh: ->
+    @_pendingVBORefresh = true
 
   ###
   # Returns the internal default shader
@@ -448,15 +509,11 @@ class ARERenderer
         a_id = a._id
 
         # Change the color for picking. Blue key is 248
-        _savedColor = a._color
-        _savedColor =
-          r: _savedColor._r
-          g: _savedColor._g
-          b: _savedColor._b
+        _savedColor = r: a._color._r, g: a._color._g, b: a._color._b
         _savedOpacity = a._opacity
 
         _id = a_id - (Math.floor(a_id / 255) * 255)
-        _idSector = Math.floor(a_id / 255)
+        _idSector = Math.floor a_id / 255
 
         @switchMaterial ARERenderer.MATERIAL_FLAT
 
@@ -477,19 +534,31 @@ class ARERenderer
       @render()
 
     else
+
+      leftEdge = rightEdge = topEdge = bottomEdge = true
+
       while actorCount--
         a = @_actors[actorCount]
-        a = a.updateAttachment() if a._attachedTexture
 
-        ##
-        ## NOTE: Keep in mind that failing to switch to the proper material
-        ##       will cause the draw to fail! Pass in a custom shader if
-        ##       switching to a different material.
-        ##
-        if a._material != @_currentMaterial
-          @switchMaterial a._material
+        # Only draw if the actor is visible onscreen
+        leftEdge = a._position.x + (a._size.x / 2) < 0
+        rightEdge = a._position.x - (a._size.x / 2) > window.innerWidth
+        topEdge = a._position.y + (a._size.y / 2) < 0
+        bottomEdge = a._position.y - (a._size.y / 2) > window.innerHeight
 
-        a.wglDraw gl
+        unless bottomEdge or topEdge or leftEdge or rightEdge
+
+          a = a.updateAttachment() if a._attachedTexture
+
+          ##
+          ## NOTE: Keep in mind that failing to switch to the proper material
+          ##       will cause the draw to fail! Pass in a custom shader if
+          ##       switching to a different material.
+          ##
+          if a._material != @_currentMaterial
+            @switchMaterial a._material
+
+          a.wglDraw gl
 
     @
 

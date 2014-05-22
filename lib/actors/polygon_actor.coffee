@@ -4,6 +4,17 @@
 # arbitrary side counts, and for manipulation by radius and segment count
 class AREPolygonActor extends ARERawActor
 
+  # We keep track of polygon actor definitions (radius/segment pairs) and their
+  # actor objects, so indice buffers can be re-used between actors.
+  @_INDICE_BUFFER_CACHE: {}
+
+  # Just like indice buffers, we also poly actor vertices, to re-use and avoid
+  # regeneration
+  @_VERTEX_CACHE: {}
+
+  # Identical to _VERTEX_CACHE, but for UVs
+  @_UV_CACHE: {}
+
   ###
   # Sets us up with the supplied radius and segment count, generating our
   # vertex sets.
@@ -51,6 +62,7 @@ class AREPolygonActor extends ARERawActor
       @setPhysicsVertices psyxVerts
 
     @setRenderMode ARERenderer.GL_MODE_TRIANGLE_FAN
+    @validateCacheEntry()
 
   ###
   # @private
@@ -61,6 +73,11 @@ class AREPolygonActor extends ARERawActor
   ###
   generateVertices: (options) ->
     options ||= {}
+
+    # Check if we've already generated this vertex set
+    cacheLookup = "#{@radius}.#{@segments}.#{options.mode}"
+    cachedVertexSet = AREPolygonActor._VERTEX_CACHE[cacheLookup]
+    return cachedVertexSet if cachedVertexSet
 
     # Build vertices
     # Uses algo from http://slabode.exofire.net/circle_draw.shtml
@@ -103,6 +120,9 @@ class AREPolygonActor extends ARERawActor
       verts.push 0
       verts.push 0
 
+    # Add set to cache
+    AREPolygonActor._VERTEX_CACHE[cacheLookup] = verts
+
     verts
 
   ###
@@ -113,9 +133,17 @@ class AREPolygonActor extends ARERawActor
   generateUVs: (vertices) ->
     param.required vertices
 
+    # Check if we've already generated this UV set
+    cacheLookup = "#{@radius}.#{@segments}"
+    cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup]
+    return cachedUVSet if cachedUVSet
+
     uvs = []
     for v in vertices
       uvs.push ((v / @radius) / 2) + 0.5
+
+    # Add set to cache
+    AREPolygonActor._UV_CACHE[cacheLookup] = uvs
 
     uvs
 
@@ -130,6 +158,23 @@ class AREPolygonActor extends ARERawActor
 
     @updateVertices verts, uvs
     @setPhysicsVertices psyxVerts
+
+  ###
+  # Ensure we are in the cache under our radius/segments pair, if no other poly
+  # is.
+  ###
+  validateCacheEntry: ->
+    cacheLookup = "#{@radius}.#{@segments}"
+
+    # If a cache entry already exists, use its indice buffer
+    if AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]
+      cachedActor = AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]
+      @setHostIndiceBuffer cachedActor.getIndiceBuffer()
+
+    # If not, make ourselves the host
+    else
+      AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = @
+      @clearHostIndiceBuffer()
 
   ###
   # Get stored radius
@@ -153,6 +198,7 @@ class AREPolygonActor extends ARERawActor
   setRadius: (@radius) ->
     if radius <= 0 then throw new Error "Invalid radius: #{radius}"
     @fullVertRefresh()
+    @validateCacheEntry()
 
   ###
   # Set segment count, causes a full vert refresh
@@ -162,3 +208,4 @@ class AREPolygonActor extends ARERawActor
   setSegments: (@segments) ->
     if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
     @fullVertRefresh()
+    @validateCacheEntry()

@@ -5,6 +5,12 @@ var AREPolygonActor,
 AREPolygonActor = (function(_super) {
   __extends(AREPolygonActor, _super);
 
+  AREPolygonActor._INDICE_BUFFER_CACHE = {};
+
+  AREPolygonActor._VERTEX_CACHE = {};
+
+  AREPolygonActor._UV_CACHE = {};
+
 
   /*
    * Sets us up with the supplied radius and segment count, generating our
@@ -45,6 +51,7 @@ AREPolygonActor = (function(_super) {
       this.setPhysicsVertices(psyxVerts);
     }
     this.setRenderMode(ARERenderer.GL_MODE_TRIANGLE_FAN);
+    this.validateCacheEntry();
   }
 
 
@@ -57,8 +64,13 @@ AREPolygonActor = (function(_super) {
    */
 
   AREPolygonActor.prototype.generateVertices = function(options) {
-    var i, radFactor, tanFactor, theta, tx, ty, verts, x, y, _i, _j, _ref, _ref1, _tv;
+    var cacheLookup, cachedVertexSet, i, radFactor, tanFactor, theta, tx, ty, verts, x, y, _i, _j, _ref, _ref1, _tv;
     options || (options = {});
+    cacheLookup = "" + this.radius + "." + this.segments + "." + options.mode;
+    cachedVertexSet = AREPolygonActor._VERTEX_CACHE[cacheLookup];
+    if (cachedVertexSet) {
+      return cachedVertexSet;
+    }
     x = this.radius;
     y = 0;
     theta = (2.0 * 3.1415926) / this.segments;
@@ -87,6 +99,7 @@ AREPolygonActor = (function(_super) {
       verts.push(0);
       verts.push(0);
     }
+    AREPolygonActor._VERTEX_CACHE[cacheLookup] = verts;
     return verts;
   };
 
@@ -98,13 +111,19 @@ AREPolygonActor = (function(_super) {
    */
 
   AREPolygonActor.prototype.generateUVs = function(vertices) {
-    var uvs, v, _i, _len;
+    var cacheLookup, cachedUVSet, uvs, v, _i, _len;
     param.required(vertices);
+    cacheLookup = "" + this.radius + "." + this.segments;
+    cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup];
+    if (cachedUVSet) {
+      return cachedUVSet;
+    }
     uvs = [];
     for (_i = 0, _len = vertices.length; _i < _len; _i++) {
       v = vertices[_i];
       uvs.push(((v / this.radius) / 2) + 0.5);
     }
+    AREPolygonActor._UV_CACHE[cacheLookup] = uvs;
     return uvs;
   };
 
@@ -123,6 +142,24 @@ AREPolygonActor = (function(_super) {
     uvs = this.generateUVs(verts);
     this.updateVertices(verts, uvs);
     return this.setPhysicsVertices(psyxVerts);
+  };
+
+
+  /*
+   * Ensure we are in the cache under our radius/segments pair, if no other poly
+   * is.
+   */
+
+  AREPolygonActor.prototype.validateCacheEntry = function() {
+    var cacheLookup, cachedActor;
+    cacheLookup = "" + this.radius + "." + this.segments;
+    if (AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]) {
+      cachedActor = AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup];
+      return this.setHostIndiceBuffer(cachedActor.getIndiceBuffer());
+    } else {
+      AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = this;
+      return this.clearHostIndiceBuffer();
+    }
   };
 
 
@@ -159,7 +196,8 @@ AREPolygonActor = (function(_super) {
     if (radius <= 0) {
       throw new Error("Invalid radius: " + radius);
     }
-    return this.fullVertRefresh();
+    this.fullVertRefresh();
+    return this.validateCacheEntry();
   };
 
 
@@ -174,7 +212,8 @@ AREPolygonActor = (function(_super) {
     if (segments <= 2) {
       throw new ERror("Invalid segment count: " + segments);
     }
-    return this.fullVertRefresh();
+    this.fullVertRefresh();
+    return this.validateCacheEntry();
   };
 
   return AREPolygonActor;

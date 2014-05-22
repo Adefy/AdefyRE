@@ -27,6 +27,14 @@ class ARERawActor extends Koon
     @_id = @_renderer.getNextId()
     @_renderer.addActor @
 
+    @_indiceBuffer = @_gl.createBuffer()
+    @_ownIndiceBuffer = @_indiceBuffer   # Save for later restoration
+    @_hasOwnIndiceBuffer = true
+
+    @_vertexData = null
+    @_vertStride = 4 * Float32Array.BYTES_PER_ELEMENT
+    @_uvOffset = 2 * Float32Array.BYTES_PER_ELEMENT
+
     @updateVertices verts, texverts
     @setColor new AREColor3 255, 255, 255
 
@@ -66,7 +74,7 @@ class ARERawActor extends Koon
     @_updateModelMatrix()
 
     ## size calculated from vertices
-    @_size = new AREVector2 0, 0
+    @_size = x: 0, y: 0
 
     ###
     # Physics values
@@ -135,6 +143,41 @@ class ARERawActor extends Koon
   destroy: ->
     @destroyPhysicsBody()
     null
+
+  ###
+  # Get the WebGL pointer to our indice buffer
+  #
+  # @return [Number]
+  ###
+  getIndiceBuffer: ->
+    @_ownIndiceBuffer
+
+  ###
+  # Useful method allowing us to re-use another actor's indice buffer. This
+  # helps keep renderer VBO size down.
+  #
+  # @param [Number] buffer
+  ###
+  setHostIndiceBuffer: (buffer) ->
+    @_indiceBuffer = buffer
+    @_hasOwnIndiceBuffer = false
+    @_renderer.requestVBORefresh()
+
+  ###
+  # Clears any indice buffer host we may have. NOTE: This requires a VBO
+  # refresh!
+  ###
+  clearHostIndiceBuffer: ->
+    @_indiceBuffer = @_ownIndiceBuffer
+    @_hasOwnIndiceBuffer = true
+    @_renderer.requestVBORefresh()
+
+  ###
+  # Check if we have our own indice buffer
+  #
+  # @return [Boolean] hasOwn
+  ###
+  hasOwnIndiceBuffer: -> @_hasOwnIndiceBuffer
 
   ###
   # Get material name
@@ -480,25 +523,22 @@ class ARERawActor extends Koon
         if @_vertices.length != newTexVerts.length
           throw new Error "Vert and UV count must match!"
 
-    @updateVertBuffer newVertices if newVertices != @_vertices
-    @updateUVBuffer newTexVerts if newTexVerts != @_texVerts
+    @_vertices = newVertices
+    @_texVerts = newTexVerts
+    @_origTexVerts = newTexVerts
 
-  ###
-  # Updates vertex buffer
-  # NOTE: No check is made as to the validity of the supplied data!
-  #
-  # @private
-  # @param [Array<Number>] vertices
-  ###
-  updateVertBuffer: (@_vertices) ->
-    @_vertBufferFloats = new Float32Array(@_vertices)
+    # Build raw float buffer for uploading into VBO
+    @_vertexData = []
 
-    if @_renderer.isWGLRendererActive()
-      @_vertBuffer = @_gl.createBuffer()
-      @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_vertBuffer
-      @_gl.bufferData @_gl.ARRAY_BUFFER, @_vertBufferFloats, @_gl.STATIC_DRAW
-      @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+    for i in [0...(@_vertices.length / 2)]
+      @_vertexData.push @_vertices[i * 2]      # X
+      @_vertexData.push @_vertices[i * 2 + 1]  # Y
+      @_vertexData.push @_texVerts[i * 2]      # U
+      @_vertexData.push @_texVerts[i * 2 + 1]  # V
 
+    @_vertCount = @_vertexData.length / 4
+
+    # Update size
     mnx = 0
     mny = 0
     mxx = 0
@@ -510,25 +550,31 @@ class ARERawActor extends Koon
       mny = @_vertices[i * 2 + 1] if mny > @_vertices[i * 2 + 1]
       mxy = @_vertices[i * 2 + 1] if mxy < @_vertices[i * 2 + 1]
 
-    @_size.x = mxx - mnx
-    @_size.y = mxy - mny
+    @_size = x: mxx - mnx, y: mxy - mny
+
+    # Notify renderer our vertices have changed
+    @_renderer.requestVBORefresh()
 
   ###
-  # Updates UV buffer (should only be called by updateVertices())
-  # NOTE: No check is made as to the validity of the supplied data!
+  # Called when the renderer has new vertex indices for us. We must regenerate
+  # our indice buffer.
   #
-  # @private
-  # @param [Array<Number>] vertices
+  # @param [Array<Number>] indices
   ###
-  updateUVBuffer: (@_texVerts) ->
-    return unless @_renderer.isWGLRendererActive()
+  updateIndices: (indices) ->
+    rawIndices = new Uint16Array indices
 
-    @_origTexVerts = @_texVerts
-    @_texVBufferFloats = new Float32Array(@_texVerts)
-    @_texBuffer = @_gl.createBuffer()
-    @_gl.bindBuffer @_gl.ARRAY_BUFFER, @_texBuffer
-    @_gl.bufferData @_gl.ARRAY_BUFFER, @_texVBufferFloats, @_gl.STATIC_DRAW
-    @_gl.bindBuffer @_gl.ARRAY_BUFFER, null
+    @_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, @_indiceBuffer
+    @_gl.bufferData @_gl.ELEMENT_ARRAY_BUFFER, rawIndices, @_gl.STATIC_DRAW
+
+  ###
+  # Get raw vertex data, used by the renderer for VBO generation. Array is in
+  # the form of <X1, Y1, U1, V1>, <X2, Y2, U2, V2>, ..., <Xn, Yn, Un, Vn> for
+  # n vertices.
+  #
+  # @return [Array<Number>] data
+  ###
+  getRawVertexData: -> @_vertexData
 
   ###
   # Set texture repeat per coordinate axis
@@ -549,7 +595,7 @@ class ARERawActor extends Koon
     @_texRepeatX = x
     @_texRepeatY = y
 
-    @updateUVBuffer uvs
+    @updateVertices @_vertices, uvs
     @
 
   ###
@@ -683,11 +729,6 @@ class ARERawActor extends Koon
   wglBindTexture: (gl) ->
     @_renderer._currentTexture = @_texture.texture
 
-    # We apparently don't need uUVScale in webgl
-    gl.bindBuffer gl.ARRAY_BUFFER, @_texBuffer
-    gl.enableVertexAttribArray @_sh_handles.aTexCoord
-    gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, 0, 0
-
     gl.activeTexture gl.TEXTURE0
     gl.bindTexture gl.TEXTURE_2D, @_texture.texture
     gl.uniform1i @_sh_handles.uSampler, 0
@@ -762,33 +803,40 @@ class ARERawActor extends Koon
       _sh_handles_backup = @_sh_handles
       @_sh_handles = shader.getHandles()
 
-    gl.bindBuffer gl.ARRAY_BUFFER, @_vertBuffer
-    gl.enableVertexAttribArray @_sh_handles.aPosition
-    gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, 0, 0
-
+    # Uniforms
     gl.uniformMatrix4fv @_sh_handles.uModelView, false, @_modelM
-
     gl.uniform4f @_sh_handles.uColor, @_colArray[0], @_colArray[1], @_colArray[2], 1.0
     gl.uniform4fv @_sh_handles.uClipRect, @_clipRect if @_sh_handles.uClipRect
     gl.uniform1f @_sh_handles.uOpacity, @_opacity
+
+    # Bind array pointers
+    gl.enableVertexAttribArray @_sh_handles.aPosition
+    gl.vertexAttribPointer @_sh_handles.aPosition, 2, gl.FLOAT, false, @_vertStride, 0
+
+    if @_sh_handles.aTexCoord != undefined
+      gl.enableVertexAttribArray @_sh_handles.aTexCoord
+      gl.vertexAttribPointer @_sh_handles.aTexCoord, 2, gl.FLOAT, false, @_vertStride, @_uvOffset
 
     # Texture rendering, if needed
     if @_renderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
       if @_renderer._currentTexture != @_texture.texture
         @wglBindTexture gl
 
+    # Bind our indices
+    @_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, @_indiceBuffer
+
     ###
     # @TODO, actually apply the RENDER_STYLE_*
     ###
     switch @_renderMode
       when ARERenderer.GL_MODE_LINE_LOOP
-        gl.drawArrays gl.LINE_LOOP, 0, @_vertices.length / 2
+        gl.drawElements gl.LINE_LOOP, @_vertCount, gl.UNSIGNED_SHORT, 0
 
       when ARERenderer.GL_MODE_TRIANGLE_FAN
-        gl.drawArrays gl.TRIANGLE_FAN, 0, @_vertices.length / 2
+        gl.drawElements gl.TRIANGLE_FAN, @_vertCount, gl.UNSIGNED_SHORT, 0
 
       when ARERenderer.GL_MODE_TRIANGLE_STRIP
-        gl.drawArrays gl.TRIANGLE_STRIP, 0, @_vertices.length / 2
+        gl.drawElements gl.TRIANGLE_STRIP, @_vertCount, gl.UNSIGNED_SHORT, 0
 
       else throw new Error "Invalid render mode! #{@_renderMode}"
 
