@@ -260,7 +260,7 @@ class ARERawActor extends Koon
     @_id = @_renderer.getNextId()
     @_renderer.addActor @
 
-    @_indiceBuffer = @_gl.createBuffer()
+    @_indiceBuffer = @_renderer.getGL().createBuffer()  if @_renderer.getGL()
     @_ownIndiceBuffer = @_indiceBuffer   # Save for later restoration
     @_hasOwnIndiceBuffer = true
 
@@ -1125,7 +1125,7 @@ class ARERawActor extends Koon
   cvDraw: (context) ->
     return unless @_visible
 
-    context.translate @_modelM[12], @_modelM[13]
+    context.translate @_modelM[12], context.canvas.clientHeight - @_modelM[13]
     context.beginPath()
     context.rotate @_rotation
     context.moveTo @_vertices[0], @_vertices[1]

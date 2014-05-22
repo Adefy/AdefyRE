@@ -360,7 +360,9 @@ ARERawActor = (function(_super) {
     this._initializeValues();
     this._id = this._renderer.getNextId();
     this._renderer.addActor(this);
-    this._indiceBuffer = this._gl.createBuffer();
+    if (this._renderer.getGL()) {
+      this._indiceBuffer = this._renderer.getGL().createBuffer();
+    }
     this._ownIndiceBuffer = this._indiceBuffer;
     this._hasOwnIndiceBuffer = true;
     this._vertexData = null;
@@ -1387,7 +1389,7 @@ ARERawActor = (function(_super) {
     if (!this._visible) {
       return;
     }
-    context.translate(this._modelM[12], this._modelM[13]);
+    context.translate(this._modelM[12], context.canvas.clientHeight - this._modelM[13]);
     context.beginPath();
     context.rotate(this._rotation);
     context.moveTo(this._vertices[0], this._vertices[1]);
