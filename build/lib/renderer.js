@@ -121,16 +121,19 @@ ARERenderer = (function() {
     this._clearColor = new AREColor3(255, 255, 255);
     _createCanvas = (function(_this) {
       return function(parent, id) {
+        var parentElm;
         _this._canvas = document.createElement("canvas");
         _this._canvas.width = _this._width;
         _this._canvas.height = _this._height;
         _this._canvas.id = id;
-        document.querySelector(parent).appendChild(_this._canvas);
-        return ARELog.info("Creating canvas #" + id + " [" + _this._width + "x" + _this._height + "]");
+        parentElm = document.querySelector(parent);
+        parentElm || (parentElm = document.getElementById(parent));
+        parentElm.appendChild(_this._canvas);
+        return ARELog.info("Creating canvas #" + id + " [" + _this._width + "x" + _this._height + "] <" + parent + ">");
       };
     })(this);
     if (!canvasId) {
-      _createCanvas("body", "are_canvas");
+      _createCanvas("body", "are_anvas");
     } else {
       this._canvas = document.getElementById(canvasId);
       if (!this._canvas) {

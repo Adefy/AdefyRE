@@ -120,12 +120,16 @@ class ARERenderer
       @_canvas.height = @_height
       @_canvas.id = id
 
-      document.querySelector(parent).appendChild @_canvas
-      ARELog.info "Creating canvas ##{id} [#{@_width}x#{@_height}]"
+      # Try both selector and id
+      parentElm = document.querySelector parent
+      parentElm ||= document.getElementById parent
+
+      parentElm.appendChild @_canvas
+      ARELog.info "Creating canvas ##{id} [#{@_width}x#{@_height}] <#{parent}>"
 
     # Create a new canvas if no id is supplied
     if !canvasId
-      _createCanvas "body", "are_canvas"
+      _createCanvas "body", "are_anvas"
 
     # Attempt to use existing canvas
     else
