@@ -4665,19 +4665,19 @@ class AREInterface
 # ARELog is used for all logging throughout the application
 class ARE
 
-  config:
+  @config:
     deps:
       physics:
         chipmunk: "/components/chipmunk/cp.js"
         koon: "/lib/koon/koon.js"
         physics_worker: "/lib/physics/worker.js"
 
-  Version:
+  @Version:
     MAJOR: 1
     MINOR: 2
-    PATCH: 0
+    PATCH: 1
     BUILD: null
-    STRING: "1.2.0"
+    STRING: "1.2.1"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
@@ -4724,7 +4724,7 @@ class ARE
       width: width
       height: height
 
-    @_physics = new PhysicsManager @_renderer, @config.deps.physics
+    @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics
 
     @_currentlyRendering = false
     @startRendering()

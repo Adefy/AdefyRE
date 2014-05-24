@@ -5300,7 +5300,7 @@ AREInterface = (function() {
 })();
 
 ARE = (function() {
-  ARE.prototype.config = {
+  ARE.config = {
     deps: {
       physics: {
         chipmunk: "/components/chipmunk/cp.js",
@@ -5310,12 +5310,12 @@ ARE = (function() {
     }
   };
 
-  ARE.prototype.Version = {
+  ARE.Version = {
     MAJOR: 1,
     MINOR: 2,
-    PATCH: 0,
+    PATCH: 1,
     BUILD: null,
-    STRING: "1.2.0"
+    STRING: "1.2.1"
   };
 
 
@@ -5354,7 +5354,7 @@ ARE = (function() {
       width: width,
       height: height
     });
-    this._physics = new PhysicsManager(this._renderer, this.config.deps.physics);
+    this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics);
     this._currentlyRendering = false;
     this.startRendering();
     cb(this);
