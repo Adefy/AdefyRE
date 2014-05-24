@@ -7402,10 +7402,10 @@ ARE = (function() {
 
   ARE.prototype.Version = {
     MAJOR: 1,
-    MINOR: 1,
-    PATCH: 4,
+    MINOR: 2,
+    PATCH: 0,
     BUILD: null,
-    STRING: "1.1.4"
+    STRING: "1.2.0"
   };
 
 

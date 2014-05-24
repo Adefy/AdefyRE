@@ -25,7 +25,7 @@ class AREPhysicsWorker extends Koon
 
     @_densityRatio = 1 / 10000
     @_gravity = new cp.v 0, 9.8
-    @_frameTime = 1.0 / 30.0
+    @_frameTime = 1.0 / 60.0
     @_posIterations = 4
     @_velIterations = 4
 
