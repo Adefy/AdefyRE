@@ -1502,14 +1502,14 @@ class ARERectangleActor extends ARERawActor
   #
   # @param [Number] width
   ###
-  setWidth: (@width) -> @updateVertBuffer @generateVertices()
+  setWidth: (@width) -> @updateVertices @generateVertices()
 
   ###
   # Set height, causes a vert refresh
   #
   # @param [Number] height
   ###
-  setHeight: (@height) -> @updateVertBuffer @generateVertices()
+  setHeight: (@height) -> @updateVertices @generateVertices()
 
 # @depend raw_actor.coffee
 
@@ -1819,14 +1819,14 @@ class ARETriangleActor extends ARERawActor
   #
   # @param [Number] base
   ###
-  setBase: (@base) -> @updateVertBuffer @generateVertices()
+  setBase: (@base) -> @updateVertices @generateVertices()
 
   ###
   # Set height, causes a vert refresh
   #
   # @param [Number] height
   ###
-  setHeight: (@height) -> @updateVertBuffer @generateVertices()
+  setHeight: (@height) -> @updateVertices @generateVertices()
 
 # Color class, holds r/g/b components
 #
@@ -4675,9 +4675,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 2
-    PATCH: 1
+    PATCH: 2
     BUILD: null
-    STRING: "1.2.1"
+    STRING: "1.2.2"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.

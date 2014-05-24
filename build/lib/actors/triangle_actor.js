@@ -88,7 +88,7 @@ ARETriangleActor = (function(_super) {
 
   ARETriangleActor.prototype.setBase = function(base) {
     this.base = base;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
 
@@ -100,7 +100,7 @@ ARETriangleActor = (function(_super) {
 
   ARETriangleActor.prototype.setHeight = function(height) {
     this.height = height;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
   return ARETriangleActor;

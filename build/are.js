@@ -1829,7 +1829,7 @@ ARERectangleActor = (function(_super) {
 
   ARERectangleActor.prototype.setWidth = function(width) {
     this.width = width;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
 
@@ -1841,7 +1841,7 @@ ARERectangleActor = (function(_super) {
 
   ARERectangleActor.prototype.setHeight = function(height) {
     this.height = height;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
   return ARERectangleActor;
@@ -2177,7 +2177,7 @@ ARETriangleActor = (function(_super) {
 
   ARETriangleActor.prototype.setBase = function(base) {
     this.base = base;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
 
@@ -2189,7 +2189,7 @@ ARETriangleActor = (function(_super) {
 
   ARETriangleActor.prototype.setHeight = function(height) {
     this.height = height;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
   return ARETriangleActor;
@@ -5313,9 +5313,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 2,
-    PATCH: 1,
+    PATCH: 2,
     BUILD: null,
-    STRING: "1.2.1"
+    STRING: "1.2.2"
   };
 
 

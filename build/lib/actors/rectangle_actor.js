@@ -88,7 +88,7 @@ ARERectangleActor = (function(_super) {
 
   ARERectangleActor.prototype.setWidth = function(width) {
     this.width = width;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
 
@@ -100,7 +100,7 @@ ARERectangleActor = (function(_super) {
 
   ARERectangleActor.prototype.setHeight = function(height) {
     this.height = height;
-    return this.updateVertBuffer(this.generateVertices());
+    return this.updateVertices(this.generateVertices());
   };
 
   return ARERectangleActor;

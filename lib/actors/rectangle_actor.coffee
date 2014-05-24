@@ -74,11 +74,11 @@ class ARERectangleActor extends ARERawActor
   #
   # @param [Number] width
   ###
-  setWidth: (@width) -> @updateVertBuffer @generateVertices()
+  setWidth: (@width) -> @updateVertices @generateVertices()
 
   ###
   # Set height, causes a vert refresh
   #
   # @param [Number] height
   ###
-  setHeight: (@height) -> @updateVertBuffer @generateVertices()
+  setHeight: (@height) -> @updateVertices @generateVertices()

@@ -33,9 +33,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 2
-    PATCH: 1
+    PATCH: 2
     BUILD: null
-    STRING: "1.2.1"
+    STRING: "1.2.2"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.

@@ -72,11 +72,11 @@ class ARETriangleActor extends ARERawActor
   #
   # @param [Number] base
   ###
-  setBase: (@base) -> @updateVertBuffer @generateVertices()
+  setBase: (@base) -> @updateVertices @generateVertices()
 
   ###
   # Set height, causes a vert refresh
   #
   # @param [Number] height
   ###
-  setHeight: (@height) -> @updateVertBuffer @generateVertices()
+  setHeight: (@height) -> @updateVertices @generateVertices()
