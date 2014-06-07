@@ -16,7 +16,7 @@ AREActorInterface = (function() {
   AREActorInterface.prototype._findActor = function(id) {
     var a, _i, _len, _ref;
     param.required(id);
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id) {
@@ -124,7 +124,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getRectangleActorWidth = function(id) {
     var a, _i, _len, _ref;
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -144,7 +144,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getRectangleActorHeight = function(id) {
     var a, _i, _len, _ref;
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -164,7 +164,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getCircleActorRadius = function(id) {
     var a, _i, _len, _ref;
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof AREPolygonActor) {
@@ -311,7 +311,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setRectangleActorHeight = function(id, height) {
     var a, _i, _len, _ref;
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -333,7 +333,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setRectangleActorWidth = function(id, width) {
     var a, _i, _len, _ref;
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof ARERectangleActor) {
@@ -355,7 +355,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.setCircleActorRadius = function(id, radius) {
     var a, _i, _len, _ref;
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === id && a instanceof AREPolygonActor) {

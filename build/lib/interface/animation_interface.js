@@ -45,7 +45,7 @@ AREAnimationInterface = (function() {
     options = JSON.parse(param.required(options));
     options.start || (options.start = 0);
     actor = null;
-    _ref = this._renderer.actors;
+    _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
       if (a.getId() === actorID) {

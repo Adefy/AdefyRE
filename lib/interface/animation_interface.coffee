@@ -68,7 +68,7 @@ class AREAnimationInterface
 
     actor = null
 
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == actorID
         actor = a
         break

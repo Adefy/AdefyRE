@@ -14,7 +14,7 @@ class AREActorInterface
   _findActor: (id) ->
     param.required id
 
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == id then return a
 
     null
@@ -101,7 +101,7 @@ class AREActorInterface
   # @return [Number] width
   ###
   getRectangleActorWidth: (id) ->
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == id and a instanceof ARERectangleActor
         return a.getWidth()
 
@@ -114,7 +114,7 @@ class AREActorInterface
   # @return [Number] height
   ###
   getRectangleActorHeight: (id) ->
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == id and a instanceof ARERectangleActor
         return a.getHeight()
 
@@ -128,7 +128,7 @@ class AREActorInterface
   # @return [Number] radius
   ###
   getCircleActorRadius: (id) ->
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == id and a instanceof AREPolygonActor
         return a.getRadius()
 
@@ -241,7 +241,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setRectangleActorHeight: (id, height) ->
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == id and a instanceof ARERectangleActor
         a.setHeight height
         return true
@@ -256,7 +256,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setRectangleActorWidth: (id, width) ->
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == id and a instanceof ARERectangleActor
         a.setWidth width
         return true
@@ -271,7 +271,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   setCircleActorRadius: (id, radius) ->
-    for a in @_renderer.actors
+    for a in @_renderer._actors
       if a.getId() == id and a instanceof AREPolygonActor
         a.setRadius radius
         return true
