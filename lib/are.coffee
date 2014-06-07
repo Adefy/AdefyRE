@@ -190,11 +190,4 @@ class ARE
     else
       ARELog.warn "Canvas renderer available for canvas pick!"
 
-  ###
-  # Return the current active renderer mode
-  #
-  # @return [Number]
-  ###
-  getActiveRendererMode: -> @_renderer.activeRendererMode
-
 window.AdefyGLI = window.AdefyRE = new AREInterface
