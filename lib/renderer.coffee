@@ -757,7 +757,7 @@ class ARERenderer
     # Extract id if given actor
     actorId = actorId.getId() if actorId instanceof ARERawActor
 
-    removedActor = _.remove @_actors, (a) -> a.getId() == actorId
+    removedActor = _.remove(@_actors, ((a) -> a.getId() == actorId))[0]
     removedActor.destroy() if removedActor and !noDestroy
     !!removedActor
 

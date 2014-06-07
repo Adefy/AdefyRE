@@ -5483,9 +5483,9 @@ ARERenderer = (function() {
     if (actorId instanceof ARERawActor) {
       actorId = actorId.getId();
     }
-    removedActor = _.remove(this._actors, function(a) {
+    removedActor = _.remove(this._actors, (function(a) {
       return a.getId() === actorId;
-    });
+    }))[0];
     if (removedActor && !noDestroy) {
       removedActor.destroy();
     }
@@ -7406,9 +7406,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 2,
-    PATCH: 4,
+    PATCH: 5,
     BUILD: null,
-    STRING: "1.2.4"
+    STRING: "1.2.5"
   };
 
 

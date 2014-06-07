@@ -771,9 +771,9 @@ ARERenderer = (function() {
     if (actorId instanceof ARERawActor) {
       actorId = actorId.getId();
     }
-    removedActor = _.remove(this._actors, function(a) {
+    removedActor = _.remove(this._actors, (function(a) {
       return a.getId() === actorId;
-    });
+    }))[0];
     if (removedActor && !noDestroy) {
       removedActor.destroy();
     }
