@@ -989,8 +989,8 @@ class ARERawActor extends Koon
     pos = @_position
     camPos = @_renderer.getCameraPosition()
 
-    s = Math.sin(-@_rotation)
-    c = Math.cos(-@_rotation)
+    s = Math.sin(@_rotation)
+    c = Math.cos(@_rotation)
 
     @_modelM[0] = c
     @_modelM[1] = s
@@ -4685,10 +4685,10 @@ class ARE
 
   @Version:
     MAJOR: 1
-    MINOR: 2
-    PATCH: 9
+    MINOR: 3
+    PATCH: 0
     BUILD: null
-    STRING: "1.2.9"
+    STRING: "1.3.0"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.

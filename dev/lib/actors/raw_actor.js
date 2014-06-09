@@ -918,8 +918,8 @@ ARERawActor = (function(_super) {
     var c, camPos, pos, s;
     pos = this._position;
     camPos = this._renderer.getCameraPosition();
-    s = Math.sin(-this._rotation);
-    c = Math.cos(-this._rotation);
+    s = Math.sin(this._rotation);
+    c = Math.cos(this._rotation);
     this._modelM[0] = c;
     this._modelM[1] = s;
     this._modelM[4] = -s;

@@ -1248,8 +1248,8 @@ ARERawActor = (function(_super) {
     var c, camPos, pos, s;
     pos = this._position;
     camPos = this._renderer.getCameraPosition();
-    s = Math.sin(-this._rotation);
-    c = Math.cos(-this._rotation);
+    s = Math.sin(this._rotation);
+    c = Math.cos(this._rotation);
     this._modelM[0] = c;
     this._modelM[1] = s;
     this._modelM[4] = -s;
@@ -5315,10 +5315,10 @@ ARE = (function() {
 
   ARE.Version = {
     MAJOR: 1,
-    MINOR: 2,
-    PATCH: 9,
+    MINOR: 3,
+    PATCH: 0,
     BUILD: null,
-    STRING: "1.2.9"
+    STRING: "1.3.0"
   };
 
 

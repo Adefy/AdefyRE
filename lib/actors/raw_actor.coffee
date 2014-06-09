@@ -756,8 +756,8 @@ class ARERawActor extends Koon
     pos = @_position
     camPos = @_renderer.getCameraPosition()
 
-    s = Math.sin(-@_rotation)
-    c = Math.cos(-@_rotation)
+    s = Math.sin(@_rotation)
+    c = Math.cos(@_rotation)
 
     @_modelM[0] = c
     @_modelM[1] = s
