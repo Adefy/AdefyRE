@@ -501,7 +501,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype._wglRender = function() {
-    var a, a_id, actorCount, bottomEdge, camPos, gl, leftEdge, rightEdge, topEdge, _id, _idSector, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, actorIterator, bottomEdge, camPos, gl, leftEdge, rightEdge, topEdge, _id, _idSector, _savedColor, _savedOpacity;
     gl = this._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
@@ -510,9 +510,10 @@ ARERenderer = (function() {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
     actorCount = this._actors.length;
+    actorIterator = this._actors.length;
     if (this._pickRenderRequested) {
-      while (actorCount--) {
-        a = this._actors[actorCount];
+      while (actorIterator--) {
+        a = this._actors[actorCount - actorIterator - 1];
         a_id = a._id;
         _savedColor = {
           r: a._color._r,
@@ -538,8 +539,8 @@ ARERenderer = (function() {
     } else {
       leftEdge = rightEdge = topEdge = bottomEdge = true;
       camPos = this._cameraPosition;
-      while (actorCount--) {
-        a = this._actors[actorCount];
+      while (actorIterator--) {
+        a = this._actors[actorCount - actorIterator - 1];
         leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0;
         rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth;
         topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0;

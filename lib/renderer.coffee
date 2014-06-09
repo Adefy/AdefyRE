@@ -506,10 +506,17 @@ class ARERenderer
 
     # Draw everything!
     actorCount = @_actors.length
+    actorIterator = @_actors.length
+
+    ##
+    ## We use the fancy while loops to decrement on each count, as apparently
+    ## it's faster than a full blown for-loop. Since we can't iterate backwards,
+    ## we do some subtraction magic to get an ascending indice
+    ##
 
     if @_pickRenderRequested
-      while actorCount--
-        a = @_actors[actorCount]
+      while actorIterator--
+        a = @_actors[actorCount - actorIterator - 1]
         a_id = a._id
 
         # Change the color for picking. Blue key is 248
@@ -542,8 +549,8 @@ class ARERenderer
       leftEdge = rightEdge = topEdge = bottomEdge = true
       camPos = @_cameraPosition
 
-      while actorCount--
-        a = @_actors[actorCount]
+      while actorIterator--
+        a = @_actors[actorCount - actorIterator - 1]
 
         # Only draw if the actor is visible onscreen
         leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0

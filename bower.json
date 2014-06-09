@@ -1,6 +1,6 @@
 {
   "name": "AdefyRE",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "authors": [
     "Cris Mihalache <cris@adefy.com>",
     "Blaž Hrastnik <blaz@adefy.com>",
@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "chipmunk": "git@github.com:josephg/Chipmunk-js.git#master",
-    "underscore": "~1.6.0",
+    "lodash": "~2.4.1",
     "async": "~0.8.0",
     "zepto": "~1.1.3"
   }
