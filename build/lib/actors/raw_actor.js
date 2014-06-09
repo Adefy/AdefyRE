@@ -142,7 +142,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.destroy = function() {
-    this.destroyPhysicsBody();
+    this._renderer.removeActor(this);
     return null;
   };
 

@@ -1218,7 +1218,7 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.destroy = function() {
-    this.destroyPhysicsBody();
+    this._renderer.removeActor(this);
     return null;
   };
 
@@ -4182,7 +4182,6 @@ ARERenderer = (function() {
       }
     }
     this._currentMaterial = material;
-    ARELog.info("Switched material " + this._currentMaterial);
     return this;
   };
 
@@ -6063,9 +6062,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 2,
-    PATCH: 8,
+    PATCH: 9,
     BUILD: null,
-    STRING: "1.2.8"
+    STRING: "1.2.9"
   };
 
 

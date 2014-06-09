@@ -815,7 +815,6 @@ ARERenderer = (function() {
       }
     }
     this._currentMaterial = material;
-    ARELog.info("Switched material " + this._currentMaterial);
     return this;
   };
 

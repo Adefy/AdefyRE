@@ -44,7 +44,6 @@
     var height = window.innerHeight - 30;
 
     window.AdefyRE.Engine().initialize(width, height, function(engine) {
-      engine.wglFlipTextureY = true;
       window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
 
         var renderer = window.renderer = engine.getRenderer();

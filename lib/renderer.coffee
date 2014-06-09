@@ -794,7 +794,6 @@ class ARERenderer
 
           handles = @_defaultShader.getHandles()
           gl.uniformMatrix4fv handles.uProjection, false, ortho
-          
 
         when ARERenderer.MATERIAL_TEXTURE
           gl.useProgram @_texShader.getProgram()
@@ -806,7 +805,6 @@ class ARERenderer
           throw new Error "Unknown material #{material}"
 
     @_currentMaterial = material
-    ARELog.info "Switched material #{@_currentMaterial}"
     @
 
   ###

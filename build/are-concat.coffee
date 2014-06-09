@@ -374,7 +374,7 @@ class ARERawActor extends Koon
   # @return [null]
   ###
   destroy: ->
-    @destroyPhysicsBody()
+    @_renderer.removeActor @
     null
 
   ###
@@ -3032,7 +3032,6 @@ class ARERenderer
 
           handles = @_defaultShader.getHandles()
           gl.uniformMatrix4fv handles.uProjection, false, ortho
-          
 
         when ARERenderer.MATERIAL_TEXTURE
           gl.useProgram @_texShader.getProgram()
@@ -3044,7 +3043,6 @@ class ARERenderer
           throw new Error "Unknown material #{material}"
 
     @_currentMaterial = material
-    ARELog.info "Switched material #{@_currentMaterial}"
     @
 
   ###
@@ -4688,9 +4686,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 2
-    PATCH: 8
+    PATCH: 9
     BUILD: null
-    STRING: "1.2.8"
+    STRING: "1.2.9"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
