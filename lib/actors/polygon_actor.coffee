@@ -169,12 +169,25 @@ class AREPolygonActor extends ARERawActor
     # If a cache entry already exists, use its indice buffer
     if AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]
       cachedActor = AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]
-      @setHostIndiceBuffer cachedActor.getIndiceBuffer()
+      @setHostIndiceBuffer cachedActor.getIndiceBuffer(), cachedActor.getId()
 
     # If not, make ourselves the host
     else
       AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = @
       @clearHostIndiceBuffer()
+
+  ###
+  # Removes the Actor, cleaning the cache
+  #
+  # @return [null]
+  ###
+  destroy: ->
+    cacheLookup = "#{@radius}.#{@segments}"
+
+    if AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] == @
+      AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = null
+
+    super()
 
   ###
   # Get stored radius

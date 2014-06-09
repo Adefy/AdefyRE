@@ -35,6 +35,7 @@ ARERawActor = (function(_super) {
     }
     this._ownIndiceBuffer = this._indiceBuffer;
     this._hasOwnIndiceBuffer = true;
+    this._hostActorId = null;
     this._vertexData = null;
     this._vertStride = 4 * Float32Array.BYTES_PER_ELEMENT;
     this._uvOffset = 2 * Float32Array.BYTES_PER_ELEMENT;
@@ -62,6 +63,7 @@ ARERawActor = (function(_super) {
     this._strokeWidth = 1;
     this._colArray = null;
     this._opacity = 1.0;
+    this._needsDelete = false;
     this._visible = true;
     this.layer = 0;
     this._physicsLayer = ~0;
@@ -137,14 +139,53 @@ ARERawActor = (function(_super) {
 
 
   /*
+   * Helper to signal to the renderer that we need to be deleted
+   * This is done so actors can be deleted in one batch at the end of the render
+   * loop
+   */
+
+  ARERawActor.prototype.flagForDelete = function() {
+    return this._needsDelete = true;
+  };
+
+
+  /*
+   * Check if we need to be deleted
+   *
+   * @return [Boolean] delete
+   */
+
+  ARERawActor.prototype.flaggedForDeletion = function() {
+    return this._needsDelete;
+  };
+
+
+  /*
    * Removes the Actor
-   * @return [null]
    */
 
   ARERawActor.prototype.destroy = function() {
+    return this.flagForDelete();
+  };
+
+
+  /*
+   * Delete the actor, should only be called by the renderer!
+   */
+
+  ARERawActor.prototype.rendererActorDelete = function() {
+    var a, outsourcedActors, _i, _len;
     this.destroyPhysicsBody();
-    this._renderer.removeActor(this, true);
-    return null;
+    outsourcedActors = _.filter(this._renderer._actors, function(a) {
+      return !a.hasOwnIndiceBuffer();
+    });
+    for (_i = 0, _len = outsourcedActors.length; _i < _len; _i++) {
+      a = outsourcedActors[_i];
+      if (a.getHostId() === this._id) {
+        a.clearHostIndiceBuffer();
+      }
+    }
+    return this._renderer.getGL().deleteBuffer(this._ownIndiceBuffer);
   };
 
 
@@ -160,16 +201,40 @@ ARERawActor = (function(_super) {
 
 
   /*
+   * Get the WebGL pointer to our used indice buffer (likely to be borrowed)
+   *
+   * @return [Number]
+   */
+
+  ARERawActor.prototype.getUsedIndiceBuffer = function() {
+    return this._ownIndiceBuffer;
+  };
+
+
+  /*
    * Useful method allowing us to re-use another actor's indice buffer. This
    * helps keep renderer VBO size down.
    *
    * @param [Number] buffer
+   * @param [Number] actorId
    */
 
-  ARERawActor.prototype.setHostIndiceBuffer = function(buffer) {
+  ARERawActor.prototype.setHostIndiceBuffer = function(buffer, actorId) {
     this._indiceBuffer = buffer;
+    this._hostActorId = actorId;
     this._hasOwnIndiceBuffer = false;
     return this._renderer.requestVBORefresh();
+  };
+
+
+  /*
+   * Get the ID of our indice buffer host. Null if we have none
+   *
+   * @return [Number] id
+   */
+
+  ARERawActor.prototype.getHostId = function() {
+    return this._hostActorId;
   };
 
 
@@ -181,6 +246,7 @@ ARERawActor = (function(_super) {
   ARERawActor.prototype.clearHostIndiceBuffer = function() {
     this._indiceBuffer = this._ownIndiceBuffer;
     this._hasOwnIndiceBuffer = true;
+    this._hostActorId = null;
     return this._renderer.requestVBORefresh();
   };
 
@@ -818,8 +884,7 @@ ARERawActor = (function(_super) {
     if (!this._attachedTexture) {
       return false;
     }
-    this._renderer.removeActor(this._attachedTexture);
-    this._attachedTexture = null;
+    this._attachedTexture.destroy();
     return true;
   };
 

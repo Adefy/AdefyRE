@@ -264,27 +264,34 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.update = function() {
-    var VBOData, absBaseIndex, absI, actor, baseIndex, compiledVertices, currentOffset, i, indices, totalVertCount, vData, _i, _j, _k, _len, _len1, _ref, _ref1, _ref2;
+    var VBOData, a, absBaseIndex, absI, actor, baseIndex, compiledVertices, currentOffset, deletedActors, i, indices, totalVertCount, vData, _i, _j, _k, _l, _len, _len1, _len2, _ref, _ref1, _ref2;
+    deletedActors = _.remove(this._actors, function(a) {
+      return a.flaggedForDeletion();
+    });
+    for (_i = 0, _len = deletedActors.length; _i < _len; _i++) {
+      a = deletedActors[_i];
+      a.rendererActorDelete();
+    }
     if (this._pendingVBORefresh && this.isWGLRendererActive()) {
       currentOffset = 0;
       indices = [];
       compiledVertices = [];
       totalVertCount = 0;
       _ref = this._actors;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        actor = _ref[_i];
+      for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+        actor = _ref[_j];
         if (actor.hasOwnIndiceBuffer()) {
           totalVertCount += actor.getRawVertexData().length;
         }
       }
       VBOData = new Float32Array(totalVertCount);
       _ref1 = this._actors;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        actor = _ref1[_j];
+      for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+        actor = _ref1[_k];
         if (actor.hasOwnIndiceBuffer()) {
           vData = actor.getRawVertexData();
           indices = [];
-          for (i = _k = 0, _ref2 = vData.length / 4; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+          for (i = _l = 0, _ref2 = vData.length / 4; 0 <= _ref2 ? _l < _ref2 : _l > _ref2; i = 0 <= _ref2 ? ++_l : --_l) {
             baseIndex = currentOffset + i;
             indices.push(baseIndex);
             absBaseIndex = baseIndex * 4;
@@ -514,21 +521,23 @@ ARERenderer = (function() {
     if (this._pickRenderRequested) {
       while (actorIterator--) {
         a = this._actors[actorCount - actorIterator - 1];
-        a_id = a._id;
-        _savedColor = {
-          r: a._color._r,
-          g: a._color._g,
-          b: a._color._b
-        };
-        _savedOpacity = a._opacity;
-        _id = a_id - (Math.floor(a_id / 255) * 255);
-        _idSector = Math.floor(a_id / 255);
-        this.switchMaterial(ARERenderer.MATERIAL_FLAT);
-        a.setColor(_id, _idSector, 248);
-        a.setOpacity(1.0);
-        a.wglDraw(gl, this._defaultShader);
-        a.setColor(_savedColor.r, _savedColor.g, _savedColor.b);
-        a.setOpacity(_savedOpacity);
+        if (a._visible) {
+          a_id = a._id;
+          _savedColor = {
+            r: a._color._r,
+            g: a._color._g,
+            b: a._color._b
+          };
+          _savedOpacity = a._opacity;
+          _id = a_id - (Math.floor(a_id / 255) * 255);
+          _idSector = Math.floor(a_id / 255);
+          this.switchMaterial(ARERenderer.MATERIAL_FLAT);
+          a.setColor(_id, _idSector, 248);
+          a.setOpacity(1.0);
+          a.wglDraw(gl, this._defaultShader);
+          a.setColor(_savedColor.r, _savedColor.g, _savedColor.b);
+          a.setOpacity(_savedOpacity);
+        }
       }
       this._pickRenderCB();
       this._pickRenderRequested = false;
@@ -541,18 +550,20 @@ ARERenderer = (function() {
       camPos = this._cameraPosition;
       while (actorIterator--) {
         a = this._actors[actorCount - actorIterator - 1];
-        leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0;
-        rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth;
-        topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0;
-        bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight;
-        if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
-          if (a._attachedTexture) {
-            a = a.updateAttachment();
+        if (a._visible) {
+          leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0;
+          rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth;
+          topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0;
+          bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight;
+          if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
+            if (a._attachedTexture) {
+              a = a.updateAttachment();
+            }
+            if (a._material !== this._currentMaterial) {
+              this.switchMaterial(a._material);
+            }
+            a.wglDraw(gl);
           }
-          if (a._material !== this._currentMaterial) {
-            this.switchMaterial(a._material);
-          }
-          a.wglDraw(gl);
         }
       }
     }
@@ -762,23 +773,18 @@ ARERenderer = (function() {
    * Remove an actor from our render list by either actor, or id
    *
    * @param [ARERawActor, Number] actorId actor id, or actor
-   * @param [Boolean] noDestroy optional, defaults to false
    * @return [Boolean] success
    */
 
-  ARERenderer.prototype.removeActor = function(actorId, noDestroy) {
+  ARERenderer.prototype.removeActor = function(actorId) {
     var removedActor;
     param.required(actorId);
-    noDestroy = !!noDestroy;
     if (actorId instanceof ARERawActor) {
       actorId = actorId.getId();
     }
     removedActor = _.remove(this._actors, (function(a) {
       return a.getId() === actorId;
     }))[0];
-    if (removedActor && !noDestroy) {
-      removedActor.destroy();
-    }
     return !!removedActor;
   };
 

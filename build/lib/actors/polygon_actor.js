@@ -155,11 +155,27 @@ AREPolygonActor = (function(_super) {
     cacheLookup = "" + this.radius + "." + this.segments;
     if (AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]) {
       cachedActor = AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup];
-      return this.setHostIndiceBuffer(cachedActor.getIndiceBuffer());
+      return this.setHostIndiceBuffer(cachedActor.getIndiceBuffer(), cachedActor.getId());
     } else {
       AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = this;
       return this.clearHostIndiceBuffer();
     }
+  };
+
+
+  /*
+   * Removes the Actor, cleaning the cache
+   *
+   * @return [null]
+   */
+
+  AREPolygonActor.prototype.destroy = function() {
+    var cacheLookup;
+    cacheLookup = "" + this.radius + "." + this.segments;
+    if (AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] === this) {
+      AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = null;
+    }
+    return AREPolygonActor.__super__.destroy.call(this);
   };
 
 

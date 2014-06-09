@@ -512,8 +512,7 @@ AREActorInterface = (function() {
   AREActorInterface.prototype.destroyActor = function(id) {
     var a;
     if ((a = this._findActor(id)) !== null) {
-      a.destroyPhysicsBody();
-      this._renderer.removeActor(a);
+      a.destroy();
       return true;
     }
     return false;

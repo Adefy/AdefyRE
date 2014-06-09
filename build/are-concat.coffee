@@ -260,9 +260,10 @@ class ARERawActor extends Koon
     @_id = @_renderer.getNextId()
     @_renderer.addActor @
 
-    @_indiceBuffer = @_renderer.getGL().createBuffer()  if @_renderer.getGL()
+    @_indiceBuffer = @_renderer.getGL().createBuffer() if @_renderer.getGL()
     @_ownIndiceBuffer = @_indiceBuffer   # Save for later restoration
     @_hasOwnIndiceBuffer = true
+    @_hostActorId = null
 
     @_vertexData = null
     @_vertStride = 4 * Float32Array.BYTES_PER_ELEMENT
@@ -295,6 +296,7 @@ class ARERawActor extends Koon
 
     @_opacity = 1.0
 
+    @_needsDelete = false
     @_visible = true
     @layer = 0
     @_physicsLayer = ~0
@@ -370,13 +372,42 @@ class ARERawActor extends Koon
       angle: 0
 
   ###
+  # Helper to signal to the renderer that we need to be deleted
+  # This is done so actors can be deleted in one batch at the end of the render
+  # loop
+  ###
+  flagForDelete: ->
+    @_needsDelete = true
+
+  ###
+  # Check if we need to be deleted
+  #
+  # @return [Boolean] delete
+  ###
+  flaggedForDeletion: ->
+    @_needsDelete
+
+  ###
   # Removes the Actor
-  # @return [null]
   ###
   destroy: ->
+    @flagForDelete()
+
+  ###
+  # Delete the actor, should only be called by the renderer!
+  ###
+  rendererActorDelete: ->
     @destroyPhysicsBody()
-    @_renderer.removeActor @, true
-    null
+
+    outsourcedActors = _.filter @_renderer._actors, (a) ->
+      !a.hasOwnIndiceBuffer()
+
+    # Go through and fix any dangling indice buffer pointers
+    for a in outsourcedActors
+      if a.getHostId() == @_id
+        a.clearHostIndiceBuffer()
+
+    @_renderer.getGL().deleteBuffer @_ownIndiceBuffer
 
   ###
   # Get the WebGL pointer to our indice buffer
@@ -387,15 +418,33 @@ class ARERawActor extends Koon
     @_ownIndiceBuffer
 
   ###
+  # Get the WebGL pointer to our used indice buffer (likely to be borrowed)
+  #
+  # @return [Number]
+  ###
+  getUsedIndiceBuffer: ->
+    @_ownIndiceBuffer
+
+  ###
   # Useful method allowing us to re-use another actor's indice buffer. This
   # helps keep renderer VBO size down.
   #
   # @param [Number] buffer
+  # @param [Number] actorId
   ###
-  setHostIndiceBuffer: (buffer) ->
+  setHostIndiceBuffer: (buffer, actorId) ->
     @_indiceBuffer = buffer
+    @_hostActorId = actorId
     @_hasOwnIndiceBuffer = false
     @_renderer.requestVBORefresh()
+
+  ###
+  # Get the ID of our indice buffer host. Null if we have none
+  #
+  # @return [Number] id
+  ###
+  getHostId: ->
+    @_hostActorId
 
   ###
   # Clears any indice buffer host we may have. NOTE: This requires a VBO
@@ -404,6 +453,7 @@ class ARERawActor extends Koon
   clearHostIndiceBuffer: ->
     @_indiceBuffer = @_ownIndiceBuffer
     @_hasOwnIndiceBuffer = true
+    @_hostActorId = null
     @_renderer.requestVBORefresh()
 
   ###
@@ -895,8 +945,7 @@ class ARERawActor extends Koon
   removeAttachment: ->
     return false unless @_attachedTexture
 
-    @_renderer.removeActor @_attachedTexture
-    @_attachedTexture = null
+    @_attachedTexture.destroy()
     true
 
   ###
@@ -1684,12 +1733,25 @@ class AREPolygonActor extends ARERawActor
     # If a cache entry already exists, use its indice buffer
     if AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]
       cachedActor = AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup]
-      @setHostIndiceBuffer cachedActor.getIndiceBuffer()
+      @setHostIndiceBuffer cachedActor.getIndiceBuffer(), cachedActor.getId()
 
     # If not, make ourselves the host
     else
       AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = @
       @clearHostIndiceBuffer()
+
+  ###
+  # Removes the Actor, cleaning the cache
+  #
+  # @return [null]
+  ###
+  destroy: ->
+    cacheLookup = "#{@radius}.#{@segments}"
+
+    if AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] == @
+      AREPolygonActor._INDICE_BUFFER_CACHE[cacheLookup] = null
+
+    super()
 
   ###
   # Get stored radius
@@ -2524,6 +2586,10 @@ class ARERenderer
   ###
   update: ->
 
+    # Delete pending actors
+    deletedActors = _.remove @_actors, (a) -> a.flaggedForDeletion()
+    a.rendererActorDelete() for a in deletedActors
+
     # Regenerate VBO
     if @_pendingVBORefresh and @isWGLRendererActive()
 
@@ -2756,23 +2822,25 @@ class ARERenderer
     if @_pickRenderRequested
       while actorIterator--
         a = @_actors[actorCount - actorIterator - 1]
-        a_id = a._id
 
-        # Change the color for picking. Blue key is 248
-        _savedColor = r: a._color._r, g: a._color._g, b: a._color._b
-        _savedOpacity = a._opacity
+        if a._visible
+          a_id = a._id
 
-        _id = a_id - (Math.floor(a_id / 255) * 255)
-        _idSector = Math.floor a_id / 255
+          # Change the color for picking. Blue key is 248
+          _savedColor = r: a._color._r, g: a._color._g, b: a._color._b
+          _savedOpacity = a._opacity
 
-        @switchMaterial ARERenderer.MATERIAL_FLAT
+          _id = a_id - (Math.floor(a_id / 255) * 255)
+          _idSector = Math.floor a_id / 255
 
-        # Recover id with (_idSector * 255) + _id
-        a.setColor _id, _idSector, 248
-        a.setOpacity 1.0
-        a.wglDraw gl, @_defaultShader
-        a.setColor _savedColor.r, _savedColor.g, _savedColor.b
-        a.setOpacity _savedOpacity
+          @switchMaterial ARERenderer.MATERIAL_FLAT
+
+          # Recover id with (_idSector * 255) + _id
+          a.setColor _id, _idSector, 248
+          a.setOpacity 1.0
+          a.wglDraw gl, @_defaultShader
+          a.setColor _savedColor.r, _savedColor.g, _savedColor.b
+          a.setOpacity _savedOpacity
 
       @_pickRenderCB()
       @_pickRenderRequested = false
@@ -2791,25 +2859,27 @@ class ARERenderer
       while actorIterator--
         a = @_actors[actorCount - actorIterator - 1]
 
-        # Only draw if the actor is visible onscreen
-        leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0
-        rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth
-        topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0
-        bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight
+        if a._visible
 
-        unless bottomEdge or topEdge or leftEdge or rightEdge
+          # Only draw if the actor is visible onscreen
+          leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0
+          rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth
+          topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0
+          bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight
 
-          a = a.updateAttachment() if a._attachedTexture
+          unless bottomEdge or topEdge or leftEdge or rightEdge
 
-          ##
-          ## NOTE: Keep in mind that failing to switch to the proper material
-          ##       will cause the draw to fail! Pass in a custom shader if
-          ##       switching to a different material.
-          ##
-          if a._material != @_currentMaterial
-            @switchMaterial a._material
+            a = a.updateAttachment() if a._attachedTexture
 
-          a.wglDraw gl
+            ##
+            ## NOTE: Keep in mind that failing to switch to the proper material
+            ##       will cause the draw to fail! Pass in a custom shader if
+            ##       switching to a different material.
+            ##
+            if a._material != @_currentMaterial
+              @switchMaterial a._material
+
+            a.wglDraw gl
 
     @
 
@@ -2994,18 +3064,15 @@ class ARERenderer
   # Remove an actor from our render list by either actor, or id
   #
   # @param [ARERawActor, Number] actorId actor id, or actor
-  # @param [Boolean] noDestroy optional, defaults to false
   # @return [Boolean] success
   ###
-  removeActor: (actorId, noDestroy) ->
+  removeActor: (actorId) ->
     param.required actorId
-    noDestroy = !!noDestroy
 
     # Extract id if given actor
     actorId = actorId.getId() if actorId instanceof ARERawActor
-
     removedActor = _.remove(@_actors, ((a) -> a.getId() == actorId))[0]
-    removedActor.destroy() if removedActor and !noDestroy
+
     !!removedActor
 
   ###
@@ -4044,8 +4111,7 @@ class AREActorInterface
   ###
   destroyActor: (id) ->
     if (a = @_findActor(id)) != null
-      a.destroyPhysicsBody()
-      @_renderer.removeActor a
+      a.destroy()
       return true
 
     false

@@ -394,8 +394,7 @@ class AREActorInterface
   ###
   destroyActor: (id) ->
     if (a = @_findActor(id)) != null
-      a.destroyPhysicsBody()
-      @_renderer.removeActor a
+      a.destroy()
       return true
 
     false

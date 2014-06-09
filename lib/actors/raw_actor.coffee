@@ -27,9 +27,10 @@ class ARERawActor extends Koon
     @_id = @_renderer.getNextId()
     @_renderer.addActor @
 
-    @_indiceBuffer = @_renderer.getGL().createBuffer()  if @_renderer.getGL()
+    @_indiceBuffer = @_renderer.getGL().createBuffer() if @_renderer.getGL()
     @_ownIndiceBuffer = @_indiceBuffer   # Save for later restoration
     @_hasOwnIndiceBuffer = true
+    @_hostActorId = null
 
     @_vertexData = null
     @_vertStride = 4 * Float32Array.BYTES_PER_ELEMENT
@@ -62,6 +63,7 @@ class ARERawActor extends Koon
 
     @_opacity = 1.0
 
+    @_needsDelete = false
     @_visible = true
     @layer = 0
     @_physicsLayer = ~0
@@ -137,13 +139,42 @@ class ARERawActor extends Koon
       angle: 0
 
   ###
+  # Helper to signal to the renderer that we need to be deleted
+  # This is done so actors can be deleted in one batch at the end of the render
+  # loop
+  ###
+  flagForDelete: ->
+    @_needsDelete = true
+
+  ###
+  # Check if we need to be deleted
+  #
+  # @return [Boolean] delete
+  ###
+  flaggedForDeletion: ->
+    @_needsDelete
+
+  ###
   # Removes the Actor
-  # @return [null]
   ###
   destroy: ->
+    @flagForDelete()
+
+  ###
+  # Delete the actor, should only be called by the renderer!
+  ###
+  rendererActorDelete: ->
     @destroyPhysicsBody()
-    @_renderer.removeActor @, true
-    null
+
+    outsourcedActors = _.filter @_renderer._actors, (a) ->
+      !a.hasOwnIndiceBuffer()
+
+    # Go through and fix any dangling indice buffer pointers
+    for a in outsourcedActors
+      if a.getHostId() == @_id
+        a.clearHostIndiceBuffer()
+
+    @_renderer.getGL().deleteBuffer @_ownIndiceBuffer
 
   ###
   # Get the WebGL pointer to our indice buffer
@@ -154,15 +185,33 @@ class ARERawActor extends Koon
     @_ownIndiceBuffer
 
   ###
+  # Get the WebGL pointer to our used indice buffer (likely to be borrowed)
+  #
+  # @return [Number]
+  ###
+  getUsedIndiceBuffer: ->
+    @_ownIndiceBuffer
+
+  ###
   # Useful method allowing us to re-use another actor's indice buffer. This
   # helps keep renderer VBO size down.
   #
   # @param [Number] buffer
+  # @param [Number] actorId
   ###
-  setHostIndiceBuffer: (buffer) ->
+  setHostIndiceBuffer: (buffer, actorId) ->
     @_indiceBuffer = buffer
+    @_hostActorId = actorId
     @_hasOwnIndiceBuffer = false
     @_renderer.requestVBORefresh()
+
+  ###
+  # Get the ID of our indice buffer host. Null if we have none
+  #
+  # @return [Number] id
+  ###
+  getHostId: ->
+    @_hostActorId
 
   ###
   # Clears any indice buffer host we may have. NOTE: This requires a VBO
@@ -171,6 +220,7 @@ class ARERawActor extends Koon
   clearHostIndiceBuffer: ->
     @_indiceBuffer = @_ownIndiceBuffer
     @_hasOwnIndiceBuffer = true
+    @_hostActorId = null
     @_renderer.requestVBORefresh()
 
   ###
@@ -662,8 +712,7 @@ class ARERawActor extends Koon
   removeAttachment: ->
     return false unless @_attachedTexture
 
-    @_renderer.removeActor @_attachedTexture
-    @_attachedTexture = null
+    @_attachedTexture.destroy()
     true
 
   ###

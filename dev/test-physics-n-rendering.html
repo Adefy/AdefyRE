@@ -78,6 +78,10 @@
             .setStrokeWidth(4)
             .setLayer(0)
             .createPhysicsBody(mass, friction, elasticity);
+
+          setTimeout(function() {
+            ball.destroy();
+          }, 2000);
         };
 
         var scheduleBallTimeout = function() {

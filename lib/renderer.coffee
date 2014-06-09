@@ -285,6 +285,10 @@ class ARERenderer
   ###
   update: ->
 
+    # Delete pending actors
+    deletedActors = _.remove @_actors, (a) -> a.flaggedForDeletion()
+    a.rendererActorDelete() for a in deletedActors
+
     # Regenerate VBO
     if @_pendingVBORefresh and @isWGLRendererActive()
 
@@ -517,23 +521,25 @@ class ARERenderer
     if @_pickRenderRequested
       while actorIterator--
         a = @_actors[actorCount - actorIterator - 1]
-        a_id = a._id
 
-        # Change the color for picking. Blue key is 248
-        _savedColor = r: a._color._r, g: a._color._g, b: a._color._b
-        _savedOpacity = a._opacity
+        if a._visible
+          a_id = a._id
 
-        _id = a_id - (Math.floor(a_id / 255) * 255)
-        _idSector = Math.floor a_id / 255
+          # Change the color for picking. Blue key is 248
+          _savedColor = r: a._color._r, g: a._color._g, b: a._color._b
+          _savedOpacity = a._opacity
 
-        @switchMaterial ARERenderer.MATERIAL_FLAT
+          _id = a_id - (Math.floor(a_id / 255) * 255)
+          _idSector = Math.floor a_id / 255
 
-        # Recover id with (_idSector * 255) + _id
-        a.setColor _id, _idSector, 248
-        a.setOpacity 1.0
-        a.wglDraw gl, @_defaultShader
-        a.setColor _savedColor.r, _savedColor.g, _savedColor.b
-        a.setOpacity _savedOpacity
+          @switchMaterial ARERenderer.MATERIAL_FLAT
+
+          # Recover id with (_idSector * 255) + _id
+          a.setColor _id, _idSector, 248
+          a.setOpacity 1.0
+          a.wglDraw gl, @_defaultShader
+          a.setColor _savedColor.r, _savedColor.g, _savedColor.b
+          a.setOpacity _savedOpacity
 
       @_pickRenderCB()
       @_pickRenderRequested = false
@@ -552,25 +558,27 @@ class ARERenderer
       while actorIterator--
         a = @_actors[actorCount - actorIterator - 1]
 
-        # Only draw if the actor is visible onscreen
-        leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0
-        rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth
-        topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0
-        bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight
+        if a._visible
 
-        unless bottomEdge or topEdge or leftEdge or rightEdge
+          # Only draw if the actor is visible onscreen
+          leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0
+          rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth
+          topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0
+          bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight
 
-          a = a.updateAttachment() if a._attachedTexture
+          unless bottomEdge or topEdge or leftEdge or rightEdge
 
-          ##
-          ## NOTE: Keep in mind that failing to switch to the proper material
-          ##       will cause the draw to fail! Pass in a custom shader if
-          ##       switching to a different material.
-          ##
-          if a._material != @_currentMaterial
-            @switchMaterial a._material
+            a = a.updateAttachment() if a._attachedTexture
 
-          a.wglDraw gl
+            ##
+            ## NOTE: Keep in mind that failing to switch to the proper material
+            ##       will cause the draw to fail! Pass in a custom shader if
+            ##       switching to a different material.
+            ##
+            if a._material != @_currentMaterial
+              @switchMaterial a._material
+
+            a.wglDraw gl
 
     @
 
@@ -755,18 +763,15 @@ class ARERenderer
   # Remove an actor from our render list by either actor, or id
   #
   # @param [ARERawActor, Number] actorId actor id, or actor
-  # @param [Boolean] noDestroy optional, defaults to false
   # @return [Boolean] success
   ###
-  removeActor: (actorId, noDestroy) ->
+  removeActor: (actorId) ->
     param.required actorId
-    noDestroy = !!noDestroy
 
     # Extract id if given actor
     actorId = actorId.getId() if actorId instanceof ARERawActor
-
     removedActor = _.remove(@_actors, ((a) -> a.getId() == actorId))[0]
-    removedActor.destroy() if removedActor and !noDestroy
+
     !!removedActor
 
   ###
