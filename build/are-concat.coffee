@@ -1269,10 +1269,11 @@ class ARERawActor extends Koon
   setPosition: (position) ->
     @_position = param.required position
 
-    @broadcast
-      id: @_id
-      position: position
-    ,"physics.body.set.position"
+    if @hasPhysics()
+      @broadcast
+        id: @_id
+        position: position
+      ,"physics.body.set.position"
 
     @
 
@@ -1291,14 +1292,15 @@ class ARERawActor extends Koon
     rotation = Number(rotation) * 0.0174532925 unless radians
     @_rotation = rotation
 
-    if @_mass > 0
-      @broadcast
-        id: @_id
-        rotation: @_rotation
-      ,"physics.body.set.rotation"
-    else
-      @destroyPhysicsBody()
-      @createPhysicsBody @_mass, @_friction, @_elasticity
+    if @hasPhysics()
+      if @_mass > 0
+        @broadcast
+          id: @_id
+          rotation: @_rotation
+        ,"physics.body.set.rotation"
+      else
+        @destroyPhysicsBody()
+        @createPhysicsBody @_mass, @_friction, @_elasticity
 
     @
 

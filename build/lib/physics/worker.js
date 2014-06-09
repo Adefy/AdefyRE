@@ -252,7 +252,9 @@ AREPhysicsWorker = (function(_super) {
     if (!(body = this.findBody(id))) {
       return;
     }
-    return this._world.removeBody(body);
+    try {
+      return this._world.removeBody(body);
+    } catch (_error) {}
   };
 
   AREPhysicsWorker.prototype.removeShape = function(message) {
@@ -264,7 +266,9 @@ AREPhysicsWorker = (function(_super) {
     if (!(shape = this.findShape(id))) {
       return;
     }
-    return this._world.removeShape(shape);
+    try {
+      return this._world.removeShape(shape);
+    } catch (_error) {}
   };
 
   AREPhysicsWorker.prototype.createBody = function(message) {

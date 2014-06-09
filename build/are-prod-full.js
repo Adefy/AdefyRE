@@ -2306,10 +2306,12 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setPosition = function(position) {
     this._position = param.required(position);
-    this.broadcast({
-      id: this._id,
-      position: position
-    }, "physics.body.set.position");
+    if (this.hasPhysics()) {
+      this.broadcast({
+        id: this._id,
+        position: position
+      }, "physics.body.set.position");
+    }
     return this;
   };
 
@@ -2330,14 +2332,16 @@ ARERawActor = (function(_super) {
       rotation = Number(rotation) * 0.0174532925;
     }
     this._rotation = rotation;
-    if (this._mass > 0) {
-      this.broadcast({
-        id: this._id,
-        rotation: this._rotation
-      }, "physics.body.set.rotation");
-    } else {
-      this.destroyPhysicsBody();
-      this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    if (this.hasPhysics()) {
+      if (this._mass > 0) {
+        this.broadcast({
+          id: this._id,
+          rotation: this._rotation
+        }, "physics.body.set.rotation");
+      } else {
+        this.destroyPhysicsBody();
+        this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+      }
     }
     return this;
   };

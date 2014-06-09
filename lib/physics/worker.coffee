@@ -198,13 +198,21 @@ class AREPhysicsWorker extends Koon
     return unless message.id != null and message.id != undefined
     id = message.id
     return unless (body = @findBody(id))
-    @_world.removeBody body
+
+    # This may fail if the body has already been removed, sometimes happens
+    # when removal events are fired in rapid succession.
+    try
+      @_world.removeBody body
 
   removeShape: (message) ->
     return unless message.id != null and message.id != undefined
     id = message.id
     return unless (shape = @findShape(id))
-    @_world.removeShape shape
+
+    # This may fail if the shape has already been removed, sometimes happens
+    # when removal events are fired in rapid succession.
+    try
+      @_world.removeShape shape
 
   createBody: (message) ->
     return unless (def = message.def)
