@@ -141,7 +141,8 @@ class ARERawActor extends Koon
   # @return [null]
   ###
   destroy: ->
-    @_renderer.removeActor @
+    @destroyPhysicsBody()
+    @_renderer.removeActor @, true
     null
 
   ###
