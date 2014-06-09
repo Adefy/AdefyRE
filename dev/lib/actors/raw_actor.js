@@ -962,6 +962,7 @@ ARERawActor = (function(_super) {
     if (!this._visible) {
       return;
     }
+    this._updateModelMatrix();
     if (shader) {
       _sh_handles_backup = this._sh_handles;
       this._sh_handles = shader.getHandles();
@@ -1059,6 +1060,7 @@ ARERawActor = (function(_super) {
     if (!this._visible) {
       return;
     }
+    this._updateModelMatrix();
     context.translate(this._modelM[12], context.canvas.clientHeight - this._modelM[13]);
     context.beginPath();
     context.rotate(this._rotation);
@@ -1160,7 +1162,6 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setPosition = function(position) {
     this._position = param.required(position);
-    this._updateModelMatrix();
     this.broadcast({
       id: this._id,
       position: position
@@ -1185,7 +1186,6 @@ ARERawActor = (function(_super) {
       rotation = Number(rotation) * 0.0174532925;
     }
     this._rotation = rotation;
-    this._updateModelMatrix();
     if (this._mass > 0) {
       this.broadcast({
         id: this._id,
@@ -1404,8 +1404,7 @@ ARERawActor = (function(_super) {
     switch (command[1]) {
       case "update":
         this._position = message.position;
-        this._rotation = message.rotation;
-        return this._updateModelMatrix();
+        return this._rotation = message.rotation;
     }
   };
 

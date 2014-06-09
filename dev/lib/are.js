@@ -14,9 +14,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 2,
-    PATCH: 5,
+    PATCH: 6,
     BUILD: null,
-    STRING: "1.2.5"
+    STRING: "1.2.6"
   };
 
 
@@ -193,17 +193,6 @@ ARE = (function() {
     } else {
       return ARELog.warn("Canvas renderer available for canvas pick!");
     }
-  };
-
-
-  /*
-   * Return the current active renderer mode
-   *
-   * @return [Number]
-   */
-
-  ARE.prototype.getActiveRendererMode = function() {
-    return this._renderer.activeRendererMode;
   };
 
   return ARE;

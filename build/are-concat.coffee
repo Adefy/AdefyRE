@@ -1031,6 +1031,8 @@ class ARERawActor extends Koon
     # cause us to render!
     return unless @_visible
 
+    @_updateModelMatrix()
+
     # Temporarily change handles if a shader was passed in
     if shader
       _sh_handles_backup = @_sh_handles
@@ -1125,6 +1127,8 @@ class ARERawActor extends Koon
   cvDraw: (context) ->
     return unless @_visible
 
+    @_updateModelMatrix()
+
     context.translate @_modelM[12], context.canvas.clientHeight - @_modelM[13]
     context.beginPath()
     context.rotate @_rotation
@@ -1214,7 +1218,6 @@ class ARERawActor extends Koon
   ###
   setPosition: (position) ->
     @_position = param.required position
-    @_updateModelMatrix()
 
     @broadcast
       id: @_id
@@ -1237,7 +1240,6 @@ class ARERawActor extends Koon
 
     rotation = Number(rotation) * 0.0174532925 unless radians
     @_rotation = rotation
-    @_updateModelMatrix()
 
     if @_mass > 0
       @broadcast
@@ -1424,7 +1426,6 @@ class ARERawActor extends Koon
 
         @_position = message.position
         @_rotation = message.rotation
-        @_updateModelMatrix()
 
 # @depend raw_actor.coffee
 
@@ -4679,9 +4680,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 2
-    PATCH: 5
+    PATCH: 6
     BUILD: null
-    STRING: "1.2.5"
+    STRING: "1.2.6"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
@@ -4835,12 +4836,5 @@ class ARE
       @_renderer.requestPickingRenderCanvas selectionRect, cb
     else
       ARELog.warn "Canvas renderer available for canvas pick!"
-
-  ###
-  # Return the current active renderer mode
-  #
-  # @return [Number]
-  ###
-  getActiveRendererMode: -> @_renderer.activeRendererMode
 
 window.AdefyGLI = window.AdefyRE = new AREInterface
