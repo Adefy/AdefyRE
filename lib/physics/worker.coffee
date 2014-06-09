@@ -195,12 +195,14 @@ class AREPhysicsWorker extends Koon
     vertices
 
   removeBody: (message) ->
-    return unless (id = message.id)
+    return unless message.id != null and message.id != undefined
+    id = message.id
     return unless (body = @findBody(id))
     @_world.removeBody body
 
   removeShape: (message) ->
-    return unless (id = message.id)
+    return unless message.id != null and message.id != undefined
+    id = message.id
     return unless (shape = @findShape(id))
     @_world.removeShape shape
 

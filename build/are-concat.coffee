@@ -596,7 +596,7 @@ class ARERawActor extends Koon
     return unless @_physics
 
     @broadcast id: @_id, "physics.shape.remove"
-    @broadcast id: @_id, "physics.body.remove"
+    @broadcast id: @_id, "physics.body.remove" if @_mass != 0
     @_physics = false
     @
 

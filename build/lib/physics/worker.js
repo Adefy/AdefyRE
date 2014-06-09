@@ -245,9 +245,10 @@ AREPhysicsWorker = (function(_super) {
 
   AREPhysicsWorker.prototype.removeBody = function(message) {
     var body, id;
-    if (!(id = message.id)) {
+    if (!(message.id !== null && message.id !== void 0)) {
       return;
     }
+    id = message.id;
     if (!(body = this.findBody(id))) {
       return;
     }
@@ -256,9 +257,10 @@ AREPhysicsWorker = (function(_super) {
 
   AREPhysicsWorker.prototype.removeShape = function(message) {
     var id, shape;
-    if (!(id = message.id)) {
+    if (!(message.id !== null && message.id !== void 0)) {
       return;
     }
+    id = message.id;
     if (!(shape = this.findShape(id))) {
       return;
     }

@@ -760,9 +760,11 @@ ARERawActor = (function(_super) {
     this.broadcast({
       id: this._id
     }, "physics.shape.remove");
-    this.broadcast({
-      id: this._id
-    }, "physics.body.remove");
+    if (this._mass !== 0) {
+      this.broadcast({
+        id: this._id
+      }, "physics.body.remove");
+    }
     this._physics = false;
     return this;
   };
