@@ -540,15 +540,16 @@ class ARERenderer
     else
 
       leftEdge = rightEdge = topEdge = bottomEdge = true
+      camPos = @_cameraPosition
 
       while actorCount--
         a = @_actors[actorCount]
 
         # Only draw if the actor is visible onscreen
-        leftEdge = a._position.x + (a._size.x / 2) < 0
-        rightEdge = a._position.x - (a._size.x / 2) > window.innerWidth
-        topEdge = a._position.y + (a._size.y / 2) < 0
-        bottomEdge = a._position.y - (a._size.y / 2) > window.innerHeight
+        leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0
+        rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth
+        topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0
+        bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight
 
         unless bottomEdge or topEdge or leftEdge or rightEdge
 

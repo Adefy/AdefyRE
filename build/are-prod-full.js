@@ -5212,7 +5212,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype._wglRender = function() {
-    var a, a_id, actorCount, bottomEdge, gl, leftEdge, rightEdge, topEdge, _id, _idSector, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, bottomEdge, camPos, gl, leftEdge, rightEdge, topEdge, _id, _idSector, _savedColor, _savedOpacity;
     gl = this._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
@@ -5248,12 +5248,13 @@ ARERenderer = (function() {
       this.render();
     } else {
       leftEdge = rightEdge = topEdge = bottomEdge = true;
+      camPos = this._cameraPosition;
       while (actorCount--) {
         a = this._actors[actorCount];
-        leftEdge = a._position.x + (a._size.x / 2) < 0;
-        rightEdge = a._position.x - (a._size.x / 2) > window.innerWidth;
-        topEdge = a._position.y + (a._size.y / 2) < 0;
-        bottomEdge = a._position.y - (a._size.y / 2) > window.innerHeight;
+        leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0;
+        rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth;
+        topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0;
+        bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight;
         if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
           if (a._attachedTexture) {
             a = a.updateAttachment();
@@ -7405,9 +7406,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 2,
-    PATCH: 6,
+    PATCH: 7,
     BUILD: null,
-    STRING: "1.2.6"
+    STRING: "1.2.7"
   };
 
 
