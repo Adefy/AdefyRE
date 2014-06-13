@@ -4259,16 +4259,14 @@ AREActorInterface = (function() {
 
 
   /*
-   * Create actor using the supplied vertices, passed in as a JSON
-   * representation of a flat array
+   * Create actor using the supplied vertices, passed in as a flat array
    *
-   * @param [String] verts
+   * @param [Array<Number>] verts
    * @return [Number] id created actor handle
    */
 
-  AREActorInterface.prototype.createRawActor = function(verts) {
-    param.required(verts);
-    return new ARERawActor(this._renderer, JSON.parse(verts)).getId();
+  AREActorInterface.prototype.create2DRawPolygon = function(verts) {
+    return new ARERawActor(this._renderer, verts).getId();
   };
 
 
@@ -4280,7 +4278,7 @@ AREActorInterface = (function() {
    * @return [Number] id created actor handle
    */
 
-  AREActorInterface.prototype.createPolygonActor = function(radius, segments) {
+  AREActorInterface.prototype.create2DPolygon = function(radius, segments) {
     if (typeof radius === "string") {
       return this.createRawActor(radius);
     } else {
@@ -4297,7 +4295,7 @@ AREActorInterface = (function() {
    * @return [Number] id created actor handle
    */
 
-  AREActorInterface.prototype.createRectangleActor = function(width, height) {
+  AREActorInterface.prototype.create2DRectangle = function(width, height) {
     return new ARERectangleActor(this._renderer, width, height).getId();
   };
 
@@ -4309,7 +4307,7 @@ AREActorInterface = (function() {
    * @return [Number] id created actor handle
    */
 
-  AREActorInterface.prototype.createCircleActor = function(radius) {
+  AREActorInterface.prototype.create2DCircle = function(radius) {
     return new ARECircleActor(this._renderer, radius).getId();
   };
 
@@ -4321,12 +4319,13 @@ AREActorInterface = (function() {
    * @return [Number] layer
    */
 
-  AREActorInterface.prototype.getActorLayer = function(id) {
+  AREActorInterface.prototype.getLayer = function(id) {
     var a;
     if (a = this._findActor(id)) {
       return a.getLayer();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4337,12 +4336,13 @@ AREActorInterface = (function() {
    * @return [Number] physicsLayer
    */
 
-  AREActorInterface.prototype.getActorPhysicsLayer = function(id) {
+  AREActorInterface.prototype.getPhysicsLayer = function(id) {
     var a;
     if (a = this._findActor(id)) {
       return a.getPhysicsLayer();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4353,16 +4353,13 @@ AREActorInterface = (function() {
    * @return [Number] width
    */
 
-  AREActorInterface.prototype.getRectangleActorWidth = function(id) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof ARERectangleActor) {
-        return a.getWidth();
-      }
+  AREActorInterface.prototype.getRectangleWidth = function(id) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof ARERectangleActor) {
+      return a.getWidth();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4373,16 +4370,13 @@ AREActorInterface = (function() {
    * @return [Number] height
    */
 
-  AREActorInterface.prototype.getRectangleActorHeight = function(id) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof ARERectangleActor) {
-        return a.getHeight();
-      }
+  AREActorInterface.prototype.getRectangleHeight = function(id) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof ARERectangleActor) {
+      return a.getHeight();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4393,12 +4387,13 @@ AREActorInterface = (function() {
    * @return [Number] opacity
    */
 
-  AREActorInterface.prototype.getActorOpacity = function(id) {
+  AREActorInterface.prototype.getOpacity = function(id) {
     var a;
     if (a = this._findActor(id)) {
       return a.getOpacity();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4409,12 +4404,13 @@ AREActorInterface = (function() {
    * @return [Boolean] visible
    */
 
-  AREActorInterface.prototype.getActorVisible = function(id) {
+  AREActorInterface.prototype.isVisible = function(id) {
     var a;
     if (a = this._findActor(id)) {
       return a.getVisible();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4426,7 +4422,7 @@ AREActorInterface = (function() {
    * @return [Object] position {x, y}
    */
 
-  AREActorInterface.prototype.getActorPosition = function(id) {
+  AREActorInterface.prototype.getPosition = function(id) {
     var a;
     if (a = this._findActor(id)) {
       return a.getPosition();
@@ -4437,19 +4433,20 @@ AREActorInterface = (function() {
 
 
   /*
-   * Get actor rotation using handle, fails with 0.000001
+   * Get actor rotation
    *
    * @param [Number] id
    * @param [Boolean] radians defaults to false
    * @return [Number] angle in degrees or radians
    */
 
-  AREActorInterface.prototype.getActorRotation = function(id, radians) {
+  AREActorInterface.prototype.getRotation = function(id, radians) {
     var a;
     if (a = this._findActor(id)) {
       return a.getRotation(!!radians);
+    } else {
+      return null;
     }
-    return 0.000001;
   };
 
 
@@ -4461,7 +4458,7 @@ AREActorInterface = (function() {
    * @return [String] col
    */
 
-  AREActorInterface.prototype.getActorColor = function(id) {
+  AREActorInterface.prototype.getColor = function(id) {
     var a, color;
     if (a = this._findActor(id)) {
       color = a.getColor();
@@ -4470,8 +4467,9 @@ AREActorInterface = (function() {
         g: color.getG(),
         b: color.getB()
       };
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4482,7 +4480,7 @@ AREActorInterface = (function() {
    * @return [String] texture_name
    */
 
-  AREActorInterface.prototype.getActorTexture = function(id) {
+  AREActorInterface.prototype.getTexture = function(id) {
     var a;
     if (a = this._findActor(id)) {
       return a.getTexture().name;
@@ -4499,7 +4497,7 @@ AREActorInterface = (function() {
    * @return [Object] repeat
    */
 
-  AREActorInterface.prototype.getActorTextureRepeat = function(id) {
+  AREActorInterface.prototype.getTextureRepeat = function(id) {
     var a;
     if (a = this._findActor(id)) {
       return a.getTextureRepeat();
@@ -4517,17 +4515,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setRectangleActorHeight = function(id, height) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof ARERectangleActor) {
-        a.setHeight(height);
-        return true;
-      }
+  AREActorInterface.prototype.setRectangleHeight = function(id, height) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof ARERectangleActor) {
+      a.setHeight(height);
+      return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4539,17 +4534,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setRectangleActorWidth = function(id, width) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof ARERectangleActor) {
-        a.setWidth(width);
-        return true;
-      }
+  AREActorInterface.prototype.setRectangleWidth = function(id, width) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof ARERectangleActor) {
+      a.setWidth(width);
+      return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4561,17 +4553,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setPolygonActorSegments = function(id, segments) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof AREPolygonActor) {
-        a.setSegments(segments);
-        return true;
-      }
+  AREActorInterface.prototype.setPolygonSegments = function(id, segments) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof AREPolygonActor) {
+      a.setSegments(segments);
+      return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4583,17 +4572,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setPolygonActorRadius = function(id, radius) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof AREPolygonActor) {
-        a.setRadius(radius);
-        return true;
-      }
+  AREActorInterface.prototype.setPolygonRadius = function(id, radius) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof AREPolygonActor) {
+      a.setRadius(radius);
+      return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4604,16 +4590,13 @@ AREActorInterface = (function() {
    * @return [Number] radius
    */
 
-  AREActorInterface.prototype.getPolygonActorRadius = function(id) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof AREPolygonActor) {
-        return a.getRadius();
-      }
+  AREActorInterface.prototype.getPolygonRadius = function(id) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof AREPolygonActor) {
+      return a.getRadius();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4624,16 +4607,13 @@ AREActorInterface = (function() {
    * @return [Number] segments
    */
 
-  AREActorInterface.prototype.getPolygonActorSegments = function(id, radius) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof AREPolygonActor) {
-        return a.getSegments();
-      }
+  AREActorInterface.prototype.getPolygonSegments = function(id, radius) {
+    var a;
+    if ((a = this._findActor(id)) && a instanceof AREPolygonActor) {
+      return a.getSegments();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4672,13 +4652,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorLayer = function(id, layer) {
+  AREActorInterface.prototype.setLayer = function(id, layer) {
     var a;
     if (a = this._findActor(id)) {
       a.setLayer(layer);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4692,13 +4673,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorPhysicsLayer = function(id, layer) {
+  AREActorInterface.prototype.setPhysicsLayer = function(id, layer) {
     var a;
     if (a = this._findActor(id)) {
       a.setPhysicsLayer(layer);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4714,8 +4696,9 @@ AREActorInterface = (function() {
     if (a = this._findActor(id)) {
       a.removeAttachment();
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4732,8 +4715,9 @@ AREActorInterface = (function() {
     var a;
     if (a = this._findActor(id)) {
       return a.setAttachmentVisibility(visible);
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4745,29 +4729,31 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.updateVertices = function(id, verts) {
+  AREActorInterface.prototype.setVertices = function(id, verts) {
     var a;
     if (a = this._findActor(id)) {
       a.updateVertices(JSON.parse(verts));
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
   /*
-   * Get actor vertices as a flat JSON array
+   * Get actor vertices as a flat array
    *
    * @param [Number] id actor id
-   * @return [String] vertices
+   * @return [Array<Number>] vertices
    */
 
   AREActorInterface.prototype.getVertices = function(id) {
     var a;
     if (a = this._findActor(id)) {
-      return JSON.stringify(a.getVertices());
+      return a.getVertices();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -4784,8 +4770,9 @@ AREActorInterface = (function() {
     if (a = this._findActor(id)) {
       a.destroy();
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4796,17 +4783,18 @@ AREActorInterface = (function() {
    * this rebuilds it!
    *
    * @param [Number] id actor id
-   * @param [String] verts
+   * @param [Array<Number>] verts
    * @return [Boolean] success
    */
 
   AREActorInterface.prototype.setPhysicsVertices = function(id, verts) {
     var a;
     if (a = this._findActor(id)) {
-      a.setPhysicsVertices(JSON.parse(verts));
+      a.setPhysicsVertices(verts);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4825,8 +4813,9 @@ AREActorInterface = (function() {
     if (a = this._findActor(id)) {
       a.setRenderMode(mode);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4838,7 +4827,7 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorOpacity = function(id, opacity) {
+  AREActorInterface.prototype.setOpacity = function(id, opacity) {
     var a;
     if (isNaN(opacity)) {
       return false;
@@ -4853,8 +4842,9 @@ AREActorInterface = (function() {
     if (a = this._findActor(id)) {
       a.setOpacity(opacity);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4866,13 +4856,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorVisible = function(id, visible) {
+  AREActorInterface.prototype.setVisible = function(id, visible) {
     var a;
     if (a = this._findActor(id)) {
       a.setVisible(visible);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4886,13 +4877,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorPosition = function(id, position) {
+  AREActorInterface.prototype.setPosition = function(id, position) {
     var a;
     if (a = this._findActor(id)) {
       a.setPosition(position);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4905,13 +4897,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorRotation = function(id, angle, radians) {
+  AREActorInterface.prototype.setRotation = function(id, angle, radians) {
     var a;
     if (a = this._findActor(id)) {
       a.setRotation(angle, !!radians);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4926,13 +4919,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorColor = function(id, color) {
+  AREActorInterface.prototype.setColor = function(id, color) {
     var a;
     if (a = this._findActor(id)) {
       a.setColor(color);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4945,13 +4939,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorTexture = function(id, name) {
+  AREActorInterface.prototype.setTexture = function(id, name) {
     var a;
     if (a = this._findActor(id)) {
       a.setTexture(name);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -4965,7 +4960,7 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorTextureRepeat = function(id, repeat) {
+  AREActorInterface.prototype.setTextureRepeat = function(id, repeat) {
     var a;
     if (a = this._findActor(id)) {
       a.setTextureRepeat(repeat.x, repeat.y);
@@ -4987,13 +4982,14 @@ AREActorInterface = (function() {
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.enableActorPhysics = function(id, mass, friction, elasticity) {
+  AREActorInterface.prototype.createPhysicsBody = function(id, mass, friction, elasticity) {
     var a;
     if (a = this._findActor(id)) {
       a.createPhysicsBody(mass, friction, elasticity);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -5009,8 +5005,97 @@ AREActorInterface = (function() {
     if (a = this._findActor(id)) {
       a.destroyPhysicsBody();
       return true;
+    } else {
+      return false;
     }
+  };
+
+  AREActorInterface.prototype.enable2DMode = function(id) {
     return false;
+  };
+
+  AREActorInterface.prototype.disable2DMode = function(id) {
+    return false;
+  };
+
+  AREActorInterface.prototype.is2DModeEnabled = function(id) {
+    return false;
+  };
+
+  AREActorInterface.prototype.create3DActor = function(verts) {
+    return false;
+  };
+
+  AREActorInterface.prototype.beginActorBatch = function() {
+    return false;
+  };
+
+  AREActorInterface.prototype.endActorBatch = function() {
+    return false;
+  };
+
+  AREActorInterface.prototype.set2DRotation = function(id, angle) {
+    return false;
+  };
+
+  AREActorInterface.prototype.rotateInto2DPlane = function(id) {
+    return false;
+  };
+
+  AREActorInterface.prototype.clearTexture = function(id) {
+    return false;
+  };
+
+  AREActorInterface.prototype.set2DVertices = function(id, verts) {
+    return false;
+  };
+
+  AREActorInterface.prototype.setTextureCoords = function(id, coords) {
+    return false;
+  };
+
+  AREActorInterface.prototype.getTextureCoords = function(id) {
+    return null;
+  };
+
+  AREActorInterface.prototype.get2DRotation = function(id) {
+    return null;
+  };
+
+  AREActorInterface.prototype.getAABB = function(id) {
+    return null;
+  };
+
+  AREActorInterface.prototype.destroy = function(id) {
+    return false;
+  };
+
+  AREActorInterface.prototype.setAttachment = function(id, attachment) {
+    return false;
+  };
+
+  AREActorInterface.prototype.setAttachmentOffset = function(id, offset) {
+    return false;
+  };
+
+  AREActorInterface.prototype.setAttachmentRotation = function(id, rotation) {
+    return false;
+  };
+
+  AREActorInterface.prototype.getAttachmentID = function(id) {
+    return null;
+  };
+
+  AREActorInterface.prototype.getAttachmentVisibility = function(id) {
+    return null;
+  };
+
+  AREActorInterface.prototype.getAttachmentOffset = function(id) {
+    return null;
+  };
+
+  AREActorInterface.prototype.getAttachmentRotation = function(id) {
+    return null;
   };
 
   return AREActorInterface;
