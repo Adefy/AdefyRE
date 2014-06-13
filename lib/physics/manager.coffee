@@ -1,6 +1,6 @@
 class PhysicsManager extends BazarShop
 
-  constructor: (@_renderer, depPaths) ->
+  constructor: (@_renderer, depPaths, cb) ->
     param.required _renderer
     param.required depPaths
 
@@ -12,7 +12,7 @@ class PhysicsManager extends BazarShop
       url: depPaths.koon
     ,
       url: depPaths.physics_worker
-    ]
+    ], cb
 
   _connectWorkerListener: ->
 

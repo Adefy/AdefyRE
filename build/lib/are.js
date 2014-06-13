@@ -55,10 +55,13 @@ ARE = (function() {
       width: width,
       height: height
     });
-    this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics);
-    this._currentlyRendering = false;
-    this.startRendering();
-    cb(this);
+    this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
+      return function() {
+        _this._currentlyRendering = false;
+        _this.startRendering();
+        return cb(_this);
+      };
+    })(this));
   }
 
 

@@ -20,7 +20,7 @@ CBazar = (function(_super) {
 BazarShop = (function(_super) {
   __extends(BazarShop, _super);
 
-  function BazarShop(name, deps) {
+  function BazarShop(name, deps, readyCB) {
     BazarShop.__super__.constructor.call(this, name);
     async.map(deps, function(dependency, cb) {
       if (dependency.raw) {
@@ -36,7 +36,10 @@ BazarShop = (function(_super) {
     }, (function(_this) {
       return function(error, sources) {
         _this._initFromSources(sources);
-        return _this._registerWithBazar();
+        _this._registerWithBazar();
+        if (readyCB) {
+          return readyCB();
+        }
       };
     })(this));
   }

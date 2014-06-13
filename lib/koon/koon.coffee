@@ -53,7 +53,8 @@ class KoonNetworkMember
 
     # This is faster than a normal for loop
     l = @_subscribers.length
-    @_subscribers[l].receiver message, namespace while l--
+    while l--
+      @_subscribers[l].receiver message, namespace
 
   ###
   # Get our UUID

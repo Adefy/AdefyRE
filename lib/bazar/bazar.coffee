@@ -6,7 +6,7 @@ class CBazar extends KoonFlock
 
 class BazarShop extends Koon
 
-  constructor: (name, deps) ->
+  constructor: (name, deps, readyCB) ->
     super name
 
     async.map deps, (dependency, cb) ->
@@ -21,6 +21,8 @@ class BazarShop extends Koon
     , (error, sources) =>
       @_initFromSources sources
       @_registerWithBazar()
+
+      readyCB() if readyCB
 
   _initFromSources: (sources) ->
     return if @_worker

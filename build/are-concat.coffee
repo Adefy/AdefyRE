@@ -53,7 +53,8 @@ class KoonNetworkMember
 
     # This is faster than a normal for loop
     l = @_subscribers.length
-    @_subscribers[l].receiver message, namespace while l--
+    while l--
+      @_subscribers[l].receiver message, namespace
 
   ###
   # Get our UUID
@@ -149,7 +150,7 @@ class CBazar extends KoonFlock
 
 class BazarShop extends Koon
 
-  constructor: (name, deps) ->
+  constructor: (name, deps, readyCB) ->
     super name
 
     async.map deps, (dependency, cb) ->
@@ -164,6 +165,8 @@ class BazarShop extends Koon
     , (error, sources) =>
       @_initFromSources sources
       @_registerWithBazar()
+
+      readyCB() if readyCB
 
   _initFromSources: (sources) ->
     return if @_worker
@@ -3176,7 +3179,7 @@ class ARERenderer
 
 class PhysicsManager extends BazarShop
 
-  constructor: (@_renderer, depPaths) ->
+  constructor: (@_renderer, depPaths, cb) ->
     param.required _renderer
     param.required depPaths
 
@@ -3188,7 +3191,7 @@ class PhysicsManager extends BazarShop
       url: depPaths.koon
     ,
       url: depPaths.physics_worker
-    ]
+    ], cb
 
   _connectWorkerListener: ->
 
@@ -4887,11 +4890,11 @@ class ARE
       width: width
       height: height
 
-    @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics
+    @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
 
-    @_currentlyRendering = false
-    @startRendering()
-    cb @
+      @_currentlyRendering = false
+      @startRendering()
+      cb @
 
   ###
   # Get our internal ARERenderer instance

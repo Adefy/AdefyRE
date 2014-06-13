@@ -82,11 +82,11 @@ class ARE
       width: width
       height: height
 
-    @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics
+    @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
 
-    @_currentlyRendering = false
-    @startRendering()
-    cb @
+      @_currentlyRendering = false
+      @startRendering()
+      cb @
 
   ###
   # Get our internal ARERenderer instance

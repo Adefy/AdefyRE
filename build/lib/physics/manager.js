@@ -5,7 +5,7 @@ var PhysicsManager,
 PhysicsManager = (function(_super) {
   __extends(PhysicsManager, _super);
 
-  function PhysicsManager(_renderer, depPaths) {
+  function PhysicsManager(_renderer, depPaths, cb) {
     this._renderer = _renderer;
     param.required(_renderer);
     param.required(depPaths);
@@ -19,7 +19,7 @@ PhysicsManager = (function(_super) {
       }, {
         url: depPaths.physics_worker
       }
-    ]);
+    ], cb);
   }
 
   PhysicsManager.prototype._connectWorkerListener = function() {

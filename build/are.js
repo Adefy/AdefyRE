@@ -220,7 +220,7 @@ CBazar = (function(_super) {
 BazarShop = (function(_super) {
   __extends(BazarShop, _super);
 
-  function BazarShop(name, deps) {
+  function BazarShop(name, deps, readyCB) {
     BazarShop.__super__.constructor.call(this, name);
     async.map(deps, function(dependency, cb) {
       if (dependency.raw) {
@@ -236,7 +236,10 @@ BazarShop = (function(_super) {
     }, (function(_this) {
       return function(error, sources) {
         _this._initFromSources(sources);
-        return _this._registerWithBazar();
+        _this._registerWithBazar();
+        if (readyCB) {
+          return readyCB();
+        }
       };
     })(this));
   }
@@ -3623,7 +3626,7 @@ ARERenderer = (function() {
 PhysicsManager = (function(_super) {
   __extends(PhysicsManager, _super);
 
-  function PhysicsManager(_renderer, depPaths) {
+  function PhysicsManager(_renderer, depPaths, cb) {
     this._renderer = _renderer;
     param.required(_renderer);
     param.required(depPaths);
@@ -3637,7 +3640,7 @@ PhysicsManager = (function(_super) {
       }, {
         url: depPaths.physics_worker
       }
-    ]);
+    ], cb);
   }
 
   PhysicsManager.prototype._connectWorkerListener = function() {
@@ -5569,10 +5572,13 @@ ARE = (function() {
       width: width,
       height: height
     });
-    this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics);
-    this._currentlyRendering = false;
-    this.startRendering();
-    cb(this);
+    this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
+      return function() {
+        _this._currentlyRendering = false;
+        _this.startRendering();
+        return cb(_this);
+      };
+    })(this));
   }
 
 
