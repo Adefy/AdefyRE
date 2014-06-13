@@ -20,16 +20,13 @@ class AREActorInterface
     null
 
   ###
-  # Create actor using the supplied vertices, passed in as a JSON
-  # representation of a flat array
+  # Create actor using the supplied vertices, passed in as a flat array
   #
-  # @param [String] verts
+  # @param [Array<Number>] verts
   # @return [Number] id created actor handle
   ###
-  createRawActor: (verts) ->
-    param.required verts
-
-    new ARERawActor(@_renderer, JSON.parse verts).getId()
+  create2DRawPolygon: (verts) ->
+    new ARERawActor(@_renderer, verts).getId()
 
   ###
   # Create a variable sided actor of the specified radius
@@ -38,7 +35,7 @@ class AREActorInterface
   # @param [Number] segments
   # @return [Number] id created actor handle
   ###
-  createPolygonActor: (radius, segments) ->
+  create2DPolygon: (radius, segments) ->
 
     ##
     ## NOTE: Things are a bit fucked up at the moment. The android engine
@@ -58,7 +55,7 @@ class AREActorInterface
   # @param [Number] height
   # @return [Number] id created actor handle
   ###
-  createRectangleActor: (width, height) ->
+  create2DRectangle: (width, height) ->
     new ARERectangleActor(@_renderer, width, height).getId()
 
   ###
@@ -67,7 +64,7 @@ class AREActorInterface
   # @param [Number] radius
   # @return [Number] id created actor handle
   ###
-  createCircleActor: (radius) ->
+  create2DCircle: (radius) ->
     new ARECircleActor(@_renderer, radius).getId()
 
   ###
@@ -76,11 +73,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Number] layer
   ###
-  getActorLayer: (id) ->
+  getLayer: (id) ->
     if a = @_findActor(id)
-      return a.getLayer()
-
-    null
+      a.getLayer()
+    else
+      null
 
   ###
   # Get actor physics layer
@@ -88,11 +85,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Number] physicsLayer
   ###
-  getActorPhysicsLayer: (id) ->
+  getPhysicsLayer: (id) ->
     if a = @_findActor(id)
-      return a.getPhysicsLayer()
-
-    null
+      a.getPhysicsLayer()
+    else
+      null
 
   ###
   # Fetch the width of the rectangle actor with the specified ID
@@ -100,12 +97,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Number] width
   ###
-  getRectangleActorWidth: (id) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof ARERectangleActor
-        return a.getWidth()
-
-    null
+  getRectangleWidth: (id) ->
+    if (a = @_findActor(id)) && a instanceof ARERectangleActor
+      a.getWidth()
+    else
+      null
 
   ###
   # Fetch the height of the rectangle actor with the specified ID
@@ -113,12 +109,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Number] height
   ###
-  getRectangleActorHeight: (id) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof ARERectangleActor
-        return a.getHeight()
-
-    null
+  getRectangleHeight: (id) ->
+    if (a = @_findActor(id)) && a instanceof ARERectangleActor
+      a.getHeight()
+    else
+      null
 
   ###
   # Get actor opacity using handle, fails with null
@@ -126,11 +121,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Number] opacity
   ###
-  getActorOpacity: (id) ->
+  getOpacity: (id) ->
     if a = @_findActor id
-      return a.getOpacity()
-
-    null
+      a.getOpacity()
+    else
+      null
 
   ###
   # Get actor visible using handle, fails with null
@@ -138,11 +133,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Boolean] visible
   ###
-  getActorVisible: (id) ->
+  isVisible: (id) ->
     if a = @_findActor id
-      return a.getVisible()
-
-    null
+      a.getVisible()
+    else
+      null
 
   ###
   # Get actor position using handle, fails with null
@@ -151,24 +146,24 @@ class AREActorInterface
   # @param [Number] id
   # @return [Object] position {x, y}
   ###
-  getActorPosition: (id) ->
+  getPosition: (id) ->
     if a = @_findActor id
       a.getPosition()
     else
       null
 
   ###
-  # Get actor rotation using handle, fails with 0.000001
+  # Get actor rotation
   #
   # @param [Number] id
   # @param [Boolean] radians defaults to false
   # @return [Number] angle in degrees or radians
   ###
-  getActorRotation: (id, radians) ->
+  getRotation: (id, radians) ->
     if a = @_findActor id
-      return a.getRotation !!radians
-
-    0.000001
+      a.getRotation !!radians
+    else
+      null
 
   ###
   # Returns actor color as a JSON triple, in 0-255 range
@@ -177,17 +172,17 @@ class AREActorInterface
   # @param [Number] id
   # @return [String] col
   ###
-  getActorColor: (id) ->
+  getColor: (id) ->
     if a = @_findActor id
       color = a.getColor()
 
-      return {
+      {
         r: color.getR()
         g: color.getG()
         b: color.getB()
       }
-
-    return null
+    else
+      null
 
   ###
   # Return an Actor's texture name
@@ -195,7 +190,7 @@ class AREActorInterface
   # @param [Number] id
   # @return [String] texture_name
   ###
-  getActorTexture: (id) ->
+  getTexture: (id) ->
     if a = @_findActor id
       a.getTexture().name
     else
@@ -207,7 +202,7 @@ class AREActorInterface
   # @param [Number] id
   # @return [Object] repeat
   ###
-  getActorTextureRepeat: (id) ->
+  getTextureRepeat: (id) ->
     if a = @_findActor id
       a.getTextureRepeat()
     else
@@ -220,13 +215,12 @@ class AREActorInterface
   # @param [Number] height
   # @return [Boolean] success
   ###
-  setRectangleActorHeight: (id, height) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof ARERectangleActor
-        a.setHeight height
-        return true
-
-    false
+  setRectangleHeight: (id, height) ->
+    if (a = @_findActor(id)) && a instanceof ARERectangleActor
+      a.setHeight height
+      true
+    else
+      false
 
   ###
   # Set the width of the rectangle actor with the specified ID
@@ -235,13 +229,12 @@ class AREActorInterface
   # @param [Number] width
   # @return [Boolean] success
   ###
-  setRectangleActorWidth: (id, width) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof ARERectangleActor
-        a.setWidth width
-        return true
-
-    false
+  setRectangleWidth: (id, width) ->
+    if (a = @_findActor(id)) && a instanceof ARERectangleActor
+      a.setWidth width
+      true
+    else
+      false
 
   ###
   # Set the segment count of the polygon actor with the specified ID
@@ -250,13 +243,12 @@ class AREActorInterface
   # @param [Number] segments
   # @return [Boolean] success
   ###
-  setPolygonActorSegments: (id, segments) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof AREPolygonActor
-        a.setSegments segments
-        return true
-
-    false
+  setPolygonSegments: (id, segments) ->
+    if (a = @_findActor(id)) && a instanceof AREPolygonActor
+      a.setSegments segments
+      true
+    else
+      false
 
   ###
   # Set the radius of the polygon actor with the specified ID
@@ -265,13 +257,13 @@ class AREActorInterface
   # @param [Number] radius
   # @return [Boolean] success
   ###
-  setPolygonActorRadius: (id, radius) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof AREPolygonActor
-        a.setRadius radius
-        return true
+  setPolygonRadius: (id, radius) ->
+    if (a = @_findActor(id)) && a instanceof AREPolygonActor
+      a.setRadius radius
+      true
+    else
+      false
 
-    false
 
   ###
   # Get the radius of the polygon actor with the specified ID
@@ -279,12 +271,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Number] radius
   ###
-  getPolygonActorRadius: (id) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof AREPolygonActor
-        return a.getRadius()
-
-    null
+  getPolygonRadius: (id) ->
+    if (a = @_findActor(id)) && a instanceof AREPolygonActor
+      a.getRadius()
+    else
+      null
 
   ###
   # Get the segment count of the polygon actor with the specified ID
@@ -292,12 +283,11 @@ class AREActorInterface
   # @param [Number] id
   # @return [Number] segments
   ###
-  getPolygonActorSegments: (id, radius) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof AREPolygonActor
-        return a.getSegments()
-
-    null
+  getPolygonSegments: (id, radius) ->
+    if (a = @_findActor(id)) && a instanceof AREPolygonActor
+      a.getSegments()
+    else
+      null
 
   ###
   # Attach texture to actor. Fails if actor isn't found
@@ -330,12 +320,12 @@ class AREActorInterface
   # @param [Number] layer
   # @return [Boolean] success
   ###
-  setActorLayer: (id, layer) ->
+  setLayer: (id, layer) ->
     if a = @_findActor id
       a.setLayer layer
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor physics layer. Fails if actor isn't found.
@@ -346,12 +336,12 @@ class AREActorInterface
   # @param [Number] layer
   # @return [Boolean] success
   ###
-  setActorPhysicsLayer: (id, layer) ->
+  setPhysicsLayer: (id, layer) ->
     if a = @_findActor id
       a.setPhysicsLayer layer
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Remove attachment from an actor. Fails if actor isn't found
@@ -362,9 +352,9 @@ class AREActorInterface
   removeAttachment: (id) ->
     if a = @_findActor id
       a.removeAttachment()
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set attachment visiblity. Fails if actor isn't found, or actor has no
@@ -376,9 +366,9 @@ class AREActorInterface
   ###
   setAttachmentVisiblity: (id, visible) ->
     if a = @_findActor id
-      return a.setAttachmentVisibility visible
-
-    false
+      a.setAttachmentVisibility visible
+    else
+      false
 
   ###
   # Refresh actor vertices, passed in as a JSON representation of a flat array
@@ -387,24 +377,24 @@ class AREActorInterface
   # @param [String] verts
   # @return [Boolean] success
   ###
-  updateVertices: (id, verts) ->
+  setVertices: (id, verts) ->
     if a = @_findActor id
       a.updateVertices JSON.parse verts
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
-  # Get actor vertices as a flat JSON array
+  # Get actor vertices as a flat array
   #
   # @param [Number] id actor id
-  # @return [String] vertices
+  # @return [Array<Number>] vertices
   ###
   getVertices: (id) ->
     if a = @_findActor id
-      return JSON.stringify a.getVertices()
-
-    null
+      a.getVertices()
+    else
+      null
 
   ###
   # Clears stored information about the actor in question. This includes the
@@ -416,9 +406,9 @@ class AREActorInterface
   destroyActor: (id) ->
     if a = @_findActor id
       a.destroy()
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Supply an alternate set of vertices for the physics body of an actor. This
@@ -427,15 +417,15 @@ class AREActorInterface
   # this rebuilds it!
   #
   # @param [Number] id actor id
-  # @param [String] verts
+  # @param [Array<Number>] verts
   # @return [Boolean] success
   ###
   setPhysicsVertices: (id, verts) ->
     if a = @_findActor id
-      a.setPhysicsVertices JSON.parse verts
-      return true
-
-    false
+      a.setPhysicsVertices verts
+      true
+    else
+      false
 
   ###
   # Change actors' render mode, currently only options are avaliable
@@ -449,9 +439,9 @@ class AREActorInterface
   setRenderMode: (id, mode) ->
     if a = @_findActor id
       a.setRenderMode mode
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor opacity using handle, fails with false
@@ -460,7 +450,7 @@ class AREActorInterface
   # @param [Number opacity
   # @return [Boolean] success
   ###
-  setActorOpacity: (id, opacity) ->
+  setOpacity: (id, opacity) ->
     return false if isNaN opacity
     opacity = Number opacity
 
@@ -469,9 +459,9 @@ class AREActorInterface
 
     if a = @_findActor id
       a.setOpacity opacity
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor visible using handle, fails with false
@@ -480,12 +470,12 @@ class AREActorInterface
   # @param [Boolean] visible
   # @return [Boolean] success
   ###
-  setActorVisible: (id, visible) ->
+  setVisible: (id, visible) ->
     if a = @_findActor id
       a.setVisible visible
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor position using handle, fails with false
@@ -496,12 +486,12 @@ class AREActorInterface
   # @option position [Number] y y coordinate
   # @return [Boolean] success
   ###
-  setActorPosition: (id, position) ->
+  setPosition: (id, position) ->
     if a = @_findActor id
       a.setPosition position
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor rotation using handle, fails with false
@@ -511,12 +501,12 @@ class AREActorInterface
   # @param [Boolean] radians defaults to false
   # @return [Boolean] success
   ###
-  setActorRotation: (id, angle, radians) ->
+  setRotation: (id, angle, radians) ->
     if a = @_findActor id
       a.setRotation angle, !!radians
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor color using handle, fails with false
@@ -528,12 +518,12 @@ class AREActorInterface
   # @option color [Number] b blue component
   # @return [Boolean] success
   ###
-  setActorColor: (id, color) ->
+  setColor: (id, color) ->
     if a = @_findActor id
       a.setColor color
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor texture by texture handle. Expects the texture to already be
@@ -543,12 +533,12 @@ class AREActorInterface
   # @param [String] name
   # @return [Boolean] success
   ###
-  setActorTexture: (id, name) ->
+  setTexture: (id, name) ->
     if a = @_findActor id
       a.setTexture name
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Set actor texture repeat
@@ -559,7 +549,7 @@ class AREActorInterface
   # @option repeat [Number] y vertical repeat (default 1)
   # @return [Boolean] success
   ###
-  setActorTextureRepeat: (id, repeat) ->
+  setTextureRepeat: (id, repeat) ->
     if a = @_findActor id
       a.setTextureRepeat repeat.x, repeat.y
       true
@@ -576,12 +566,12 @@ class AREActorInterface
   # @param [Number] elasticity 0.0 - 1.0
   # @return [Boolean] success
   ###
-  enableActorPhysics: (id, mass, friction, elasticity) ->
+  createPhysicsBody: (id, mass, friction, elasticity) ->
     if a = @_findActor id
       a.createPhysicsBody mass, friction, elasticity
-      return true
-
-    false
+      true
+    else
+      false
 
   ###
   # Destroys the physics body if one exists, fails with false
@@ -592,6 +582,45 @@ class AREActorInterface
   destroyPhysicsBody: (id) ->
     if a = @_findActor id
       a.destroyPhysicsBody()
-      return true
+      true
+    else
+      false
 
-    false
+  ##
+  ## TODO: New NRAID methods
+  ##
+  enable2DMode: (id) -> false
+  disable2DMode: (id) -> false
+  is2DModeEnabled: (id) -> false
+
+  create3DActor: (verts) -> false
+
+  beginActorBatch: -> false
+  endActorBatch: -> false
+
+  # TODO: Modify setPosition to be 3D
+  # TODO: Modify setRotation to be 3D
+  set2DRotation: (id, angle) -> false
+  rotateInto2DPlane: (id) -> false
+
+  clearTexture: (id) -> false
+
+  # TODO: Modify setVertices to pass 3D verts
+  set2DVertices: (id, verts) -> false
+  setTextureCoords: (id, coords) -> false
+  getTextureCoords: (id) -> null
+
+  # TODO: Modify getPosition to return 3D position
+  # TODO: Modify getRotation to return 3D rotation
+  get2DRotation: (id) -> null
+
+  getAABB: (id) -> null
+  destroy: (id) -> false
+
+  setAttachment: (id, attachment) -> false
+  setAttachmentOffset: (id, offset) -> false
+  setAttachmentRotation: (id, rotation) -> false
+  getAttachmentID: (id) -> null
+  getAttachmentVisibility: (id) -> null
+  getAttachmentOffset: (id) -> null
+  getAttachmentRotation: (id) -> null
