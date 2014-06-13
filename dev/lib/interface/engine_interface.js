@@ -36,6 +36,10 @@ AREEngineInterface = (function() {
     param.required(ad);
     log || (log = 4);
     id || (id = "");
+    if (this._engine) {
+      ARELog.warn("Re-initialize attempt, ignoring and passing through");
+      return ad(this._engine);
+    }
 
     /*
      * Should WGL textures be flipped by their Y axis?
@@ -57,6 +61,7 @@ AREEngineInterface = (function() {
   /*
    * Set global render mode
    *   @see ARERenderer.RENDERER_MODE_*
+   *
    * This is a special method only we implement; as such, any libraries
    * interfacing with us should check for the existence of the method before
    * calling it!
@@ -70,23 +75,24 @@ AREEngineInterface = (function() {
   /*
    * Set engine clear color
    *
-   * @param [Number] r
-   * @param [Number] g
-   * @param [Number] b
+   * @param [Object] color
+   * @option color [Number] r red component
+   * @option color [Number] g green component
+   * @option color [Number] b blue component
    */
 
-  AREEngineInterface.prototype.setClearColor = function(r, g, b) {
+  AREEngineInterface.prototype.setClearColor = function(color) {
     if (!this._renderer) {
       return;
     }
-    return this._renderer.setClearColor(r, g, b);
+    return this._renderer.setClearColor(color.r, color.g, color.b);
   };
 
 
   /*
-   * Get engine clear color as (r,g,b) JSON, fails with null
+   * Get engine clear color
    *
-   * @return [String] clearcol
+   * @return [Object] color {r, g, b}
    */
 
   AREEngineInterface.prototype.getClearColor = function() {
@@ -95,7 +101,11 @@ AREEngineInterface = (function() {
       return;
     }
     col = this._renderer.getClearColor();
-    return "{ r: " + (col.getR()) + ", g: " + (col.getG()) + ", b: " + (col.getB()) + " }";
+    return {
+      r: col.getR(),
+      g: col.getG(),
+      b: col.getB()
+    };
   };
 
 
@@ -106,35 +116,62 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.setLogLevel = function(level) {
-    return ARELog.level = param.required(level, [0, 1, 2, 3, 4]);
+    level = Number(level);
+    if (isNaN(level)) {
+      return ARELog.warn("Log level is NaN");
+    }
+    level = Math.round(level);
+    if (level < 0) {
+      level = 0;
+    }
+    if (level > 4) {
+      level = 4;
+    }
+    return ARELog.level = level;
   };
 
 
   /*
-   * Set camera center position. Leaving out a component leaves it unchanged
+   * Get the engine log level
    *
-   * @param [Number] x
-   * @param [Number] y
+   * @return [Number] level
    */
 
-  AREEngineInterface.prototype.setCameraPosition = function(x, y) {
-    var currentPosition;
-    currentPosition = this._renderer.getCameraPosition();
-    return this._renderer.setCameraPosition({
-      x: x || currentPosition.x,
-      y: y || currentPosition.y
-    });
+  AREEngineInterface.prototype.getLogLevel = function() {
+    return ARELog.level;
   };
 
 
   /*
-   * Fetch camera position. Returns a JSON object with x,y keys
+   * Set camera center position with an object. Leaving out a component leaves it
+   * unchanged.
    *
-   * @return [Object]
+   * @param [Object] position
+   * @option position [Number] x x component
+   * @option position [Number] y y component
+   */
+
+  AREEngineInterface.prototype.setCameraPosition = function(position) {
+    var currentPosition;
+    currentPosition = this._renderer.getCameraPosition();
+    if (position.x !== void 0) {
+      currentPosition.x = position.x;
+    }
+    if (position.y !== void 0) {
+      currentPosition.y = position.y;
+    }
+    return this._renderer.setCameraPosition(currentPosition);
+  };
+
+
+  /*
+   * Fetch camera position as an object
+   *
+   * @return [Object] position {x, y}
    */
 
   AREEngineInterface.prototype.getCameraPosition = function() {
-    return JSON.stringify(this._renderer.getCameraPosition());
+    return this._renderer.getCameraPosition();
   };
 
 
@@ -167,7 +204,9 @@ AREEngineInterface = (function() {
 
 
   /*
-   * Enable/disable benchmarking
+   * Enable/disable benchmarking.
+   *
+   * NOTE: This is a special method that only we have.
    *
    * @param [Boolean] benchmark
    */
@@ -184,74 +223,96 @@ AREEngineInterface = (function() {
 
 
   /*
-   * Load a package.json manifest, assume texture paths are relative to our
-   * own
+   * Get the NRAID version string that this ad engine supports. It is implied
+   * that we are backwards compatible with all previous versions.
    *
-   * @param [String] json package.json source
+   * @return [String] version
+   */
+
+  AREEngineInterface.prototype.getNRAIDVersion = function() {
+    return "1.0.0,freestanding";
+  };
+
+
+  /*
+   * Fetch meta data as defined in loaded manifest
+   *
+   * @return [Object] meta
+   */
+
+  AREEngineInterface.prototype.getMetaData = function() {
+    return this._metaData;
+  };
+
+
+  /*
+   * Load a package.json manifest, assume texture paths are relative to our
+   * own.
+   *
+   * As we are a browser engine built for the desktop, and therefore don't
+   * support mobile device features like orientation, or need to load files off
+   * the disk, we only support a subset of the NRAID creative manifest.
+   *
+   * @param [Object] manifest
+   * @option manifest [String] version NRAID version string
+   * @option manifest [Object] meta
+   * @option manifest [Array<Object>] textures
    * @param [Method] cb callback to call once the load completes (textures)
    */
 
-  AREEngineInterface.prototype.loadManifest = function(json, cb) {
-    var count, flipTexture, manifest, tex, _i, _len, _results;
-    manifest = JSON.parse(param.required(json));
-    if (manifest.textures) {
-      manifest = manifest.textures;
+  AREEngineInterface.prototype.loadManifest = function(manifest, cb) {
+    param.required(manifest.version);
+    if (manifest.version.split(",")[0] > this.getNRAIDVersion().split(",")[0]) {
+      throw new Error("Unsupported NRAID version");
     }
-    if (_.isEmpty(manifest)) {
+    this._metaData = manifest.meta;
+    if (manifest.textures) {
+      return async.each(manifest.textures, (function(_this) {
+        return function(tex, done) {
+          return _this.loadTexture(tex, function() {
+            return done();
+          }, _this.wglFlipTextureY);
+        };
+      })(this), cb);
+    } else {
       return cb();
     }
-    count = 0;
-    flipTexture = this.wglFlipTextureY;
-    _results = [];
-    for (_i = 0, _len = manifest.length; _i < _len; _i++) {
-      tex = manifest[_i];
-      if (tex.compression && tex.compression !== "none") {
-        throw new Error("Texture is compressed! [" + tex.compression + "]");
-      }
-      if (tex.type && tex.type !== "image") {
-        throw new Error("Texture is not an image! [" + tex.type + "]");
-      }
-      _results.push(this.loadTexture(tex.name, tex.path, flipTexture, function() {
-        count++;
-        if (count === manifest.length) {
-          return cb();
-        }
-      }));
-    }
-    return _results;
   };
 
 
   /*
    * Loads a texture, and adds it to our renderer
    *
-   * @param [String] name
-   * @param [String] path
-   * @param [Boolean] flipTexture
+   * @param [Object] textureDef Texture definition object, NRAID-compatible
    * @param [Method] cb called when texture is loaded
+   * @param [Boolean] flipTexture optional
    */
 
-  AREEngineInterface.prototype.loadTexture = function(name, path, flipTexture, cb) {
+  AREEngineInterface.prototype.loadTexture = function(textureDef, cb, flipTexture) {
     var gl, img, tex;
+    param.required(textureDef.name);
+    param.required(textureDef.file);
     if (typeof flipTexture !== "boolean") {
       flipTexture = this.wglFlipTextureY;
     }
-    ARELog.info("Loading texture: " + name + ", " + path);
+    if (!!textureDef.atlas) {
+      throw new Error("This version of ARE does not support atlas loading!");
+    }
     img = new Image();
     img.crossOrigin = "anonymous";
     gl = this._renderer.getGL();
     tex = null;
     if (this._renderer.isWGLRendererActive()) {
-      ARELog.info("Loading Gl Texture");
       tex = gl.createTexture();
       img.onload = (function(_this) {
         return function() {
-          var canvas, ctx, h, scaleX, scaleY, w;
+          var canvas, ctx, h_NPOT, scaleX, scaleY, w_NPOT;
+          ARELog.info("Loading GL tex: " + textureDef.name + ", " + textureDef.file);
           scaleX = 1;
           scaleY = 1;
-          w = (img.width & (img.width - 1)) !== 0;
-          h = (img.height & (img.height - 1)) !== 0;
-          if (w || h) {
+          w_NPOT = (img.width & (img.width - 1)) !== 0;
+          h_NPOT = (img.height & (img.height - 1)) !== 0;
+          if (w_NPOT || h_NPOT) {
             canvas = document.createElement("canvas");
             canvas.width = nextHighestPowerOfTwo(img.width);
             canvas.height = nextHighestPowerOfTwo(img.height);
@@ -270,7 +331,7 @@ AREEngineInterface = (function() {
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
           gl.bindTexture(gl.TEXTURE_2D, null);
           _this._renderer.addTexture({
-            name: name,
+            name: textureDef.name,
             texture: tex,
             width: img.width,
             height: img.height,
@@ -283,11 +344,11 @@ AREEngineInterface = (function() {
         };
       })(this);
     } else {
-      ARELog.info("Loading Canvas Image");
       img.onload = (function(_this) {
         return function() {
+          ARELog.info("Loading canvas tex: " + textureDef.name + ", " + textureDef.file);
           _this._renderer.addTexture({
-            name: name,
+            name: textureDef.name,
             texture: img,
             width: img.width,
             height: img.height
@@ -298,7 +359,7 @@ AREEngineInterface = (function() {
         };
       })(this);
     }
-    return img.src = path;
+    return img.src = textureDef.file;
   };
 
 
@@ -312,20 +373,6 @@ AREEngineInterface = (function() {
   AREEngineInterface.prototype.getTextureSize = function(name) {
     return this._renderer.getTextureSize(name);
   };
-
-
-  /*
-   * TODO: Implement
-   *
-   * Set remind me later button region
-   *
-   * @param [Number] x
-   * @param [Number] y
-   * @param [Number] w
-   * @param [Number] h
-   */
-
-  AREEngineInterface.prototype.setRemindMeButton = function(x, y, w, h) {};
 
   return AREEngineInterface;
 

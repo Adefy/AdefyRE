@@ -31,6 +31,12 @@ class AREEngineInterface
     log ||= 4
     id ||= ""
 
+    # If we've already initialised once, show a warning and just callback
+    # immediately
+    if @_engine
+      ARELog.warn "Re-initialize attempt, ignoring and passing through"
+      return ad @_engine
+
     ###
     # Should WGL textures be flipped by their Y axis?
     # NOTE. This does not affect existing textures.
@@ -50,6 +56,7 @@ class AREEngineInterface
   ###
   # Set global render mode
   #   @see ARERenderer.RENDERER_MODE_*
+  #
   # This is a special method only we implement; as such, any libraries
   # interfacing with us should check for the existence of the method before
   # calling it!
@@ -59,24 +66,30 @@ class AREEngineInterface
   ###
   # Set engine clear color
   #
-  # @param [Number] r
-  # @param [Number] g
-  # @param [Number] b
+  # @param [Object] color
+  # @option color [Number] r red component
+  # @option color [Number] g green component
+  # @option color [Number] b blue component
   ###
-  setClearColor: (r, g, b) ->
+  setClearColor: (color) ->    
     return unless @_renderer
-    @_renderer.setClearColor r, g, b
+    @_renderer.setClearColor color.r, color.g, color.b
 
   ###
-  # Get engine clear color as (r,g,b) JSON, fails with null
+  # Get engine clear color
   #
-  # @return [String] clearcol
+  # @return [Object] color {r, g, b}
   ###
   getClearColor: ->
     return unless @_renderer
 
     col = @_renderer.getClearColor()
-    "{ r: #{col.getR()}, g: #{col.getG()}, b: #{col.getB()} }"
+    
+    {
+      r: col.getR()
+      g: col.getG()
+      b: col.getB()
+    }
 
   ###
   # Set log level
@@ -84,27 +97,48 @@ class AREEngineInterface
   # @param [Number] level 0-4
   ###
   setLogLevel: (level) ->
-    ARELog.level = param.required level, [0, 1, 2, 3, 4]
+    level = Number level
+
+    if isNaN level
+      return ARELog.warn "Log level is NaN"
+
+    level = Math.round level
+    level = 0 if level < 0
+    level = 4 if level > 4
+
+    ARELog.level = level
 
   ###
-  # Set camera center position. Leaving out a component leaves it unchanged
+  # Get the engine log level
   #
-  # @param [Number] x
-  # @param [Number] y
+  # @return [Number] level
   ###
-  setCameraPosition: (x, y) ->
+  getLogLevel: ->
+    ARELog.level
+
+  ###
+  # Set camera center position with an object. Leaving out a component leaves it
+  # unchanged.
+  #
+  # @param [Object] position
+  # @option position [Number] x x component
+  # @option position [Number] y y component
+  ###
+  setCameraPosition: (position) ->
     currentPosition = @_renderer.getCameraPosition()
 
-    @_renderer.setCameraPosition
-      x: x or currentPosition.x
-      y: y or currentPosition.y
+    currentPosition.x = position.x if position.x != undefined
+    currentPosition.y = position.y if position.y != undefined
+
+    @_renderer.setCameraPosition currentPosition
 
   ###
-  # Fetch camera position. Returns a JSON object with x,y keys
+  # Fetch camera position as an object
   #
-  # @return [Object]
+  # @return [Object] position {x, y}
   ###
-  getCameraPosition: -> JSON.stringify @_renderer.getCameraPosition()
+  getCameraPosition: ->
+    @_renderer.getCameraPosition()
 
   ###
   # Return our engine's width
@@ -125,7 +159,9 @@ class AREEngineInterface
     @_renderer.getHeight()
 
   ###
-  # Enable/disable benchmarking
+  # Enable/disable benchmarking.
+  #
+  # NOTE: This is a special method that only we have.
   #
   # @param [Boolean] benchmark
   ###
@@ -135,51 +171,70 @@ class AREEngineInterface
     window.AREMessages.broadcast value: status, "physics.benchmark.set"
 
   ###
-  # Load a package.json manifest, assume texture paths are relative to our
-  # own
+  # Get the NRAID version string that this ad engine supports. It is implied
+  # that we are backwards compatible with all previous versions.
   #
-  # @param [String] json package.json source
+  # @return [String] version
+  ###
+  getNRAIDVersion: ->
+    "1.0.0,freestanding"
+
+  ###
+  # Fetch meta data as defined in loaded manifest
+  #
+  # @return [Object] meta
+  ###
+  getMetaData: ->
+    @_metaData
+
+  ###
+  # Load a package.json manifest, assume texture paths are relative to our
+  # own.
+  #
+  # As we are a browser engine built for the desktop, and therefore don't
+  # support mobile device features like orientation, or need to load files off
+  # the disk, we only support a subset of the NRAID creative manifest.
+  #
+  # @param [Object] manifest
+  # @option manifest [String] version NRAID version string
+  # @option manifest [Object] meta
+  # @option manifest [Array<Object>] textures
   # @param [Method] cb callback to call once the load completes (textures)
   ###
-  loadManifest: (json, cb) ->
-    manifest = JSON.parse param.required json
+  loadManifest: (manifest, cb) ->
+    param.required manifest.version
 
-    ##
-    ## NOTE: The manifest only contains textures now, but for the sake of
-    ##       backwards compatibilty, we check for a textures array
+    # Ensure we are of the proper version
+    if manifest.version.split(",")[0] > @getNRAIDVersion().split(",")[0]
+      throw new Error "Unsupported NRAID version"
 
-    manifest = manifest.textures if manifest.textures
-    return cb() if _.isEmpty(manifest)
+    # We store meta data on ourselves
+    @_metaData = manifest.meta
 
-    count = 0
-    flipTexture = @wglFlipTextureY
-
-    # Load textures
-    for tex in manifest
-
-      # Feature check
-      if tex.compression and tex.compression != "none"
-        throw new Error "Texture is compressed! [#{tex.compression}]"
-
-      if tex.type and tex.type != "image"
-        throw new Error "Texture is not an image! [#{tex.type}]"
-
-      # Gogo
-      @loadTexture tex.name, tex.path, flipTexture, ->
-        count++
-        cb() if count == manifest.length
+    if manifest.textures
+      async.each manifest.textures, (tex, done) =>
+        @loadTexture tex, ->
+          done()
+        , @wglFlipTextureY
+      , cb
+    else
+      cb()
 
   ###
   # Loads a texture, and adds it to our renderer
   #
-  # @param [String] name
-  # @param [String] path
-  # @param [Boolean] flipTexture
+  # @param [Object] textureDef Texture definition object, NRAID-compatible
   # @param [Method] cb called when texture is loaded
+  # @param [Boolean] flipTexture optional
   ###
-  loadTexture: (name, path, flipTexture, cb) ->
+  loadTexture: (textureDef, cb, flipTexture) ->
+    param.required textureDef.name
+    param.required textureDef.file
+
     flipTexture = @wglFlipTextureY if typeof flipTexture != "boolean"
-    ARELog.info "Loading texture: #{name}, #{path}"
+    
+    if !!textureDef.atlas
+      throw new Error "This version of ARE does not support atlas loading!"
 
     # Create texture and image
     img = new Image()
@@ -189,18 +244,19 @@ class AREEngineInterface
     tex = null
 
     if @_renderer.isWGLRendererActive()
-      ARELog.info "Loading Gl Texture"
 
       tex = gl.createTexture()
       img.onload = =>
+        ARELog.info "Loading GL tex: #{textureDef.name}, #{textureDef.file}"
 
         scaleX = 1
         scaleY = 1
 
         # Resize image if needed
-        w = (img.width & (img.width - 1)) != 0
-        h = (img.height & (img.height - 1)) != 0
-        if w || h
+        w_NPOT = (img.width & (img.width - 1)) != 0
+        h_NPOT = (img.height & (img.height - 1)) != 0
+
+        if w_NPOT || h_NPOT
 
           canvas = document.createElement "canvas"
 
@@ -221,10 +277,6 @@ class AREEngineInterface
         gl.texImage2D gl.TEXTURE_2D, 0,
                       gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 
-        # if not pot
-        #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
-        #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
-
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
@@ -235,7 +287,7 @@ class AREEngineInterface
 
         # Add to renderer
         @_renderer.addTexture
-          name: name
+          name: textureDef.name
           texture: tex
           width: img.width
           height: img.height
@@ -245,12 +297,12 @@ class AREEngineInterface
         cb() if cb
 
     else
-      ARELog.info "Loading Canvas Image"
       img.onload = =>
+        ARELog.info "Loading canvas tex: #{textureDef.name}, #{textureDef.file}"
 
         # Add to renderer
         @_renderer.addTexture
-          name: name
+          name: textureDef.name
           texture: img
           width: img.width
           height: img.height
@@ -258,7 +310,7 @@ class AREEngineInterface
         cb() if cb
 
     # Load!
-    img.src = path
+    img.src = textureDef.file
 
   ###
   # Get renderer texture size by name
@@ -266,16 +318,5 @@ class AREEngineInterface
   # @param [String] name
   # @param [Object] size
   ###
-  getTextureSize: (name) -> @_renderer.getTextureSize name
-
-  ###
-  # TODO: Implement
-  #
-  # Set remind me later button region
-  #
-  # @param [Number] x
-  # @param [Number] y
-  # @param [Number] w
-  # @param [Number] h
-  ###
-  setRemindMeButton: (x, y, w, h) ->
+  getTextureSize: (name) ->
+    @_renderer.getTextureSize name

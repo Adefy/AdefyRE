@@ -1,129 +1,120 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>AdefyRE Physics + Rendering Test</title>
+<script src="/components/async/lib/async.js"></script>
+<script src="/components/lodash/dist/lodash.min.js"></script>
+<script src="/components/zepto/zepto.min.js"></script>
+<script src="/components/chipmunk/cp.min.js"></script>
+<script src="/js/EWGL_math.js"></script>
+<script src="/js/inkyEWGL.js"></script>
+<script src="/js/reutil.js"></script>
+<script src="/are.js"></script>
+<script src="/js/are_test_helper.js"></script>
 
-  <script type="text/javascript" src="./components/async/lib/async.js"></script>
-  <script type="text/javascript" src="./components/lodash/dist/lodash.min.js"></script>
-  <script type="text/javascript" src="./components/zepto/zepto.min.js"></script>
-  <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
-  <script type="text/javascript" src="./js/EWGL_math.js"></script>
-  <script type="text/javascript" src="./js/inkyEWGL.js"></script>
-  <script type="text/javascript" src="./js/reutil.js"></script>
-  <script type="text/javascript" src="./are.js"></script>
-  <script type="text/javascript" src="./js/are_test_helper.js"></script>
+<link type="text/css" rel="stylesheet" href="/css/style.css">
+<link type="text/css" rel="stylesheet" href="/css/header.css">
 
-  <link type="text/css" rel="stylesheet" href="./css/main.css"/>
-</head>
+<header>
+  <div id="header-decorator"></div>
+  <ul>
+    <li>
+      Mode: <span id="RendererMode"></span>
+    </li>
+    <li>
+      Actor Count: <span id="ActorCount"></span>
+    </li>
+  </ul>
+</header>
 
-<body>
-  <header>
-    <div id="header-decorator"></div>
-    <ul>
-      <li>
-        Mode: <span id="RendererMode"></span>
-      </li>
-      <li>
-        Actor Count: <span id="ActorCount"></span>
-      </li>
-    </ul>
-  </header>
+<script>
 
-  <script>
+  var manifest = [{
+    "name": "metalGrate",
+    "path": "images/metalGrate.jpg"
+  },{
+    "name": "roundThing",
+    "path": "images/roundThing.jpg"
+  }];
 
-    var manifest = [{
-      "name": "metalGrate",
-      "path": "images/metalGrate.jpg"
-    },{
-      "name": "roundThing",
-      "path": "images/roundThing.jpg"
-    }];
+  var width = window.innerWidth;
+  var height = window.innerHeight - 30;
 
-    var width = window.innerWidth;
-    var height = window.innerHeight - 30;
+  window.AdefyRE.Engine().initialize(width, height, function(engine) {
+    window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
 
-    window.AdefyRE.Engine().initialize(width, height, function(engine) {
-      window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
+      var renderer = window.renderer = engine.getRenderer();
+      engine.setClearColor(0, 128, 128);
 
-        var renderer = window.renderer = engine.getRenderer();
-        engine.setClearColor(0, 128, 128);
+      var ground = new ARERectangleActor(renderer, width, height * 0.05);
+      ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
+        .setTexture("metalGrate")
+        .setTextureRepeat(20, 0.5)
+        .setLayer(10)
+        .createPhysicsBody(0, 0.7, 0.6);
 
-        var ground = new ARERectangleActor(renderer, width, height * 0.05);
-        ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
-          .setTexture("metalGrate")
-          .setTextureRepeat(20, 0.5)
-          .setLayer(10)
-          .createPhysicsBody(0, 0.7, 0.6);
+      new ARECircleActor(renderer, 128)
+        .setTexture("roundThing")
+        .setPosition({ x: width / 2, y: height / 2 })
+        .setLayer(5)
+        .setRotation(90)
+        .createPhysicsBody(100, 0.8, 0.7);
 
-        new ARECircleActor(renderer, 128)
+      var createBall = function() {
+        var x = Math.random() * width;
+        var y = -(Math.random() * 1000);
+
+        var mass = Math.random() * 100;
+        var friction = Math.random();
+        var elasticity = Math.random() * 1.2;
+
+        var ball = new ARECircleActor(renderer, 16)
+          .setPosition({ x: x, y: y })
           .setTexture("roundThing")
-          .setPosition({ x: width / 2, y: height / 2 })
-          .setLayer(5)
-          .setRotation(90)
-          .createPhysicsBody(100, 0.8, 0.7);
+          .setStrokeColor(0, 0, 0)
+          .setStrokeWidth(4)
+          .setLayer(0)
+          .createPhysicsBody(mass, friction, elasticity);
 
-        var createBall = function() {
-          var x = Math.random() * width;
-          var y = -(Math.random() * 1000);
+        setTimeout(function() {
+          ball.destroy();
+        }, 2000);
+      };
 
-          var mass = Math.random() * 100;
-          var friction = Math.random();
-          var elasticity = Math.random() * 1.2;
+      var scheduleBallTimeout = function() {
+        setTimeout(function() {
+          createBall();
+          refreshActorCount();
+          if(renderer._actors.length < 1000)
+            scheduleBallTimeout();
+        }, 25);
+      };
 
-          var ball = new ARECircleActor(renderer, 16)
-            .setPosition({ x: x, y: y })
-            .setTexture("roundThing")
-            .setStrokeColor(0, 0, 0)
-            .setStrokeWidth(4)
-            .setLayer(0)
-            .createPhysicsBody(mass, friction, elasticity);
+      var modestr = "N/A";
+      if (renderer.isWGLRendererActive())
+        modestr = "WebGL"
+      else if (renderer.isCanvasRendererActive())
+        modestr = "Canvas"
 
-          setTimeout(function() {
-            ball.destroy();
-          }, 2000);
-        };
+      document.getElementById("RendererMode").innerHTML = modestr;
 
-        var scheduleBallTimeout = function() {
-          setTimeout(function() {
-            createBall();
-            refreshActorCount();
-            if(renderer._actors.length < 1000)
-              scheduleBallTimeout();
-          }, 25);
-        };
+      // Throw out the old balls ~_~
+      // For people like IceDragon, who has a shitty computer
+      var ballGCTimeout = function() {
+        setTimeout(function() {
+          var to_remove = [];
+          for (var i = 0; i < renderer._actors.length; i++) {
+            actor = renderer._actors[i];
+            if (actor.getPosition().y < -height)
+              to_remove.push(actor);
+          };
+          for (var i = 0; i < to_remove.length; i++) {
+            renderer.removeActor(to_remove[i]);
+          };
+          ballGCTimeout();
+        }, 5000);
+      };
 
-        var modestr = "N/A";
-        if (renderer.isWGLRendererActive())
-          modestr = "WebGL"
-        else if (renderer.isCanvasRendererActive())
-          modestr = "Canvas"
-
-        document.getElementById("RendererMode").innerHTML = modestr;
-
-        // Throw out the old balls ~_~
-        // For people like IceDragon, who has a shitty computer
-        var ballGCTimeout = function() {
-          setTimeout(function() {
-            var to_remove = [];
-            for (var i = 0; i < renderer._actors.length; i++) {
-              actor = renderer._actors[i];
-              if (actor.getPosition().y < -height)
-                to_remove.push(actor);
-            };
-            for (var i = 0; i < to_remove.length; i++) {
-              renderer.removeActor(to_remove[i]);
-            };
-            ballGCTimeout();
-          }, 5000);
-        };
-
-        scheduleBallTimeout();
-        // ballGCTimeout();
-        refreshRendererMode();
-      });
+      scheduleBallTimeout();
+      // ballGCTimeout();
+      refreshRendererMode();
     });
+  });
 
-  </script>
-</body>
-</html>
+</script>

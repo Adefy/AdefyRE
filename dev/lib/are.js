@@ -87,7 +87,6 @@ ARE = (function() {
 
   /*
    * Start render loop if it isn't already running
-   * @return [Void]
    */
 
   ARE.prototype.startRendering = function() {
@@ -104,6 +103,17 @@ ARE = (function() {
       return window.requestAnimationFrame(render);
     };
     return window.requestAnimationFrame(render);
+  };
+
+
+  /*
+   * Check if the render loop is currently running
+   *
+   * @return [Boolean] rendering
+   */
+
+  ARE.prototype.isRendering = function() {
+    return this._currentlyRendering;
   };
 
 

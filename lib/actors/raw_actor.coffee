@@ -15,6 +15,7 @@ class ARERawActor extends Koon
   # If no texture verts are provided, a default array is provided for square
   # actors.
   #
+  # @param [ARERenderer] renderer
   # @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
   # @param [Array<Number>] texverts flat array of texture coords, optional
   ###
@@ -139,6 +140,14 @@ class ARERawActor extends Koon
       angle: 0
 
   ###
+  # Return the renderer that we belong to
+  #
+  # @return [ARERenderer] renderer
+  ###
+  getRenderer: ->
+    @_renderer
+
+  ###
   # Helper to signal to the renderer that we need to be deleted
   # This is done so actors can be deleted in one batch at the end of the render
   # loop
@@ -249,12 +258,12 @@ class ARERawActor extends Koon
   #
   # @param [Number] layer
   ###
-  setLayer: (layer) ->
-    @layer = param.required layer
+  setLayer: (@layer) ->
+    param.required layer
 
     # Re-insert ourselves with new layer
     @_renderer.removeActor @, true
-    @_renderer.addActor @
+    @_renderer.addActor @, layer
 
   ###
   # We support a single texture per actor for the time being. UV coords are
@@ -1104,12 +1113,17 @@ class ARERawActor extends Koon
       target.setG colOrR.getG()
       target.setB colOrR.getB()
     else
-      param.required g
-      param.required b
+      if colOrR.g != undefined && colOrR.b != undefined
+        g = colOrR.g
+        b = colOrR.b
+        colOrR = colOrR.r
+      else
+        param.required g
+        param.required b
 
-      target.setR Number(colOrR)
-      target.setG Number(g)
-      target.setB Number(b)
+      target.setR Number colOrR
+      target.setG Number g
+      target.setB Number b
 
     @
 

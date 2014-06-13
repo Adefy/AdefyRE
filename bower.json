@@ -16,6 +16,8 @@
     "chipmunk": "git@github.com:josephg/Chipmunk-js.git#master",
     "lodash": "~2.4.1",
     "async": "~0.8.0",
-    "zepto": "~1.1.3"
+    "zepto": "~1.1.3",
+    "mocha": "~1.20.1",
+    "chai": "~1.9.1"
   }
 }

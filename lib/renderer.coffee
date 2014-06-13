@@ -840,9 +840,9 @@ class ARERenderer
     param.required name
 
     if t = @getTexture name
-      return w: t.width * t.scaleX, h: t.height * t.scaleY
-
-    return null
+      w: t.width * t.scaleX, h: t.height * t.scaleY
+    else
+      null
 
   ###
   # Adds a texture to our internal collection

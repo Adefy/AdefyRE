@@ -1,0 +1,37 @@
+script(src="/components/async/lib/async.js")
+script(src="/components/lodash/dist/lodash.min.js")
+script(src="/components/zepto/zepto.min.js")
+script(src="/components/chipmunk/cp.min.js")
+
+script(src="/js/EWGL_math.js")
+script(src="/js/inkyEWGL.js")
+script(src="/js/reutil.js")
+
+script(src="/are.js")
+script(src="/js/are_test_helper.js")
+
+script(src="/components/mocha/mocha.js")
+script(src="/components/chai/chai.js")
+link(type="text/css" rel="stylesheet" href="/components/mocha/mocha.css")
+
+body
+  #mocha
+  #are-parent(style="position: absolute; top: -10000px; left: -10000px")
+
+  script.
+    mocha.setup("bdd");
+
+    chai.should();
+    window.expect = chai.expect;
+    window.assert = chai.assert;
+
+  //- These tests are expected to define the official NRAID interface!
+  script(src="/tests/integration/setup.js")
+  script(src="/tests/integration/engine.js")
+  script(src="/tests/integration/actor.js")
+  script(src="/tests/integration/animation.js")
+
+  script.
+    mocha.checkLeaks();
+    mocha.globals(["AREMessages"]);
+    mocha.run();

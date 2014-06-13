@@ -1,0 +1,20 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="utf-8")
+    title AdefyRE Physics + Rendering Test
+
+    link(type="text/css" rel="stylesheet" href="/css/reset.css")
+    link(type="text/css" rel="stylesheet" href="/css/layout.css")
+    link(type="text/css" rel="stylesheet" href="/css/style.css")
+
+  body
+    ul#test-list
+      li: a(href="test-physics-n-rendering.html" target="active_test") Physics test
+      li: a(href="test-attach-texture.html" target="active_test") Attachment test
+      li: a(href="test-render-flat.html" target="active_test") Flat render test
+      li: a(href="test-render-texture.html" target="active_test") Texture render test
+      li: a(href="test-uv-scale.html" target="active_test") UV scale test
+      li: a(href="test-integration.html" target="active_test") Integration test
+
+    iframe#active-test(height="100%" width="85%" name="active_test")

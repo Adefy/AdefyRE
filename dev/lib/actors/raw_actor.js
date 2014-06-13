@@ -19,6 +19,7 @@ ARERawActor = (function(_super) {
    * If no texture verts are provided, a default array is provided for square
    * actors.
    *
+   * @param [ARERenderer] renderer
    * @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
    * @param [Array<Number>] texverts flat array of texture coords, optional
    */
@@ -135,6 +136,17 @@ ARERawActor = (function(_super) {
       height: 0,
       angle: 0
     };
+  };
+
+
+  /*
+   * Return the renderer that we belong to
+   *
+   * @return [ARERenderer] renderer
+   */
+
+  ARERawActor.prototype.getRenderer = function() {
+    return this._renderer;
   };
 
 
@@ -291,9 +303,10 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.setLayer = function(layer) {
-    this.layer = param.required(layer);
+    this.layer = layer;
+    param.required(layer);
     this._renderer.removeActor(this, true);
-    return this._renderer.addActor(this);
+    return this._renderer.addActor(this, layer);
   };
 
 
@@ -1307,8 +1320,14 @@ ARERawActor = (function(_super) {
       target.setG(colOrR.getG());
       target.setB(colOrR.getB());
     } else {
-      param.required(g);
-      param.required(b);
+      if (colOrR.g !== void 0 && colOrR.b !== void 0) {
+        g = colOrR.g;
+        b = colOrR.b;
+        colOrR = colOrR.r;
+      } else {
+        param.required(g);
+        param.required(b);
+      }
       target.setR(Number(colOrR));
       target.setG(Number(g));
       target.setB(Number(b));

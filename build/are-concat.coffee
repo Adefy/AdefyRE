@@ -248,6 +248,7 @@ class ARERawActor extends Koon
   # If no texture verts are provided, a default array is provided for square
   # actors.
   #
+  # @param [ARERenderer] renderer
   # @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
   # @param [Array<Number>] texverts flat array of texture coords, optional
   ###
@@ -372,6 +373,14 @@ class ARERawActor extends Koon
       angle: 0
 
   ###
+  # Return the renderer that we belong to
+  #
+  # @return [ARERenderer] renderer
+  ###
+  getRenderer: ->
+    @_renderer
+
+  ###
   # Helper to signal to the renderer that we need to be deleted
   # This is done so actors can be deleted in one batch at the end of the render
   # loop
@@ -482,12 +491,12 @@ class ARERawActor extends Koon
   #
   # @param [Number] layer
   ###
-  setLayer: (layer) ->
-    @layer = param.required layer
+  setLayer: (@layer) ->
+    param.required layer
 
     # Re-insert ourselves with new layer
     @_renderer.removeActor @, true
-    @_renderer.addActor @
+    @_renderer.addActor @, layer
 
   ###
   # We support a single texture per actor for the time being. UV coords are
@@ -1337,12 +1346,17 @@ class ARERawActor extends Koon
       target.setG colOrR.getG()
       target.setB colOrR.getB()
     else
-      param.required g
-      param.required b
+      if colOrR.g != undefined && colOrR.b != undefined
+        g = colOrR.g
+        b = colOrR.b
+        colOrR = colOrR.r
+      else
+        param.required g
+        param.required b
 
-      target.setR Number(colOrR)
-      target.setG Number(g)
-      target.setB Number(b)
+      target.setR Number colOrR
+      target.setG Number g
+      target.setB Number b
 
     @
 
@@ -3143,9 +3157,9 @@ class ARERenderer
     param.required name
 
     if t = @getTexture name
-      return w: t.width * t.scaleX, h: t.height * t.scaleY
-
-    return null
+      w: t.width * t.scaleX, h: t.height * t.scaleY
+    else
+      null
 
   ###
   # Adds a texture to our internal collection
@@ -3839,21 +3853,6 @@ class AREActorInterface
 
     null
 
-
-  ###
-  # Fetch the radius of the circle actor with the specified ID
-  #
-  # @param [Number] id
-  # @return [Number] radius
-  ###
-  getCircleActorRadius: (id) ->
-    for a in @_renderer._actors
-      if a.getId() == id and a instanceof AREPolygonActor
-        return a.getRadius()
-
-    null
-
-
   ###
   # Get actor opacity using handle, fails with null
   #
@@ -3861,7 +3860,7 @@ class AREActorInterface
   # @return [Number] opacity
   ###
   getActorOpacity: (id) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       return a.getOpacity()
 
     null
@@ -3873,28 +3872,23 @@ class AREActorInterface
   # @return [Boolean] visible
   ###
   getActorVisible: (id) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       return a.getVisible()
 
     null
-
 
   ###
   # Get actor position using handle, fails with null
   # Returns position as a JSON representation of a primitive (x, y) object!
   #
   # @param [Number] id
-  # @return [String] position
+  # @return [Object] position {x, y}
   ###
   getActorPosition: (id) ->
-    if (a = @_findActor(id)) != null
-      pos = a.getPosition()
-
-      return JSON.stringify
-        x: pos.x
-        y: pos.y
-
-    null
+    if a = @_findActor id
+      a.getPosition()
+    else
+      null
 
   ###
   # Get actor rotation using handle, fails with 0.000001
@@ -3904,7 +3898,7 @@ class AREActorInterface
   # @return [Number] angle in degrees or radians
   ###
   getActorRotation: (id, radians) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       return a.getRotation !!radians
 
     0.000001
@@ -3917,14 +3911,16 @@ class AREActorInterface
   # @return [String] col
   ###
   getActorColor: (id) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       color = a.getColor()
-      return JSON.stringify
+
+      return {
         r: color.getR()
         g: color.getG()
         b: color.getB()
+      }
 
-    null
+    return null
 
   ###
   # Return an Actor's texture name
@@ -3933,24 +3929,22 @@ class AREActorInterface
   # @return [String] texture_name
   ###
   getActorTexture: (id) ->
-    if (a = @_findActor(id)) != null
-      tex = a.getTexture()
-      return tex.name
-
-    null
+    if a = @_findActor id
+      a.getTexture().name
+    else
+      null
 
   ###
   # Retrieve an Actor's texture repeat
   #
   # @param [Number] id
-  # @return [JSONString] texture_repeat
+  # @return [Object] repeat
   ###
   getActorTextureRepeat: (id) ->
-    if (a = @_findActor(id)) != null
-      texRep = a.getTextureRepeat()
-      return JSON.stringify texRep
-
-    null
+    if a = @_findActor id
+      a.getTextureRepeat()
+    else
+      null
 
   ###
   # Set the height of the rectangle actor with the specified ID
@@ -3983,13 +3977,28 @@ class AREActorInterface
     false
 
   ###
-  # Set the radius of the circle actor with the specified ID
+  # Set the segment count of the polygon actor with the specified ID
+  #
+  # @param [Number] id
+  # @param [Number] segments
+  # @return [Boolean] success
+  ###
+  setPolygonActorSegments: (id, segments) ->
+    for a in @_renderer._actors
+      if a.getId() == id and a instanceof AREPolygonActor
+        a.setSegments segments
+        return true
+
+    false
+
+  ###
+  # Set the radius of the polygon actor with the specified ID
   #
   # @param [Number] id
   # @param [Number] radius
   # @return [Boolean] success
   ###
-  setCircleActorRadius: (id, radius) ->
+  setPolygonActorRadius: (id, radius) ->
     for a in @_renderer._actors
       if a.getId() == id and a instanceof AREPolygonActor
         a.setRadius radius
@@ -3998,23 +4007,49 @@ class AREActorInterface
     false
 
   ###
+  # Get the radius of the polygon actor with the specified ID
+  #
+  # @param [Number] id
+  # @return [Number] radius
+  ###
+  getPolygonActorRadius: (id) ->
+    for a in @_renderer._actors
+      if a.getId() == id and a instanceof AREPolygonActor
+        return a.getRadius()
+
+    null
+
+  ###
+  # Get the segment count of the polygon actor with the specified ID
+  #
+  # @param [Number] id
+  # @return [Number] segments
+  ###
+  getPolygonActorSegments: (id, radius) ->
+    for a in @_renderer._actors
+      if a.getId() == id and a instanceof AREPolygonActor
+        return a.getSegments()
+
+    null
+
+  ###
   # Attach texture to actor. Fails if actor isn't found
   #
+  # @param [Number] id id of actor to attach texture to
   # @param [String] texture texture name
   # @param [Number] width attached actor width
   # @param [Number] height attached actor height
   # @param [Number] offx anchor point offset
   # @param [Number] offy anchor point offset
   # @param [Angle] angle anchor point rotation
-  # @param [Number] id id of actor to attach texture to
   # @return [Boolean] success
   ###
-  attachTexture: (texture, w, h, x, y, angle, id) ->
+  attachTexture: (id, texture, w, h, x, y, angle) ->
     x ||= 0
     y ||= 0
     angle ||= 0
 
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       a.attachTexture texture, w, h, x, y, angle
       return true
 
@@ -4024,12 +4059,12 @@ class AREActorInterface
   # Set actor layer. Fails if actor isn't found.
   # Actors render from largest layer to smallest
   #
-  # @param [Number] layer
   # @param [Number] id id of actor to set layer of
+  # @param [Number] layer
   # @return [Boolean] success
   ###
-  setActorLayer: (layer, id) ->
-    if (a = @_findActor(id)) != null
+  setActorLayer: (id, layer) ->
+    if a = @_findActor id
       a.setLayer layer
       return true
 
@@ -4040,12 +4075,12 @@ class AREActorInterface
   # Physics layers persist within an actor between body creations. Only bodies
   # in the same layer will collide! There are only 16 physics layers!
   #
-  # @param [Number] layer
   # @param [Number] id id of actor to set layer of
+  # @param [Number] layer
   # @return [Boolean] success
   ###
-  setActorPhysicsLayer: (layer, id) ->
-    if (a = @_findActor(id)) != null
+  setActorPhysicsLayer: (id, layer) ->
+    if a = @_findActor id
       a.setPhysicsLayer layer
       return true
 
@@ -4058,7 +4093,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   removeAttachment: (id) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       a.removeAttachment()
       return true
 
@@ -4068,12 +4103,12 @@ class AREActorInterface
   # Set attachment visiblity. Fails if actor isn't found, or actor has no
   # attachment.
   #
-  # @param [Boolean] visible
   # @param [Number] id id of actor to modify
+  # @param [Boolean] visible
   # @return [Boolean] success
   ###
-  setAttachmentVisiblity: (visible, id) ->
-    if (a = @_findActor(id)) != null
+  setAttachmentVisiblity: (id, visible) ->
+    if a = @_findActor id
       return a.setAttachmentVisibility visible
 
     false
@@ -4081,12 +4116,12 @@ class AREActorInterface
   ###
   # Refresh actor vertices, passed in as a JSON representation of a flat array
   #
-  # @param [String] verts
   # @param [Number] id actor id
+  # @param [String] verts
   # @return [Boolean] success
   ###
-  updateVertices: (verts, id) ->
-    if (a = @_findActor(id)) != null
+  updateVertices: (id, verts) ->
+    if a = @_findActor id
       a.updateVertices JSON.parse verts
       return true
 
@@ -4099,7 +4134,7 @@ class AREActorInterface
   # @return [String] vertices
   ###
   getVertices: (id) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       return JSON.stringify a.getVertices()
 
     null
@@ -4112,7 +4147,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   destroyActor: (id) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       a.destroy()
       return true
 
@@ -4124,12 +4159,12 @@ class AREActorInterface
   # removed when building the physics body. If a physics body already exists,
   # this rebuilds it!
   #
-  # @param [String] verts
   # @param [Number] id actor id
+  # @param [String] verts
   # @return [Boolean] success
   ###
-  setPhysicsVertices: (verts, id) ->
-    if (a = @_findActor(id)) != null
+  setPhysicsVertices: (id, verts) ->
+    if a = @_findActor id
       a.setPhysicsVertices JSON.parse verts
       return true
 
@@ -4140,12 +4175,12 @@ class AREActorInterface
   #   1 == TRIANGLE_STRIP
   #   2 == TRIANGLE_FAN
   #
-  # @param [Number] mode
   # @param [Number] id actor id
+  # @param [Number] mode
   # @return [Boolean] success
   ###
-  setRenderMode: (mode, id) ->
-    if (a = @_findActor(id)) != null
+  setRenderMode: (id, mode) ->
+    if a = @_findActor id
       a.setRenderMode mode
       return true
 
@@ -4154,12 +4189,18 @@ class AREActorInterface
   ###
   # Set actor opacity using handle, fails with false
   #
-  # @param [Number opacity
   # @param [Number] id
+  # @param [Number opacity
   # @return [Boolean] success
   ###
-  setActorOpacity: (opacity, id) ->
-    if (a = @_findActor(id)) != null
+  setActorOpacity: (id, opacity) ->
+    return false if isNaN opacity
+    opacity = Number opacity
+
+    opacity = 1.0 if opacity > 1.0
+    opacity = 0.0 if opacity < 0.0
+
+    if a = @_findActor id
       a.setOpacity opacity
       return true
 
@@ -4168,12 +4209,12 @@ class AREActorInterface
   ###
   # Set actor visible using handle, fails with false
   #
-  # @param [Boolean] visible
   # @param [Number] id
+  # @param [Boolean] visible
   # @return [Boolean] success
   ###
-  setActorVisible: (visible, id) ->
-    if (a = @_findActor(id)) != null
+  setActorVisible: (id, visible) ->
+    if a = @_findActor id
       a.setVisible visible
       return true
 
@@ -4182,14 +4223,15 @@ class AREActorInterface
   ###
   # Set actor position using handle, fails with false
   #
-  # @param [Number] x x coordinate
-  # @param [Number] y y coordinate
   # @param [Number] id
+  # @param [Object] position
+  # @option position [Number] x x coordinate
+  # @option position [Number] y y coordinate
   # @return [Boolean] success
   ###
-  setActorPosition: (x, y, id) ->
-    if (a = @_findActor(id)) != null
-      a.setPosition new cp.v x, y
+  setActorPosition: (id, position) ->
+    if a = @_findActor id
+      a.setPosition position
       return true
 
     false
@@ -4197,13 +4239,13 @@ class AREActorInterface
   ###
   # Set actor rotation using handle, fails with false
   #
-  # @param [Number] angle in degrees or radians
   # @param [Number] id
+  # @param [Number] angle in degrees or radians
   # @param [Boolean] radians defaults to false
   # @return [Boolean] success
   ###
-  setActorRotation: (angle, id, radians) ->
-    if (a = @_findActor(id)) != null
+  setActorRotation: (id, angle, radians) ->
+    if a = @_findActor id
       a.setRotation angle, !!radians
       return true
 
@@ -4212,15 +4254,16 @@ class AREActorInterface
   ###
   # Set actor color using handle, fails with false
   #
-  # @param [Number] r red component
-  # @param [Number] g green component
-  # @param [Number] b blue component
   # @param [Number] id
+  # @param [Object] color
+  # @option color [Number] r red component
+  # @option color [Number] g green component
+  # @option color [Number] b blue component
   # @return [Boolean] success
   ###
-  setActorColor: (r, g, b, id) ->
-    if (a = @_findActor(id)) != null
-      a.setColor new AREColor3 r, g, b
+  setActorColor: (id, color) ->
+    if a = @_findActor id
+      a.setColor color
       return true
 
     false
@@ -4229,12 +4272,12 @@ class AREActorInterface
   # Set actor texture by texture handle. Expects the texture to already be
   # loaded by the asset system!
   #
-  # @param [String] name
   # @param [Number] id
+  # @param [String] name
   # @return [Boolean] success
   ###
-  setActorTexture: (name, id) ->
-    if (a = @_findActor(id)) != null
+  setActorTexture: (id, name) ->
+    if a = @_findActor id
       a.setTexture name
       return true
 
@@ -4243,32 +4286,31 @@ class AREActorInterface
   ###
   # Set actor texture repeat
   #
-  # @param [Number] x horizontal repeat
-  # @param [Number] y vertical repeat (default 1)
   # @param [Number] id
+  # @param [Object] repeat
+  # @option repeat [Number] x horizontal repeat
+  # @option repeat [Number] y vertical repeat (default 1)
   # @return [Boolean] success
   ###
-  setActorTextureRepeat: (x, y, id) ->
-    y ||= 1
-
-    if (a = @_findActor(id)) != null
-      a.setTextureRepeat x, y
-      return true
-
-    false
+  setActorTextureRepeat: (id, repeat) ->
+    if a = @_findActor id
+      a.setTextureRepeat repeat.x, repeat.y
+      true
+    else
+      false
 
   ###
   # Creates the internal physics body, if one does not already exist
   # Fails with false
   #
+  # @param [Number] id
   # @param [Number] mass 0.0 - unbound
   # @param [Number] friction 0.0 - 1.0
   # @param [Number] elasticity 0.0 - 1.0
-  # @param [Number] id
   # @return [Boolean] success
   ###
-  enableActorPhysics: (mass, friction, elasticity, id) ->
-    if (a = @_findActor(id)) != null
+  enableActorPhysics: (id, mass, friction, elasticity) ->
+    if a = @_findActor id
       a.createPhysicsBody mass, friction, elasticity
       return true
 
@@ -4281,7 +4323,7 @@ class AREActorInterface
   # @return [Boolean] success
   ###
   destroyPhysicsBody: (id) ->
-    if (a = @_findActor(id)) != null
+    if a = @_findActor id
       a.destroyPhysicsBody()
       return true
 
@@ -4320,6 +4362,12 @@ class AREEngineInterface
     log ||= 4
     id ||= ""
 
+    # If we've already initialised once, show a warning and just callback
+    # immediately
+    if @_engine
+      ARELog.warn "Re-initialize attempt, ignoring and passing through"
+      return ad @_engine
+
     ###
     # Should WGL textures be flipped by their Y axis?
     # NOTE. This does not affect existing textures.
@@ -4339,6 +4387,7 @@ class AREEngineInterface
   ###
   # Set global render mode
   #   @see ARERenderer.RENDERER_MODE_*
+  #
   # This is a special method only we implement; as such, any libraries
   # interfacing with us should check for the existence of the method before
   # calling it!
@@ -4348,24 +4397,30 @@ class AREEngineInterface
   ###
   # Set engine clear color
   #
-  # @param [Number] r
-  # @param [Number] g
-  # @param [Number] b
+  # @param [Object] color
+  # @option color [Number] r red component
+  # @option color [Number] g green component
+  # @option color [Number] b blue component
   ###
-  setClearColor: (r, g, b) ->
+  setClearColor: (color) ->    
     return unless @_renderer
-    @_renderer.setClearColor r, g, b
+    @_renderer.setClearColor color.r, color.g, color.b
 
   ###
-  # Get engine clear color as (r,g,b) JSON, fails with null
+  # Get engine clear color
   #
-  # @return [String] clearcol
+  # @return [Object] color {r, g, b}
   ###
   getClearColor: ->
     return unless @_renderer
 
     col = @_renderer.getClearColor()
-    "{ r: #{col.getR()}, g: #{col.getG()}, b: #{col.getB()} }"
+    
+    {
+      r: col.getR()
+      g: col.getG()
+      b: col.getB()
+    }
 
   ###
   # Set log level
@@ -4373,27 +4428,48 @@ class AREEngineInterface
   # @param [Number] level 0-4
   ###
   setLogLevel: (level) ->
-    ARELog.level = param.required level, [0, 1, 2, 3, 4]
+    level = Number level
+
+    if isNaN level
+      return ARELog.warn "Log level is NaN"
+
+    level = Math.round level
+    level = 0 if level < 0
+    level = 4 if level > 4
+
+    ARELog.level = level
 
   ###
-  # Set camera center position. Leaving out a component leaves it unchanged
+  # Get the engine log level
   #
-  # @param [Number] x
-  # @param [Number] y
+  # @return [Number] level
   ###
-  setCameraPosition: (x, y) ->
+  getLogLevel: ->
+    ARELog.level
+
+  ###
+  # Set camera center position with an object. Leaving out a component leaves it
+  # unchanged.
+  #
+  # @param [Object] position
+  # @option position [Number] x x component
+  # @option position [Number] y y component
+  ###
+  setCameraPosition: (position) ->
     currentPosition = @_renderer.getCameraPosition()
 
-    @_renderer.setCameraPosition
-      x: x or currentPosition.x
-      y: y or currentPosition.y
+    currentPosition.x = position.x if position.x != undefined
+    currentPosition.y = position.y if position.y != undefined
+
+    @_renderer.setCameraPosition currentPosition
 
   ###
-  # Fetch camera position. Returns a JSON object with x,y keys
+  # Fetch camera position as an object
   #
-  # @return [Object]
+  # @return [Object] position {x, y}
   ###
-  getCameraPosition: -> JSON.stringify @_renderer.getCameraPosition()
+  getCameraPosition: ->
+    @_renderer.getCameraPosition()
 
   ###
   # Return our engine's width
@@ -4414,7 +4490,9 @@ class AREEngineInterface
     @_renderer.getHeight()
 
   ###
-  # Enable/disable benchmarking
+  # Enable/disable benchmarking.
+  #
+  # NOTE: This is a special method that only we have.
   #
   # @param [Boolean] benchmark
   ###
@@ -4424,51 +4502,70 @@ class AREEngineInterface
     window.AREMessages.broadcast value: status, "physics.benchmark.set"
 
   ###
-  # Load a package.json manifest, assume texture paths are relative to our
-  # own
+  # Get the NRAID version string that this ad engine supports. It is implied
+  # that we are backwards compatible with all previous versions.
   #
-  # @param [String] json package.json source
+  # @return [String] version
+  ###
+  getNRAIDVersion: ->
+    "1.0.0,freestanding"
+
+  ###
+  # Fetch meta data as defined in loaded manifest
+  #
+  # @return [Object] meta
+  ###
+  getMetaData: ->
+    @_metaData
+
+  ###
+  # Load a package.json manifest, assume texture paths are relative to our
+  # own.
+  #
+  # As we are a browser engine built for the desktop, and therefore don't
+  # support mobile device features like orientation, or need to load files off
+  # the disk, we only support a subset of the NRAID creative manifest.
+  #
+  # @param [Object] manifest
+  # @option manifest [String] version NRAID version string
+  # @option manifest [Object] meta
+  # @option manifest [Array<Object>] textures
   # @param [Method] cb callback to call once the load completes (textures)
   ###
-  loadManifest: (json, cb) ->
-    manifest = JSON.parse param.required json
+  loadManifest: (manifest, cb) ->
+    param.required manifest.version
 
-    ##
-    ## NOTE: The manifest only contains textures now, but for the sake of
-    ##       backwards compatibilty, we check for a textures array
+    # Ensure we are of the proper version
+    if manifest.version.split(",")[0] > @getNRAIDVersion().split(",")[0]
+      throw new Error "Unsupported NRAID version"
 
-    manifest = manifest.textures if manifest.textures
-    return cb() if _.isEmpty(manifest)
+    # We store meta data on ourselves
+    @_metaData = manifest.meta
 
-    count = 0
-    flipTexture = @wglFlipTextureY
-
-    # Load textures
-    for tex in manifest
-
-      # Feature check
-      if tex.compression and tex.compression != "none"
-        throw new Error "Texture is compressed! [#{tex.compression}]"
-
-      if tex.type and tex.type != "image"
-        throw new Error "Texture is not an image! [#{tex.type}]"
-
-      # Gogo
-      @loadTexture tex.name, tex.path, flipTexture, ->
-        count++
-        cb() if count == manifest.length
+    if manifest.textures
+      async.each manifest.textures, (tex, done) =>
+        @loadTexture tex, ->
+          done()
+        , @wglFlipTextureY
+      , cb
+    else
+      cb()
 
   ###
   # Loads a texture, and adds it to our renderer
   #
-  # @param [String] name
-  # @param [String] path
-  # @param [Boolean] flipTexture
+  # @param [Object] textureDef Texture definition object, NRAID-compatible
   # @param [Method] cb called when texture is loaded
+  # @param [Boolean] flipTexture optional
   ###
-  loadTexture: (name, path, flipTexture, cb) ->
+  loadTexture: (textureDef, cb, flipTexture) ->
+    param.required textureDef.name
+    param.required textureDef.file
+
     flipTexture = @wglFlipTextureY if typeof flipTexture != "boolean"
-    ARELog.info "Loading texture: #{name}, #{path}"
+    
+    if !!textureDef.atlas
+      throw new Error "This version of ARE does not support atlas loading!"
 
     # Create texture and image
     img = new Image()
@@ -4478,18 +4575,19 @@ class AREEngineInterface
     tex = null
 
     if @_renderer.isWGLRendererActive()
-      ARELog.info "Loading Gl Texture"
 
       tex = gl.createTexture()
       img.onload = =>
+        ARELog.info "Loading GL tex: #{textureDef.name}, #{textureDef.file}"
 
         scaleX = 1
         scaleY = 1
 
         # Resize image if needed
-        w = (img.width & (img.width - 1)) != 0
-        h = (img.height & (img.height - 1)) != 0
-        if w || h
+        w_NPOT = (img.width & (img.width - 1)) != 0
+        h_NPOT = (img.height & (img.height - 1)) != 0
+
+        if w_NPOT || h_NPOT
 
           canvas = document.createElement "canvas"
 
@@ -4510,10 +4608,6 @@ class AREEngineInterface
         gl.texImage2D gl.TEXTURE_2D, 0,
                       gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img
 
-        # if not pot
-        #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE
-        #  gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE
-
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT
         gl.texParameteri gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR
@@ -4524,7 +4618,7 @@ class AREEngineInterface
 
         # Add to renderer
         @_renderer.addTexture
-          name: name
+          name: textureDef.name
           texture: tex
           width: img.width
           height: img.height
@@ -4534,12 +4628,12 @@ class AREEngineInterface
         cb() if cb
 
     else
-      ARELog.info "Loading Canvas Image"
       img.onload = =>
+        ARELog.info "Loading canvas tex: #{textureDef.name}, #{textureDef.file}"
 
         # Add to renderer
         @_renderer.addTexture
-          name: name
+          name: textureDef.name
           texture: img
           width: img.width
           height: img.height
@@ -4547,7 +4641,7 @@ class AREEngineInterface
         cb() if cb
 
     # Load!
-    img.src = path
+    img.src = textureDef.file
 
   ###
   # Get renderer texture size by name
@@ -4555,19 +4649,8 @@ class AREEngineInterface
   # @param [String] name
   # @param [Object] size
   ###
-  getTextureSize: (name) -> @_renderer.getTextureSize name
-
-  ###
-  # TODO: Implement
-  #
-  # Set remind me later button region
-  #
-  # @param [Number] x
-  # @param [Number] y
-  # @param [Number] w
-  # @param [Number] h
-  ###
-  setRemindMeButton: (x, y, w, h) ->
+  getTextureSize: (name) ->
+    @_renderer.getTextureSize name
 
 # Animation interface class
 class AREAnimationInterface
@@ -4828,7 +4911,6 @@ class ARE
 
   ###
   # Start render loop if it isn't already running
-  # @return [Void]
   ###
   startRendering: ->
     return if @_currentlyRendering
@@ -4842,6 +4924,13 @@ class ARE
       window.requestAnimationFrame render
 
     window.requestAnimationFrame render
+
+  ###
+  # Check if the render loop is currently running
+  #
+  # @return [Boolean] rendering
+  ###
+  isRendering: -> @_currentlyRendering
 
   ###
   # Set renderer clear color in integer RGB form (passes through to renderer)

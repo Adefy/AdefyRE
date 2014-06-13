@@ -1,85 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>AdefyRE flat Material Test</title>
+<script src="/components/async/lib/async.js"></script>
+<script src="/components/lodash/dist/lodash.min.js"></script>
+<script src="/components/zepto/zepto.min.js"></script>
+<script src="/components/chipmunk/cp.min.js"></script>
+<script src="/js/EWGL_math.js"></script>
+<script src="/js/inkyEWGL.js"></script>
+<script src="/js/reutil.js"></script>
+<script src="/are.js"></script>
+<script src="/js/are_test_helper.js"></script>
 
-  <script type="text/javascript" src="./components/async/lib/async.js"></script>
-  <script type="text/javascript" src="./components/underscore/underscore.js"></script>
-  <script type="text/javascript" src="./components/zepto/zepto.min.js"></script>
-  <script type="text/javascript" src="./components/chipmunk/cp.min.js"></script>
-  <script type="text/javascript" src="./js/EWGL_math.js"></script>
-  <script type="text/javascript" src="./js/inkyEWGL.js"></script>
-  <script type="text/javascript" src="./js/reutil.js"></script>
-  <script type="text/javascript" src="./are.js"></script>
-  <script type="text/javascript" src="./js/are_test_helper.js"></script>
+<link type="text/css" rel="stylesheet" href="/css/style.css">
+<link type="text/css" rel="stylesheet" href="/css/header.css">
 
-  <link type="text/css" rel="stylesheet" href="./css/main.css"/>
-</head>
+<header>
+  <div id="header-decorator"></div>
+  <ul>
+    <li>
+      Mode: <span id="RendererMode"></span>
+    </li>
+    <li>
+      Actor Count: <span id="ActorCount"></span>
+    </li>
+  </ul>
+</header>
 
-<body>
-  <header>
-    <div id="header-decorator"></div>
-    <ul>
-      <li>
-        Mode: <span id="RendererMode"></span>
-      </li>
-      <li>
-        Actor Count: <span id="ActorCount"></span>
-      </li>
-    </ul>
-  </header>
+<script>
 
-  <script>
+  onManifestLoad = function() {
+    // FINALLY WE CAN START!
+    // So after the manifests have loaded, we can finally get started (I hope)
+    // Don't ask, too lazy to convert these values to ints...
+    // Proves that setClearColor works
+    window.AdefyRE.Engine().setClearColor(0x0, 0x0, 0x0);
+    var engineWidth = window.AdefyRE.Engine().getWidth();
+    var engineHeight = window.AdefyRE.Engine().getHeight();
+    var w = 96;
+    var h = 96;
+    var cols = Math.floor(engineWidth / w);
+    var rows = Math.floor(engineHeight / h);
+    var totalblocks = Math.floor(cols * rows);
+    for (var i = 0; i < totalblocks; i++) {
+      new ARERectangleActor(w, h)
+      // Little fact: The scene is upside down.
+      .setPosition({ x: 48 + w * Math.floor(i % cols),
+                     y: 48 + h * Math.floor(i / cols) })
+      .setColor(reutil.rand(256), reutil.rand(256), reutil.rand(256));
+    }
+  };
 
-    onManifestLoad = function() {
-      // FINALLY WE CAN START!
-      // So after the manifests have loaded, we can finally get started (I hope)
-      // Don't ask, too lazy to convert these values to ints...
-      // Proves that setClearColor works
-      window.AdefyRE.Engine().setClearColor(0x0, 0x0, 0x0);
-      var engineWidth = window.AdefyRE.Engine().getWidth();
-      var engineHeight = window.AdefyRE.Engine().getHeight();
-      var w = 96;
-      var h = 96;
-      var cols = Math.floor(engineWidth / w);
-      var rows = Math.floor(engineHeight / h);
-      var totalblocks = Math.floor(cols * rows);
-      for (var i = 0; i < totalblocks; i++) {
-        new ARERectangleActor(w, h)
-        // Little fact: The scene is upside down.
-        .setPosition({ x: 48 + w * Math.floor(i % cols),
-                       y: 48 + h * Math.floor(i / cols) })
-        .setColor(reutil.rand(256), reutil.rand(256), reutil.rand(256));
-      }
+  onEngineInit = function() {
+    // So lets load some blocks into the Texture cache
+    var manifest = {
     };
 
-    onEngineInit = function() {
-      // So lets load some blocks into the Texture cache
-      var manifest = {
-      };
+    window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
+      onManifestLoad(); // Callback #2
+    })
+  };
 
-      window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
-        onManifestLoad(); // Callback #2
-      })
-    };
+  // First order of business, CHOOSE YOUR DESTINY
+  // Actually just choose a renderer mode, you can choose from
+  // the NULL renderer, the WGL renderer, or the CANVAS renderer; modes
+  //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_NULL);
+  //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_CANVAS);
+  ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_WGL);
 
-    // First order of business, CHOOSE YOUR DESTINY
-    // Actually just choose a renderer mode, you can choose from
-    // the NULL renderer, the WGL renderer, or the CANVAS renderer; modes
-    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_NULL);
-    //ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_CANVAS);
-    ARERenderer.setRendererMode(ARERenderer.RENDERER_MODE_WGL);
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
+    onEngineInit(); // Callback #1
+  });
 
-    var width = window.innerWidth;
-    var height = window.innerHeight;
-    window.engine = window.AdefyRE.Engine().initialize(width, height, function() {
-      onEngineInit(); // Callback #1
-    });
+  refreshRendererMode();
+  startActorCountInterval();
 
-    refreshRendererMode();
-    startActorCountInterval();
-
-  </script>
-</body>
-</html>
+</script>

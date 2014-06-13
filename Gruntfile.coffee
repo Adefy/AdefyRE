@@ -193,4 +193,4 @@ module.exports = (grunt) ->
     "concat"
     "uglify"
   ]
-  grunt.registerTask "dev", ["connect", "copy:test_page", "watch"]
+  grunt.registerTask "dev", ["copy:test_page", "watch"]

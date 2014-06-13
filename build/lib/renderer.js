@@ -868,8 +868,9 @@ ARERenderer = (function() {
         w: t.width * t.scaleX,
         h: t.height * t.scaleY
       };
+    } else {
+      return null;
     }
-    return null;
   };
 
 

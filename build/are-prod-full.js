@@ -1095,6 +1095,7 @@ ARERawActor = (function(_super) {
    * If no texture verts are provided, a default array is provided for square
    * actors.
    *
+   * @param [ARERenderer] renderer
    * @param [Array<Number>] vertices flat array of vertices (x1, y1, x2, ...)
    * @param [Array<Number>] texverts flat array of texture coords, optional
    */
@@ -1211,6 +1212,17 @@ ARERawActor = (function(_super) {
       height: 0,
       angle: 0
     };
+  };
+
+
+  /*
+   * Return the renderer that we belong to
+   *
+   * @return [ARERenderer] renderer
+   */
+
+  ARERawActor.prototype.getRenderer = function() {
+    return this._renderer;
   };
 
 
@@ -1367,9 +1379,10 @@ ARERawActor = (function(_super) {
    */
 
   ARERawActor.prototype.setLayer = function(layer) {
-    this.layer = param.required(layer);
+    this.layer = layer;
+    param.required(layer);
     this._renderer.removeActor(this, true);
-    return this._renderer.addActor(this);
+    return this._renderer.addActor(this, layer);
   };
 
 
@@ -2383,8 +2396,14 @@ ARERawActor = (function(_super) {
       target.setG(colOrR.getG());
       target.setB(colOrR.getB());
     } else {
-      param.required(g);
-      param.required(b);
+      if (colOrR.g !== void 0 && colOrR.b !== void 0) {
+        g = colOrR.g;
+        b = colOrR.b;
+        colOrR = colOrR.r;
+      } else {
+        param.required(g);
+        param.required(b);
+      }
       target.setR(Number(colOrR));
       target.setG(Number(g));
       target.setB(Number(b));
@@ -4323,8 +4342,9 @@ ARERenderer = (function() {
         w: t.width * t.scaleX,
         h: t.height * t.scaleY
       };
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -5110,26 +5130,6 @@ AREActorInterface = (function() {
 
 
   /*
-   * Fetch the radius of the circle actor with the specified ID
-   *
-   * @param [Number] id
-   * @return [Number] radius
-   */
-
-  AREActorInterface.prototype.getCircleActorRadius = function(id) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof AREPolygonActor) {
-        return a.getRadius();
-      }
-    }
-    return null;
-  };
-
-
-  /*
    * Get actor opacity using handle, fails with null
    *
    * @param [Number] id
@@ -5138,7 +5138,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorOpacity = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.getOpacity();
     }
     return null;
@@ -5154,7 +5154,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorVisible = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.getVisible();
     }
     return null;
@@ -5166,19 +5166,16 @@ AREActorInterface = (function() {
    * Returns position as a JSON representation of a primitive (x, y) object!
    *
    * @param [Number] id
-   * @return [String] position
+   * @return [Object] position {x, y}
    */
 
   AREActorInterface.prototype.getActorPosition = function(id) {
-    var a, pos;
-    if ((a = this._findActor(id)) !== null) {
-      pos = a.getPosition();
-      return JSON.stringify({
-        x: pos.x,
-        y: pos.y
-      });
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getPosition();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -5192,7 +5189,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorRotation = function(id, radians) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.getRotation(!!radians);
     }
     return 0.000001;
@@ -5209,13 +5206,13 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorColor = function(id) {
     var a, color;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       color = a.getColor();
-      return JSON.stringify({
+      return {
         r: color.getR(),
         g: color.getG(),
         b: color.getB()
-      });
+      };
     }
     return null;
   };
@@ -5229,12 +5226,12 @@ AREActorInterface = (function() {
    */
 
   AREActorInterface.prototype.getActorTexture = function(id) {
-    var a, tex;
-    if ((a = this._findActor(id)) !== null) {
-      tex = a.getTexture();
-      return tex.name;
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getTexture().name;
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -5242,16 +5239,16 @@ AREActorInterface = (function() {
    * Retrieve an Actor's texture repeat
    *
    * @param [Number] id
-   * @return [JSONString] texture_repeat
+   * @return [Object] repeat
    */
 
   AREActorInterface.prototype.getActorTextureRepeat = function(id) {
-    var a, texRep;
-    if ((a = this._findActor(id)) !== null) {
-      texRep = a.getTextureRepeat();
-      return JSON.stringify(texRep);
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getTextureRepeat();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -5300,14 +5297,36 @@ AREActorInterface = (function() {
 
 
   /*
-   * Set the radius of the circle actor with the specified ID
+   * Set the segment count of the polygon actor with the specified ID
+   *
+   * @param [Number] id
+   * @param [Number] segments
+   * @return [Boolean] success
+   */
+
+  AREActorInterface.prototype.setPolygonActorSegments = function(id, segments) {
+    var a, _i, _len, _ref;
+    _ref = this._renderer._actors;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      if (a.getId() === id && a instanceof AREPolygonActor) {
+        a.setSegments(segments);
+        return true;
+      }
+    }
+    return false;
+  };
+
+
+  /*
+   * Set the radius of the polygon actor with the specified ID
    *
    * @param [Number] id
    * @param [Number] radius
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setCircleActorRadius = function(id, radius) {
+  AREActorInterface.prototype.setPolygonActorRadius = function(id, radius) {
     var a, _i, _len, _ref;
     _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -5322,24 +5341,64 @@ AREActorInterface = (function() {
 
 
   /*
+   * Get the radius of the polygon actor with the specified ID
+   *
+   * @param [Number] id
+   * @return [Number] radius
+   */
+
+  AREActorInterface.prototype.getPolygonActorRadius = function(id) {
+    var a, _i, _len, _ref;
+    _ref = this._renderer._actors;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      if (a.getId() === id && a instanceof AREPolygonActor) {
+        return a.getRadius();
+      }
+    }
+    return null;
+  };
+
+
+  /*
+   * Get the segment count of the polygon actor with the specified ID
+   *
+   * @param [Number] id
+   * @return [Number] segments
+   */
+
+  AREActorInterface.prototype.getPolygonActorSegments = function(id, radius) {
+    var a, _i, _len, _ref;
+    _ref = this._renderer._actors;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      if (a.getId() === id && a instanceof AREPolygonActor) {
+        return a.getSegments();
+      }
+    }
+    return null;
+  };
+
+
+  /*
    * Attach texture to actor. Fails if actor isn't found
    *
+   * @param [Number] id id of actor to attach texture to
    * @param [String] texture texture name
    * @param [Number] width attached actor width
    * @param [Number] height attached actor height
    * @param [Number] offx anchor point offset
    * @param [Number] offy anchor point offset
    * @param [Angle] angle anchor point rotation
-   * @param [Number] id id of actor to attach texture to
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.attachTexture = function(texture, w, h, x, y, angle, id) {
+  AREActorInterface.prototype.attachTexture = function(id, texture, w, h, x, y, angle) {
     var a;
     x || (x = 0);
     y || (y = 0);
     angle || (angle = 0);
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.attachTexture(texture, w, h, x, y, angle);
       return true;
     }
@@ -5351,14 +5410,14 @@ AREActorInterface = (function() {
    * Set actor layer. Fails if actor isn't found.
    * Actors render from largest layer to smallest
    *
-   * @param [Number] layer
    * @param [Number] id id of actor to set layer of
+   * @param [Number] layer
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorLayer = function(layer, id) {
+  AREActorInterface.prototype.setActorLayer = function(id, layer) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setLayer(layer);
       return true;
     }
@@ -5371,14 +5430,14 @@ AREActorInterface = (function() {
    * Physics layers persist within an actor between body creations. Only bodies
    * in the same layer will collide! There are only 16 physics layers!
    *
-   * @param [Number] layer
    * @param [Number] id id of actor to set layer of
+   * @param [Number] layer
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorPhysicsLayer = function(layer, id) {
+  AREActorInterface.prototype.setActorPhysicsLayer = function(id, layer) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setPhysicsLayer(layer);
       return true;
     }
@@ -5395,7 +5454,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.removeAttachment = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.removeAttachment();
       return true;
     }
@@ -5407,14 +5466,14 @@ AREActorInterface = (function() {
    * Set attachment visiblity. Fails if actor isn't found, or actor has no
    * attachment.
    *
-   * @param [Boolean] visible
    * @param [Number] id id of actor to modify
+   * @param [Boolean] visible
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setAttachmentVisiblity = function(visible, id) {
+  AREActorInterface.prototype.setAttachmentVisiblity = function(id, visible) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.setAttachmentVisibility(visible);
     }
     return false;
@@ -5424,14 +5483,14 @@ AREActorInterface = (function() {
   /*
    * Refresh actor vertices, passed in as a JSON representation of a flat array
    *
-   * @param [String] verts
    * @param [Number] id actor id
+   * @param [String] verts
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.updateVertices = function(verts, id) {
+  AREActorInterface.prototype.updateVertices = function(id, verts) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.updateVertices(JSON.parse(verts));
       return true;
     }
@@ -5448,7 +5507,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getVertices = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return JSON.stringify(a.getVertices());
     }
     return null;
@@ -5465,7 +5524,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.destroyActor = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.destroy();
       return true;
     }
@@ -5479,14 +5538,14 @@ AREActorInterface = (function() {
    * removed when building the physics body. If a physics body already exists,
    * this rebuilds it!
    *
-   * @param [String] verts
    * @param [Number] id actor id
+   * @param [String] verts
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setPhysicsVertices = function(verts, id) {
+  AREActorInterface.prototype.setPhysicsVertices = function(id, verts) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setPhysicsVertices(JSON.parse(verts));
       return true;
     }
@@ -5499,14 +5558,14 @@ AREActorInterface = (function() {
    *   1 == TRIANGLE_STRIP
    *   2 == TRIANGLE_FAN
    *
-   * @param [Number] mode
    * @param [Number] id actor id
+   * @param [Number] mode
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setRenderMode = function(mode, id) {
+  AREActorInterface.prototype.setRenderMode = function(id, mode) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setRenderMode(mode);
       return true;
     }
@@ -5517,14 +5576,24 @@ AREActorInterface = (function() {
   /*
    * Set actor opacity using handle, fails with false
    *
-   * @param [Number opacity
    * @param [Number] id
+   * @param [Number opacity
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorOpacity = function(opacity, id) {
+  AREActorInterface.prototype.setActorOpacity = function(id, opacity) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (isNaN(opacity)) {
+      return false;
+    }
+    opacity = Number(opacity);
+    if (opacity > 1.0) {
+      opacity = 1.0;
+    }
+    if (opacity < 0.0) {
+      opacity = 0.0;
+    }
+    if (a = this._findActor(id)) {
       a.setOpacity(opacity);
       return true;
     }
@@ -5535,14 +5604,14 @@ AREActorInterface = (function() {
   /*
    * Set actor visible using handle, fails with false
    *
-   * @param [Boolean] visible
    * @param [Number] id
+   * @param [Boolean] visible
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorVisible = function(visible, id) {
+  AREActorInterface.prototype.setActorVisible = function(id, visible) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setVisible(visible);
       return true;
     }
@@ -5553,16 +5622,17 @@ AREActorInterface = (function() {
   /*
    * Set actor position using handle, fails with false
    *
-   * @param [Number] x x coordinate
-   * @param [Number] y y coordinate
    * @param [Number] id
+   * @param [Object] position
+   * @option position [Number] x x coordinate
+   * @option position [Number] y y coordinate
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorPosition = function(x, y, id) {
+  AREActorInterface.prototype.setActorPosition = function(id, position) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
-      a.setPosition(new cp.v(x, y));
+    if (a = this._findActor(id)) {
+      a.setPosition(position);
       return true;
     }
     return false;
@@ -5572,15 +5642,15 @@ AREActorInterface = (function() {
   /*
    * Set actor rotation using handle, fails with false
    *
-   * @param [Number] angle in degrees or radians
    * @param [Number] id
+   * @param [Number] angle in degrees or radians
    * @param [Boolean] radians defaults to false
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorRotation = function(angle, id, radians) {
+  AREActorInterface.prototype.setActorRotation = function(id, angle, radians) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setRotation(angle, !!radians);
       return true;
     }
@@ -5591,17 +5661,18 @@ AREActorInterface = (function() {
   /*
    * Set actor color using handle, fails with false
    *
-   * @param [Number] r red component
-   * @param [Number] g green component
-   * @param [Number] b blue component
    * @param [Number] id
+   * @param [Object] color
+   * @option color [Number] r red component
+   * @option color [Number] g green component
+   * @option color [Number] b blue component
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorColor = function(r, g, b, id) {
+  AREActorInterface.prototype.setActorColor = function(id, color) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
-      a.setColor(new AREColor3(r, g, b));
+    if (a = this._findActor(id)) {
+      a.setColor(color);
       return true;
     }
     return false;
@@ -5612,14 +5683,14 @@ AREActorInterface = (function() {
    * Set actor texture by texture handle. Expects the texture to already be
    * loaded by the asset system!
    *
-   * @param [String] name
    * @param [Number] id
+   * @param [String] name
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorTexture = function(name, id) {
+  AREActorInterface.prototype.setActorTexture = function(id, name) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setTexture(name);
       return true;
     }
@@ -5630,20 +5701,21 @@ AREActorInterface = (function() {
   /*
    * Set actor texture repeat
    *
-   * @param [Number] x horizontal repeat
-   * @param [Number] y vertical repeat (default 1)
    * @param [Number] id
+   * @param [Object] repeat
+   * @option repeat [Number] x horizontal repeat
+   * @option repeat [Number] y vertical repeat (default 1)
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorTextureRepeat = function(x, y, id) {
+  AREActorInterface.prototype.setActorTextureRepeat = function(id, repeat) {
     var a;
-    y || (y = 1);
-    if ((a = this._findActor(id)) !== null) {
-      a.setTextureRepeat(x, y);
+    if (a = this._findActor(id)) {
+      a.setTextureRepeat(repeat.x, repeat.y);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -5651,16 +5723,16 @@ AREActorInterface = (function() {
    * Creates the internal physics body, if one does not already exist
    * Fails with false
    *
+   * @param [Number] id
    * @param [Number] mass 0.0 - unbound
    * @param [Number] friction 0.0 - 1.0
    * @param [Number] elasticity 0.0 - 1.0
-   * @param [Number] id
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.enableActorPhysics = function(mass, friction, elasticity, id) {
+  AREActorInterface.prototype.enableActorPhysics = function(id, mass, friction, elasticity) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.createPhysicsBody(mass, friction, elasticity);
       return true;
     }
@@ -5677,7 +5749,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.destroyPhysicsBody = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.destroyPhysicsBody();
       return true;
     }
@@ -5725,6 +5797,10 @@ AREEngineInterface = (function() {
     param.required(ad);
     log || (log = 4);
     id || (id = "");
+    if (this._engine) {
+      ARELog.warn("Re-initialize attempt, ignoring and passing through");
+      return ad(this._engine);
+    }
 
     /*
      * Should WGL textures be flipped by their Y axis?
@@ -5746,6 +5822,7 @@ AREEngineInterface = (function() {
   /*
    * Set global render mode
    *   @see ARERenderer.RENDERER_MODE_*
+   *
    * This is a special method only we implement; as such, any libraries
    * interfacing with us should check for the existence of the method before
    * calling it!
@@ -5759,23 +5836,24 @@ AREEngineInterface = (function() {
   /*
    * Set engine clear color
    *
-   * @param [Number] r
-   * @param [Number] g
-   * @param [Number] b
+   * @param [Object] color
+   * @option color [Number] r red component
+   * @option color [Number] g green component
+   * @option color [Number] b blue component
    */
 
-  AREEngineInterface.prototype.setClearColor = function(r, g, b) {
+  AREEngineInterface.prototype.setClearColor = function(color) {
     if (!this._renderer) {
       return;
     }
-    return this._renderer.setClearColor(r, g, b);
+    return this._renderer.setClearColor(color.r, color.g, color.b);
   };
 
 
   /*
-   * Get engine clear color as (r,g,b) JSON, fails with null
+   * Get engine clear color
    *
-   * @return [String] clearcol
+   * @return [Object] color {r, g, b}
    */
 
   AREEngineInterface.prototype.getClearColor = function() {
@@ -5784,7 +5862,11 @@ AREEngineInterface = (function() {
       return;
     }
     col = this._renderer.getClearColor();
-    return "{ r: " + (col.getR()) + ", g: " + (col.getG()) + ", b: " + (col.getB()) + " }";
+    return {
+      r: col.getR(),
+      g: col.getG(),
+      b: col.getB()
+    };
   };
 
 
@@ -5795,35 +5877,62 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.setLogLevel = function(level) {
-    return ARELog.level = param.required(level, [0, 1, 2, 3, 4]);
+    level = Number(level);
+    if (isNaN(level)) {
+      return ARELog.warn("Log level is NaN");
+    }
+    level = Math.round(level);
+    if (level < 0) {
+      level = 0;
+    }
+    if (level > 4) {
+      level = 4;
+    }
+    return ARELog.level = level;
   };
 
 
   /*
-   * Set camera center position. Leaving out a component leaves it unchanged
+   * Get the engine log level
    *
-   * @param [Number] x
-   * @param [Number] y
+   * @return [Number] level
    */
 
-  AREEngineInterface.prototype.setCameraPosition = function(x, y) {
-    var currentPosition;
-    currentPosition = this._renderer.getCameraPosition();
-    return this._renderer.setCameraPosition({
-      x: x || currentPosition.x,
-      y: y || currentPosition.y
-    });
+  AREEngineInterface.prototype.getLogLevel = function() {
+    return ARELog.level;
   };
 
 
   /*
-   * Fetch camera position. Returns a JSON object with x,y keys
+   * Set camera center position with an object. Leaving out a component leaves it
+   * unchanged.
    *
-   * @return [Object]
+   * @param [Object] position
+   * @option position [Number] x x component
+   * @option position [Number] y y component
+   */
+
+  AREEngineInterface.prototype.setCameraPosition = function(position) {
+    var currentPosition;
+    currentPosition = this._renderer.getCameraPosition();
+    if (position.x !== void 0) {
+      currentPosition.x = position.x;
+    }
+    if (position.y !== void 0) {
+      currentPosition.y = position.y;
+    }
+    return this._renderer.setCameraPosition(currentPosition);
+  };
+
+
+  /*
+   * Fetch camera position as an object
+   *
+   * @return [Object] position {x, y}
    */
 
   AREEngineInterface.prototype.getCameraPosition = function() {
-    return JSON.stringify(this._renderer.getCameraPosition());
+    return this._renderer.getCameraPosition();
   };
 
 
@@ -5856,7 +5965,9 @@ AREEngineInterface = (function() {
 
 
   /*
-   * Enable/disable benchmarking
+   * Enable/disable benchmarking.
+   *
+   * NOTE: This is a special method that only we have.
    *
    * @param [Boolean] benchmark
    */
@@ -5873,74 +5984,96 @@ AREEngineInterface = (function() {
 
 
   /*
-   * Load a package.json manifest, assume texture paths are relative to our
-   * own
+   * Get the NRAID version string that this ad engine supports. It is implied
+   * that we are backwards compatible with all previous versions.
    *
-   * @param [String] json package.json source
+   * @return [String] version
+   */
+
+  AREEngineInterface.prototype.getNRAIDVersion = function() {
+    return "1.0.0,freestanding";
+  };
+
+
+  /*
+   * Fetch meta data as defined in loaded manifest
+   *
+   * @return [Object] meta
+   */
+
+  AREEngineInterface.prototype.getMetaData = function() {
+    return this._metaData;
+  };
+
+
+  /*
+   * Load a package.json manifest, assume texture paths are relative to our
+   * own.
+   *
+   * As we are a browser engine built for the desktop, and therefore don't
+   * support mobile device features like orientation, or need to load files off
+   * the disk, we only support a subset of the NRAID creative manifest.
+   *
+   * @param [Object] manifest
+   * @option manifest [String] version NRAID version string
+   * @option manifest [Object] meta
+   * @option manifest [Array<Object>] textures
    * @param [Method] cb callback to call once the load completes (textures)
    */
 
-  AREEngineInterface.prototype.loadManifest = function(json, cb) {
-    var count, flipTexture, manifest, tex, _i, _len, _results;
-    manifest = JSON.parse(param.required(json));
-    if (manifest.textures) {
-      manifest = manifest.textures;
+  AREEngineInterface.prototype.loadManifest = function(manifest, cb) {
+    param.required(manifest.version);
+    if (manifest.version.split(",")[0] > this.getNRAIDVersion().split(",")[0]) {
+      throw new Error("Unsupported NRAID version");
     }
-    if (_.isEmpty(manifest)) {
+    this._metaData = manifest.meta;
+    if (manifest.textures) {
+      return async.each(manifest.textures, (function(_this) {
+        return function(tex, done) {
+          return _this.loadTexture(tex, function() {
+            return done();
+          }, _this.wglFlipTextureY);
+        };
+      })(this), cb);
+    } else {
       return cb();
     }
-    count = 0;
-    flipTexture = this.wglFlipTextureY;
-    _results = [];
-    for (_i = 0, _len = manifest.length; _i < _len; _i++) {
-      tex = manifest[_i];
-      if (tex.compression && tex.compression !== "none") {
-        throw new Error("Texture is compressed! [" + tex.compression + "]");
-      }
-      if (tex.type && tex.type !== "image") {
-        throw new Error("Texture is not an image! [" + tex.type + "]");
-      }
-      _results.push(this.loadTexture(tex.name, tex.path, flipTexture, function() {
-        count++;
-        if (count === manifest.length) {
-          return cb();
-        }
-      }));
-    }
-    return _results;
   };
 
 
   /*
    * Loads a texture, and adds it to our renderer
    *
-   * @param [String] name
-   * @param [String] path
-   * @param [Boolean] flipTexture
+   * @param [Object] textureDef Texture definition object, NRAID-compatible
    * @param [Method] cb called when texture is loaded
+   * @param [Boolean] flipTexture optional
    */
 
-  AREEngineInterface.prototype.loadTexture = function(name, path, flipTexture, cb) {
+  AREEngineInterface.prototype.loadTexture = function(textureDef, cb, flipTexture) {
     var gl, img, tex;
+    param.required(textureDef.name);
+    param.required(textureDef.file);
     if (typeof flipTexture !== "boolean") {
       flipTexture = this.wglFlipTextureY;
     }
-    ARELog.info("Loading texture: " + name + ", " + path);
+    if (!!textureDef.atlas) {
+      throw new Error("This version of ARE does not support atlas loading!");
+    }
     img = new Image();
     img.crossOrigin = "anonymous";
     gl = this._renderer.getGL();
     tex = null;
     if (this._renderer.isWGLRendererActive()) {
-      ARELog.info("Loading Gl Texture");
       tex = gl.createTexture();
       img.onload = (function(_this) {
         return function() {
-          var canvas, ctx, h, scaleX, scaleY, w;
+          var canvas, ctx, h_NPOT, scaleX, scaleY, w_NPOT;
+          ARELog.info("Loading GL tex: " + textureDef.name + ", " + textureDef.file);
           scaleX = 1;
           scaleY = 1;
-          w = (img.width & (img.width - 1)) !== 0;
-          h = (img.height & (img.height - 1)) !== 0;
-          if (w || h) {
+          w_NPOT = (img.width & (img.width - 1)) !== 0;
+          h_NPOT = (img.height & (img.height - 1)) !== 0;
+          if (w_NPOT || h_NPOT) {
             canvas = document.createElement("canvas");
             canvas.width = nextHighestPowerOfTwo(img.width);
             canvas.height = nextHighestPowerOfTwo(img.height);
@@ -5959,7 +6092,7 @@ AREEngineInterface = (function() {
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
           gl.bindTexture(gl.TEXTURE_2D, null);
           _this._renderer.addTexture({
-            name: name,
+            name: textureDef.name,
             texture: tex,
             width: img.width,
             height: img.height,
@@ -5972,11 +6105,11 @@ AREEngineInterface = (function() {
         };
       })(this);
     } else {
-      ARELog.info("Loading Canvas Image");
       img.onload = (function(_this) {
         return function() {
+          ARELog.info("Loading canvas tex: " + textureDef.name + ", " + textureDef.file);
           _this._renderer.addTexture({
-            name: name,
+            name: textureDef.name,
             texture: img,
             width: img.width,
             height: img.height
@@ -5987,7 +6120,7 @@ AREEngineInterface = (function() {
         };
       })(this);
     }
-    return img.src = path;
+    return img.src = textureDef.file;
   };
 
 
@@ -6001,20 +6134,6 @@ AREEngineInterface = (function() {
   AREEngineInterface.prototype.getTextureSize = function(name) {
     return this._renderer.getTextureSize(name);
   };
-
-
-  /*
-   * TODO: Implement
-   *
-   * Set remind me later button region
-   *
-   * @param [Number] x
-   * @param [Number] y
-   * @param [Number] w
-   * @param [Number] h
-   */
-
-  AREEngineInterface.prototype.setRemindMeButton = function(x, y, w, h) {};
 
   return AREEngineInterface;
 
@@ -6228,7 +6347,6 @@ ARE = (function() {
 
   /*
    * Start render loop if it isn't already running
-   * @return [Void]
    */
 
   ARE.prototype.startRendering = function() {
@@ -6245,6 +6363,17 @@ ARE = (function() {
       return window.requestAnimationFrame(render);
     };
     return window.requestAnimationFrame(render);
+  };
+
+
+  /*
+   * Check if the render loop is currently running
+   *
+   * @return [Boolean] rendering
+   */
+
+  ARE.prototype.isRendering = function() {
+    return this._currentlyRendering;
   };
 
 

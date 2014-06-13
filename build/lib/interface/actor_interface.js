@@ -156,26 +156,6 @@ AREActorInterface = (function() {
 
 
   /*
-   * Fetch the radius of the circle actor with the specified ID
-   *
-   * @param [Number] id
-   * @return [Number] radius
-   */
-
-  AREActorInterface.prototype.getCircleActorRadius = function(id) {
-    var a, _i, _len, _ref;
-    _ref = this._renderer._actors;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      a = _ref[_i];
-      if (a.getId() === id && a instanceof AREPolygonActor) {
-        return a.getRadius();
-      }
-    }
-    return null;
-  };
-
-
-  /*
    * Get actor opacity using handle, fails with null
    *
    * @param [Number] id
@@ -184,7 +164,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorOpacity = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.getOpacity();
     }
     return null;
@@ -200,7 +180,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorVisible = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.getVisible();
     }
     return null;
@@ -212,19 +192,16 @@ AREActorInterface = (function() {
    * Returns position as a JSON representation of a primitive (x, y) object!
    *
    * @param [Number] id
-   * @return [String] position
+   * @return [Object] position {x, y}
    */
 
   AREActorInterface.prototype.getActorPosition = function(id) {
-    var a, pos;
-    if ((a = this._findActor(id)) !== null) {
-      pos = a.getPosition();
-      return JSON.stringify({
-        x: pos.x,
-        y: pos.y
-      });
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getPosition();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -238,7 +215,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorRotation = function(id, radians) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.getRotation(!!radians);
     }
     return 0.000001;
@@ -255,13 +232,13 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getActorColor = function(id) {
     var a, color;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       color = a.getColor();
-      return JSON.stringify({
+      return {
         r: color.getR(),
         g: color.getG(),
         b: color.getB()
-      });
+      };
     }
     return null;
   };
@@ -275,12 +252,12 @@ AREActorInterface = (function() {
    */
 
   AREActorInterface.prototype.getActorTexture = function(id) {
-    var a, tex;
-    if ((a = this._findActor(id)) !== null) {
-      tex = a.getTexture();
-      return tex.name;
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getTexture().name;
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -288,16 +265,16 @@ AREActorInterface = (function() {
    * Retrieve an Actor's texture repeat
    *
    * @param [Number] id
-   * @return [JSONString] texture_repeat
+   * @return [Object] repeat
    */
 
   AREActorInterface.prototype.getActorTextureRepeat = function(id) {
-    var a, texRep;
-    if ((a = this._findActor(id)) !== null) {
-      texRep = a.getTextureRepeat();
-      return JSON.stringify(texRep);
+    var a;
+    if (a = this._findActor(id)) {
+      return a.getTextureRepeat();
+    } else {
+      return null;
     }
-    return null;
   };
 
 
@@ -346,14 +323,36 @@ AREActorInterface = (function() {
 
 
   /*
-   * Set the radius of the circle actor with the specified ID
+   * Set the segment count of the polygon actor with the specified ID
+   *
+   * @param [Number] id
+   * @param [Number] segments
+   * @return [Boolean] success
+   */
+
+  AREActorInterface.prototype.setPolygonActorSegments = function(id, segments) {
+    var a, _i, _len, _ref;
+    _ref = this._renderer._actors;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      if (a.getId() === id && a instanceof AREPolygonActor) {
+        a.setSegments(segments);
+        return true;
+      }
+    }
+    return false;
+  };
+
+
+  /*
+   * Set the radius of the polygon actor with the specified ID
    *
    * @param [Number] id
    * @param [Number] radius
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setCircleActorRadius = function(id, radius) {
+  AREActorInterface.prototype.setPolygonActorRadius = function(id, radius) {
     var a, _i, _len, _ref;
     _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -368,24 +367,64 @@ AREActorInterface = (function() {
 
 
   /*
+   * Get the radius of the polygon actor with the specified ID
+   *
+   * @param [Number] id
+   * @return [Number] radius
+   */
+
+  AREActorInterface.prototype.getPolygonActorRadius = function(id) {
+    var a, _i, _len, _ref;
+    _ref = this._renderer._actors;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      if (a.getId() === id && a instanceof AREPolygonActor) {
+        return a.getRadius();
+      }
+    }
+    return null;
+  };
+
+
+  /*
+   * Get the segment count of the polygon actor with the specified ID
+   *
+   * @param [Number] id
+   * @return [Number] segments
+   */
+
+  AREActorInterface.prototype.getPolygonActorSegments = function(id, radius) {
+    var a, _i, _len, _ref;
+    _ref = this._renderer._actors;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      if (a.getId() === id && a instanceof AREPolygonActor) {
+        return a.getSegments();
+      }
+    }
+    return null;
+  };
+
+
+  /*
    * Attach texture to actor. Fails if actor isn't found
    *
+   * @param [Number] id id of actor to attach texture to
    * @param [String] texture texture name
    * @param [Number] width attached actor width
    * @param [Number] height attached actor height
    * @param [Number] offx anchor point offset
    * @param [Number] offy anchor point offset
    * @param [Angle] angle anchor point rotation
-   * @param [Number] id id of actor to attach texture to
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.attachTexture = function(texture, w, h, x, y, angle, id) {
+  AREActorInterface.prototype.attachTexture = function(id, texture, w, h, x, y, angle) {
     var a;
     x || (x = 0);
     y || (y = 0);
     angle || (angle = 0);
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.attachTexture(texture, w, h, x, y, angle);
       return true;
     }
@@ -397,14 +436,14 @@ AREActorInterface = (function() {
    * Set actor layer. Fails if actor isn't found.
    * Actors render from largest layer to smallest
    *
-   * @param [Number] layer
    * @param [Number] id id of actor to set layer of
+   * @param [Number] layer
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorLayer = function(layer, id) {
+  AREActorInterface.prototype.setActorLayer = function(id, layer) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setLayer(layer);
       return true;
     }
@@ -417,14 +456,14 @@ AREActorInterface = (function() {
    * Physics layers persist within an actor between body creations. Only bodies
    * in the same layer will collide! There are only 16 physics layers!
    *
-   * @param [Number] layer
    * @param [Number] id id of actor to set layer of
+   * @param [Number] layer
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorPhysicsLayer = function(layer, id) {
+  AREActorInterface.prototype.setActorPhysicsLayer = function(id, layer) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setPhysicsLayer(layer);
       return true;
     }
@@ -441,7 +480,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.removeAttachment = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.removeAttachment();
       return true;
     }
@@ -453,14 +492,14 @@ AREActorInterface = (function() {
    * Set attachment visiblity. Fails if actor isn't found, or actor has no
    * attachment.
    *
-   * @param [Boolean] visible
    * @param [Number] id id of actor to modify
+   * @param [Boolean] visible
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setAttachmentVisiblity = function(visible, id) {
+  AREActorInterface.prototype.setAttachmentVisiblity = function(id, visible) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return a.setAttachmentVisibility(visible);
     }
     return false;
@@ -470,14 +509,14 @@ AREActorInterface = (function() {
   /*
    * Refresh actor vertices, passed in as a JSON representation of a flat array
    *
-   * @param [String] verts
    * @param [Number] id actor id
+   * @param [String] verts
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.updateVertices = function(verts, id) {
+  AREActorInterface.prototype.updateVertices = function(id, verts) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.updateVertices(JSON.parse(verts));
       return true;
     }
@@ -494,7 +533,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.getVertices = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       return JSON.stringify(a.getVertices());
     }
     return null;
@@ -511,7 +550,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.destroyActor = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.destroy();
       return true;
     }
@@ -525,14 +564,14 @@ AREActorInterface = (function() {
    * removed when building the physics body. If a physics body already exists,
    * this rebuilds it!
    *
-   * @param [String] verts
    * @param [Number] id actor id
+   * @param [String] verts
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setPhysicsVertices = function(verts, id) {
+  AREActorInterface.prototype.setPhysicsVertices = function(id, verts) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setPhysicsVertices(JSON.parse(verts));
       return true;
     }
@@ -545,14 +584,14 @@ AREActorInterface = (function() {
    *   1 == TRIANGLE_STRIP
    *   2 == TRIANGLE_FAN
    *
-   * @param [Number] mode
    * @param [Number] id actor id
+   * @param [Number] mode
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setRenderMode = function(mode, id) {
+  AREActorInterface.prototype.setRenderMode = function(id, mode) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setRenderMode(mode);
       return true;
     }
@@ -563,14 +602,24 @@ AREActorInterface = (function() {
   /*
    * Set actor opacity using handle, fails with false
    *
-   * @param [Number opacity
    * @param [Number] id
+   * @param [Number opacity
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorOpacity = function(opacity, id) {
+  AREActorInterface.prototype.setActorOpacity = function(id, opacity) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (isNaN(opacity)) {
+      return false;
+    }
+    opacity = Number(opacity);
+    if (opacity > 1.0) {
+      opacity = 1.0;
+    }
+    if (opacity < 0.0) {
+      opacity = 0.0;
+    }
+    if (a = this._findActor(id)) {
       a.setOpacity(opacity);
       return true;
     }
@@ -581,14 +630,14 @@ AREActorInterface = (function() {
   /*
    * Set actor visible using handle, fails with false
    *
-   * @param [Boolean] visible
    * @param [Number] id
+   * @param [Boolean] visible
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorVisible = function(visible, id) {
+  AREActorInterface.prototype.setActorVisible = function(id, visible) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setVisible(visible);
       return true;
     }
@@ -599,16 +648,17 @@ AREActorInterface = (function() {
   /*
    * Set actor position using handle, fails with false
    *
-   * @param [Number] x x coordinate
-   * @param [Number] y y coordinate
    * @param [Number] id
+   * @param [Object] position
+   * @option position [Number] x x coordinate
+   * @option position [Number] y y coordinate
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorPosition = function(x, y, id) {
+  AREActorInterface.prototype.setActorPosition = function(id, position) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
-      a.setPosition(new cp.v(x, y));
+    if (a = this._findActor(id)) {
+      a.setPosition(position);
       return true;
     }
     return false;
@@ -618,15 +668,15 @@ AREActorInterface = (function() {
   /*
    * Set actor rotation using handle, fails with false
    *
-   * @param [Number] angle in degrees or radians
    * @param [Number] id
+   * @param [Number] angle in degrees or radians
    * @param [Boolean] radians defaults to false
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorRotation = function(angle, id, radians) {
+  AREActorInterface.prototype.setActorRotation = function(id, angle, radians) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setRotation(angle, !!radians);
       return true;
     }
@@ -637,17 +687,18 @@ AREActorInterface = (function() {
   /*
    * Set actor color using handle, fails with false
    *
-   * @param [Number] r red component
-   * @param [Number] g green component
-   * @param [Number] b blue component
    * @param [Number] id
+   * @param [Object] color
+   * @option color [Number] r red component
+   * @option color [Number] g green component
+   * @option color [Number] b blue component
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorColor = function(r, g, b, id) {
+  AREActorInterface.prototype.setActorColor = function(id, color) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
-      a.setColor(new AREColor3(r, g, b));
+    if (a = this._findActor(id)) {
+      a.setColor(color);
       return true;
     }
     return false;
@@ -658,14 +709,14 @@ AREActorInterface = (function() {
    * Set actor texture by texture handle. Expects the texture to already be
    * loaded by the asset system!
    *
-   * @param [String] name
    * @param [Number] id
+   * @param [String] name
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorTexture = function(name, id) {
+  AREActorInterface.prototype.setActorTexture = function(id, name) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.setTexture(name);
       return true;
     }
@@ -676,20 +727,21 @@ AREActorInterface = (function() {
   /*
    * Set actor texture repeat
    *
-   * @param [Number] x horizontal repeat
-   * @param [Number] y vertical repeat (default 1)
    * @param [Number] id
+   * @param [Object] repeat
+   * @option repeat [Number] x horizontal repeat
+   * @option repeat [Number] y vertical repeat (default 1)
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.setActorTextureRepeat = function(x, y, id) {
+  AREActorInterface.prototype.setActorTextureRepeat = function(id, repeat) {
     var a;
-    y || (y = 1);
-    if ((a = this._findActor(id)) !== null) {
-      a.setTextureRepeat(x, y);
+    if (a = this._findActor(id)) {
+      a.setTextureRepeat(repeat.x, repeat.y);
       return true;
+    } else {
+      return false;
     }
-    return false;
   };
 
 
@@ -697,16 +749,16 @@ AREActorInterface = (function() {
    * Creates the internal physics body, if one does not already exist
    * Fails with false
    *
+   * @param [Number] id
    * @param [Number] mass 0.0 - unbound
    * @param [Number] friction 0.0 - 1.0
    * @param [Number] elasticity 0.0 - 1.0
-   * @param [Number] id
    * @return [Boolean] success
    */
 
-  AREActorInterface.prototype.enableActorPhysics = function(mass, friction, elasticity, id) {
+  AREActorInterface.prototype.enableActorPhysics = function(id, mass, friction, elasticity) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.createPhysicsBody(mass, friction, elasticity);
       return true;
     }
@@ -723,7 +775,7 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype.destroyPhysicsBody = function(id) {
     var a;
-    if ((a = this._findActor(id)) !== null) {
+    if (a = this._findActor(id)) {
       a.destroyPhysicsBody();
       return true;
     }

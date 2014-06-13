@@ -1,16 +1,3 @@
-body {
-  font-family: arial;
-}
-
-* {
-  padding: 0;
-  margin: 0;
-}
-
-div#SceneInfo span {
-  padding: 4px;
-}
-
 #header-decorator {
   position: absolute;
   top: 0;

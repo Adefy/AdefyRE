@@ -106,7 +106,6 @@ class ARE
 
   ###
   # Start render loop if it isn't already running
-  # @return [Void]
   ###
   startRendering: ->
     return if @_currentlyRendering
@@ -120,6 +119,13 @@ class ARE
       window.requestAnimationFrame render
 
     window.requestAnimationFrame render
+
+  ###
+  # Check if the render loop is currently running
+  #
+  # @return [Boolean] rendering
+  ###
+  isRendering: -> @_currentlyRendering
 
   ###
   # Set renderer clear color in integer RGB form (passes through to renderer)
