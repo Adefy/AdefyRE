@@ -25,19 +25,22 @@
 
 <script>
 
-  var manifest = [{
-    "name": "metalGrate",
-    "path": "images/metalGrate.jpg"
-  },{
-    "name": "roundThing",
-    "path": "images/roundThing.jpg"
-  }];
+  var manifest = {
+    "version": "1.0.0",
+    "textures": [{
+      "name": "metalGrate",
+      "file": "images/metalGrate.jpg"
+    },{
+      "name": "roundThing",
+      "file": "images/roundThing.jpg"
+    }]
+  };
 
   var width = window.innerWidth;
   var height = window.innerHeight - 30;
 
   window.AdefyRE.Engine().initialize(width, height, function(engine) {
-    window.AdefyRE.Engine().loadManifest(JSON.stringify(manifest), function() {
+    window.AdefyRE.Engine().loadManifest(manifest, function() {
 
       var renderer = window.renderer = engine.getRenderer();
       engine.setClearColor(0, 128, 128);
