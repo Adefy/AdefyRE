@@ -1,23 +1,12 @@
-var AREPhysicsWorker, ARE_PHYSICS_UPDATE_PACKET, onmessage, worker,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+var AREPhysicsWorker, ARE_PHYSICS_UPDATE_PACKET, onmessage, worker;
 
 ARE_PHYSICS_UPDATE_PACKET = [];
 
-
-/*
- * Physics worker, implements a BazarShop and uses Koon for message passing
- */
-
-AREPhysicsWorker = (function(_super) {
-  __extends(AREPhysicsWorker, _super);
-
+AREPhysicsWorker = (function() {
   function AREPhysicsWorker() {
-    AREPhysicsWorker.__super__.constructor.call(this, "PhysicsWorker");
     this._shapes = [];
     this._bodies = [];
     this._initDefaults();
-    this._setBazarNamespace(/^physics\..*/);
     this._createWorld();
   }
 
@@ -40,13 +29,6 @@ AREPhysicsWorker = (function(_super) {
     this._world.iterations = 30;
     this._world.collisionSlop = 0.5;
     return this._world.sleepTimeThreshold = 0.5;
-  };
-
-  AREPhysicsWorker.prototype._setBazarNamespace = function(match) {
-    return postMessage({
-      namespace: "bazar.set_namespace",
-      message: match
-    });
   };
 
 
@@ -135,12 +117,11 @@ AREPhysicsWorker = (function(_super) {
     return postMessage(ARE_PHYSICS_UPDATE_PACKET);
   };
 
-  AREPhysicsWorker.prototype.receiveMessage = function(message, namespace) {
-    var command;
-    if (!namespace) {
+  AREPhysicsWorker.prototype.receiveMessage = function(message, command) {
+    if (!command) {
       return;
     }
-    command = namespace.split(".");
+    command = command.split(".");
     switch (command[1]) {
       case "ppm":
         return this._PPM = message.value;
@@ -171,6 +152,10 @@ AREPhysicsWorker = (function(_super) {
               case "rotation":
                 return this.bodySetRotation(message);
             }
+            break;
+          case "refresh":
+            this.removeBody(message);
+            return this.createBody(message);
         }
         break;
       case "shape":
@@ -184,6 +169,10 @@ AREPhysicsWorker = (function(_super) {
               case "layer":
                 return this.shapeSetLayer(message);
             }
+            break;
+          case "refresh":
+            this.removeShape(message);
+            return this.createShape(message);
         }
         break;
       case "gravity":
@@ -291,6 +280,9 @@ AREPhysicsWorker = (function(_super) {
     if (def.angle) {
       body.setAngle(def.angle);
     }
+    if (def.mass === 0) {
+      console.log("Physics worker created physics body " + def.position);
+    }
     return this._bodies.push(body);
   };
 
@@ -374,10 +366,10 @@ AREPhysicsWorker = (function(_super) {
 
   return AREPhysicsWorker;
 
-})(Koon);
+})();
 
 worker = new AREPhysicsWorker();
 
 onmessage = function(e) {
-  return worker.receiveMessage(e.data.message, e.data.namespace);
+  return worker.receiveMessage(e.data.message, e.data.command);
 };

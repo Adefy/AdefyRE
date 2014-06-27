@@ -1,10 +1,6 @@
-var ARERawActor,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+var ARERawActor;
 
-ARERawActor = (function(_super) {
-  __extends(ARERawActor, _super);
-
+ARERawActor = (function() {
   ARERawActor.defaultFriction = 0.3;
 
   ARERawActor.defaultMass = 10;
@@ -43,8 +39,6 @@ ARERawActor = (function(_super) {
     this.updateVertices(verts, texverts);
     this.setColor(new AREColor3(255, 255, 255));
     this.clearTexture();
-    ARERawActor.__super__.constructor.call(this, "Actor_" + this._id);
-    window.AREMessages.registerKoon(this, /^actor\..*/);
   }
 
 
@@ -412,16 +406,21 @@ ARERawActor = (function(_super) {
    * @param [Number] mass 0.0 - unbound
    * @param [Number] friction 0.0 - unbound
    * @param [Number] elasticity 0.0 - unbound
+   * @param [Boolean] refresh optionally delete any existing body/shape
    */
 
-  ARERawActor.prototype.createPhysicsBody = function(_mass, _friction, _elasticity) {
-    var a, bodyDef, i, origVerts, shapeDef, vertIndex, verts, x, y, _i, _ref;
+  ARERawActor.prototype.createPhysicsBody = function(_mass, _friction, _elasticity, refresh) {
+    var a, bodyDef, command, i, origVerts, shapeDef, vertIndex, verts, x, y, _i, _ref;
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
+    if (this._physics) {
+      return;
+    }
     if (!(this._mass !== null && this._mass !== void 0)) {
       return;
     }
+    refresh = !!refresh;
     this._friction || (this._friction = ARERawActor.defaultFriction);
     this._elasticity || (this._elasticity = ARERawActor.defaultElasticity);
     if (this._mass < 0) {
@@ -484,16 +483,28 @@ ARERawActor = (function(_super) {
       };
     }
     this._physics = true;
-    this.broadcast({}, "physics.enable");
+    window.AREPhysicsManager.sendMessage({}, "physics.enable");
     if (bodyDef) {
-      this.broadcast({
-        def: bodyDef
-      }, "physics.body.create");
+      if (refresh) {
+        command = "physics.body.refresh";
+      } else {
+        command = "physics.body.create";
+      }
+      window.AREPhysicsManager.sendMessage({
+        def: bodyDef,
+        id: this._id
+      }, command);
     }
     if (shapeDef) {
-      this.broadcast({
-        def: shapeDef
-      }, "physics.shape.create");
+      if (refresh) {
+        command = "physics.shape.refresh";
+      } else {
+        command = "physics.shape.create";
+      }
+      window.AREPhysicsManager.sendMessage({
+        def: shapeDef,
+        id: this._id
+      }, command);
     }
     return this;
   };
@@ -507,11 +518,11 @@ ARERawActor = (function(_super) {
     if (!this._physics) {
       return;
     }
-    this.broadcast({
+    window.AREPhysicsManager.sendMessage({
       id: this._id
     }, "physics.shape.remove");
     if (this._mass !== 0) {
-      this.broadcast({
+      window.AREPhysicsManager.sendMessage({
         id: this._id
       }, "physics.body.remove");
     }
@@ -537,8 +548,7 @@ ARERawActor = (function(_super) {
     if (!this.hasPhysics()) {
       return;
     }
-    this.destroyPhysicsBody();
-    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    return this.createPhysicsBody(this._mass, this._friction, this._elasticity, true);
   };
 
 
@@ -605,14 +615,6 @@ ARERawActor = (function(_super) {
     this._friction = _friction;
     this.refreshPhysics();
     return this;
-  };
-
-  ARERawActor.prototype.refreshPhysics = function() {
-    if (!this.hasPhysics()) {
-      return;
-    }
-    this.destroyPhysicsBody();
-    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
   };
 
 
@@ -704,7 +706,7 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setPhysicsLayer = function(layer) {
     this._physicsLayer = 1 << param.required(layer, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    return this.broadcast({
+    return window.AREPhysicsManager.sendMessage({
       id: this._id,
       layer: this._physicsLayer
     }, "physics.shape.set.layer");
@@ -840,8 +842,7 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setPhysicsVertices = function(verts) {
     this._psyxVertices = param.required(verts);
-    this.destroyPhysicsBody();
-    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    return this.refreshPhysics();
   };
 
 
@@ -1244,7 +1245,7 @@ ARERawActor = (function(_super) {
   ARERawActor.prototype.setPosition = function(position) {
     this._position = param.required(position);
     if (this.hasPhysics()) {
-      this.broadcast({
+      window.AREPhysicsManager.sendMessage({
         id: this._id,
         position: position
       }, "physics.body.set.position");
@@ -1268,16 +1269,18 @@ ARERawActor = (function(_super) {
     if (!radians) {
       rotation = Number(rotation) * 0.0174532925;
     }
+    if (this._rotation === rotation) {
+      return;
+    }
     this._rotation = rotation;
     if (this.hasPhysics()) {
       if (this._mass > 0) {
-        this.broadcast({
+        window.AREPhysicsManager.sendMessage({
           id: this._id,
           rotation: this._rotation
         }, "physics.body.set.rotation");
       } else {
-        this.destroyPhysicsBody();
-        this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+        this.refreshPhysics();
       }
     }
     return this;
@@ -1501,4 +1504,4 @@ ARERawActor = (function(_super) {
 
   return ARERawActor;
 
-})(Koon);
+})();

@@ -13,10 +13,10 @@ ARE = (function() {
 
   ARE.Version = {
     MAJOR: 1,
-    MINOR: 3,
+    MINOR: 4,
     PATCH: 0,
     BUILD: null,
-    STRING: "1.3.0"
+    STRING: "1.4.0"
   };
 
 
@@ -48,13 +48,16 @@ ARE = (function() {
     if (window._ === null || window._ === void 0) {
       return ARELog.error("Underscore.js is not present!");
     }
-    window.AREMessages = new KoonFlock("AREMessages");
-    window.AREMessages.registerKoon(window.Bazar);
     this._renderer = new ARERenderer({
       canvasId: canvas,
       width: width,
       height: height
     });
+
+    /*
+     * We expose the physics manager to the window, so actors can directly
+     * communicate with it
+     */
     this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
       return function() {
         _this._currentlyRendering = false;
@@ -62,6 +65,7 @@ ARE = (function() {
         return cb(_this);
       };
     })(this));
+    window.AREPhysicsManager = this._physics;
   }
 
 

@@ -431,7 +431,7 @@ class ARERenderer
       b = @_clearColor.getB true
 
       # Actually set the color if possible
-      @_gl.clearColor r, g, b, 1.0 if @_gl
+      @_gl.clearColor r, g, b, 1.0 if !!@_gl
 
     @
 

@@ -1,5 +1,3 @@
-# @depend koon/koon.coffee
-# @depend bazar/bazar.coffee
 # @depend util/util_param.coffee
 #
 # @depend actors/rectangle_actor.coffee
@@ -32,10 +30,10 @@ class ARE
 
   @Version:
     MAJOR: 1
-    MINOR: 3
+    MINOR: 4
     PATCH: 0
     BUILD: null
-    STRING: "1.3.0"
+    STRING: "1.4.0"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
@@ -72,21 +70,22 @@ class ARE
     if window._ == null or window._ == undefined
       return ARELog.error "Underscore.js is not present!"
 
-    # Initialize messaging system
-    window.AREMessages = new KoonFlock "AREMessages"
-    window.AREMessages.registerKoon window.Bazar
-
     # Initialize physics worker
     @_renderer = new ARERenderer
       canvasId: canvas
       width: width
       height: height
 
+    ###
+    # We expose the physics manager to the window, so actors can directly
+    # communicate with it
+    ###
     @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
-
       @_currentlyRendering = false
       @startRendering()
       cb @
+
+    window.AREPhysicsManager = @_physics
 
   ###
   # Get our internal ARERenderer instance

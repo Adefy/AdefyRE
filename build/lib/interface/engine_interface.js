@@ -45,16 +45,16 @@ AREEngineInterface = (function() {
      * Should WGL textures be flipped by their Y axis?
      * NOTE. This does not affect existing textures.
      */
-    this.wglFlipTextureY = false;
-    return new ARE(width, height, (function(_this) {
-      return function(_engine) {
-        _this._engine = _engine;
-        _this._masterInterface.setEngine(_this._engine);
-        _this._renderer = _this._engine.getRenderer();
-        _this._engine.startRendering();
+    this.wglFlipTextureY = true;
+    this._engine = new ARE(width, height, (function(_this) {
+      return function() {
         return ad(_this._engine);
       };
     })(this), log, id);
+    this._masterInterface.setEngine(this._engine);
+    this._renderer = this._engine.getRenderer();
+    this._engine.startRendering();
+    return this._engine;
   };
 
 

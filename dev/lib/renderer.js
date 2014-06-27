@@ -447,7 +447,7 @@ ARERenderer = (function() {
       r = this._clearColor.getR(true);
       g = this._clearColor.getG(true);
       b = this._clearColor.getB(true);
-      if (this._gl) {
+      if (!!this._gl) {
         this._gl.clearColor(r, g, b, 1.0);
       }
     }

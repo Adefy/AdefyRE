@@ -1,18 +1,67 @@
-class PhysicsManager extends BazarShop
+###
+# PhysicsManager is in charge of starting and communicating with the physics
+# web worker.
+###
+class PhysicsManager
 
   constructor: (@_renderer, depPaths, cb) ->
     param.required _renderer
     param.required depPaths
 
-    super "PhysicsManager", [
+    # Messages that are sent before our worker is initialised
+    @_backlog = []
+
+    dependencies = [
       raw: "cp = exports = {};"
     ,
       url: depPaths.chipmunk
     ,
-      url: depPaths.koon
-    ,
       url: depPaths.physics_worker
-    ], cb
+    ]
+
+    async.map dependencies, (dependency, depCB) ->
+      return depCB(null, dependency.raw) if dependency.raw
+
+      $.ajax
+        url: dependency.url
+        mimeType: "text"
+        success:  (rawDep) ->
+          depCB null, rawDep
+
+    , (error, sources) =>
+      @_initFromSources sources
+      @_emptyBacklog()
+      cb() if cb
+
+  _initFromSources: (sources) ->
+    return if !!@_worker
+
+    data = new Blob [sources.join("\n\n")], type: "text/javascript"
+    @_worker = new Worker (URL || (window.webkitURL)).createObjectURL data
+    @_worker.postMessage ""
+    @_connectWorkerListener()
+
+  _emptyBacklog: ->
+    return unless !!@_worker
+    for item in @_backlog
+      @sendMessage item.message, item.command
+
+  ###
+  # Broadcast a message to the physics manager; this gets passed through to the
+  # underlying web worker.
+  #
+  # @param [Object] message
+  # @param [String] command
+  ###
+  sendMessage: (message, command) ->
+    if !!@_worker
+      @_worker.postMessage
+        message: message
+        command: command
+    else
+      @_backlog.push
+        message: message
+        command: command
 
   _connectWorkerListener: ->
 
@@ -43,4 +92,4 @@ class PhysicsManager extends BazarShop
           actor._rotation = dataPacket[ROT_INDEX]
           actor._updateModelMatrix()
       else
-        @broadcast e.data.message, e.data.namespace
+        @broadcast data.message, data.command

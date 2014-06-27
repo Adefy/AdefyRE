@@ -1,204 +1,3 @@
-###
-# Koon v0.0.1
-###
-
-class KoonNetworkMember
-
-  constructor: (name) ->
-    @_name = name or "GenericKoonNetworkMember"
-    @_uuid = KoonNetworkMember.generateUUID()
-    @_subscribers = []
-
-  ###
-  # Returns a valid receiver for the specified subscriber. Expects the
-  # subscriber to have a receiveMessage method.
-  #
-  # @param [Object] subscriber
-  # @return [Method] receiver
-  # @private
-  ###
-  _generateReceiver: (subscriber) ->
-    (message, namespace) =>
-      subscriber.receiveMessage message, namespace
-
-  ###
-  # Register a new subscriber. 
-  #
-  # @param [Object] subscriber
-  # @param [String] namespace
-  # @return [Koon] self
-  ###
-  subscribe: (subscriber, namespace) ->
-    @_subscribers.push
-      namespace: namespace or ""
-      receiver: @_generateReceiver subscriber
-
-  ###
-  # Broadcast message to the koon. Message is sent out to all subscribers and
-  # other koons.
-  #
-  # @param [Object] message message object as passed directly to listeners
-  # @param [String] namespace optional, defaults to the wildcard namespace *
-  ###
-  broadcast: (message, namespace) ->
-    # return unless typeof message == "object"
-    namespace = namespace or ""
-
-    return if @hasSent message
-    message = @tagAsSent message
-
-    #for subscriber in @_subscribers
-      # if !!namespace.match subscriber.namespace
-      #subscriber.receiver message, namespace
-
-    # This is faster than a normal for loop
-    l = @_subscribers.length
-    while l--
-      @_subscribers[l].receiver message, namespace
-
-  ###
-  # Get our UUID
-  #
-  # @return [String] uuid
-  ###
-  getId: ->
-    @_uuid
-
-  ###
-  # Get our name
-  #
-  # @return [String] name
-  ###
-  getName: ->
-    @_name
-
-  ###
-  # Returns an RFC4122 v4 compliant UUID
-  #
-  # StackOverflow link: http://goo.gl/z2RxK
-  #
-  # @return [String] uuid
-  ###
-  @generateUUID: ->
-    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace /[xy]/g, (c) ->
-      r = Math.random() * 16 | 0
-
-      if c == "x"
-        r.toString 16
-      else
-        (r & 0x3 | 0x8).toString 16
-
-  tagAsSent: (message) ->
-    unless message._senders
-      message._senders = [@_name]
-    else
-      message._senders.push @_name
-
-    message
-
-  hasSent: (message) ->
-    if message and message._senders
-      for sender in message._senders
-        return true if sender == @_name
-
-    false
-
-
-class Koon extends KoonNetworkMember
-
-  constructor: (name) ->
-    super(name or "GenericKoon")
-
-  receiveMessage: (message, namespace) ->
-    console.log "<#{message._sender}> --> <#{@getName()}>  [#{namespace}] #{JSON.stringify message}"
-
-  broadcast: (message, namespace) ->
-    return unless typeof message == "object"
-
-    message._sender = @_name
-    super message, namespace
-
-class KoonFlock extends KoonNetworkMember
-
-  constructor: (name) ->
-    super(name or "GenericKoonFlock")
-
-  registerKoon: (koon, namespace) ->
-    @subscribe koon, namespace
-    koon.subscribe @
-
-  receiveMessage: (message, namespace) ->
-    @broadcast message, namespace
-
-  ###
-  # Returns a valid receiver for the specified koon.
-  #
-  # @param [Object] koon
-  # @return [Method] receiver
-  # @private
-  ###
-  _generateReceiver: (koon) ->
-    (message, namespace) ->
-      unless koon.hasSent message
-        koon.receiveMessage message, namespace
-
-###
-# Note that shops cannot be accessed directly, they can only be messaged!
-###
-class CBazar extends KoonFlock
-  constructor: -> super "Bazar"
-
-class BazarShop extends Koon
-
-  constructor: (name, deps, readyCB) ->
-    super name
-
-    async.map deps, (dependency, cb) ->
-      return cb(null, dependency.raw) if dependency.raw
-
-      $.ajax
-        url: dependency.url
-        mimeType: "text"
-        success:  (rawDep) ->
-          cb null, rawDep
-
-    , (error, sources) =>
-      @_initFromSources sources
-      @_registerWithBazar()
-
-      readyCB() if readyCB
-
-  _initFromSources: (sources) ->
-    return if @_worker
-
-    data = new Blob [sources.join("\n\n")], type: "text/javascript"
-    @_worker = new Worker (URL || (window.webkitURL)).createObjectURL data
-    @_connectWorkerListener()
-    @_worker.postMessage ""
-
-  _connectWorkerListener: ->
-    @_worker.onmessage = (e) =>
-      if e.data instanceof Array
-        for message in e.data
-          @broadcast message.message, message.namespace
-      else
-        @broadcast e.data.message, e.data.namespace
-
-  _registerWithBazar: ->
-    window.Bazar.registerKoon @
-
-  receiveMessage: (message, namespace) ->
-
-    # TODO: Cache messages received when worker not initialised
-    return unless @_worker
-
-    @_worker.postMessage
-      message: message
-      namespace: namespace
-
-# Setup the global bazar instance
-window.Bazar = new CBazar() unless window.Bazar
-
 # This class implements some helper methods for function param enforcement
 # It simply serves to standardize error messages for missing/incomplete
 # parameters, and set them to default values if such values are provided.
@@ -238,7 +37,7 @@ if window.param == undefined then window.param = AREUtilParam
 # for the specialized actor classes.
 #
 # Constructs itself from the supplied vertex and UV sets
-class ARERawActor extends Koon
+class ARERawActor
 
   @defaultFriction: 0.3
   @defaultMass: 10
@@ -278,9 +77,6 @@ class ARERawActor extends Koon
 
     # Default to flat rendering
     @clearTexture()
-
-    super "Actor_#{@_id}"
-    window.AREMessages.registerKoon @, /^actor\..*/
 
   ###
   # Sets up default values and initializes our data structures.
@@ -582,10 +378,13 @@ class ARERawActor extends Koon
   # @param [Number] mass 0.0 - unbound
   # @param [Number] friction 0.0 - unbound
   # @param [Number] elasticity 0.0 - unbound
+  # @param [Boolean] refresh optionally delete any existing body/shape
   ###
-  createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
+  createPhysicsBody: (@_mass, @_friction, @_elasticity, refresh) ->
+    return if @_physics
     return unless @_mass != null and @_mass != undefined
 
+    refresh = !!refresh
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
 
@@ -646,9 +445,29 @@ class ARERawActor extends Koon
       shapeDef.position = x: 0, y: 0
 
     @_physics = true
-    @broadcast {}, "physics.enable"
-    @broadcast def: bodyDef, "physics.body.create" if bodyDef
-    @broadcast def: shapeDef, "physics.shape.create" if shapeDef
+    window.AREPhysicsManager.sendMessage {}, "physics.enable"
+
+    if bodyDef
+      if refresh
+        command = "physics.body.refresh"
+      else
+        command = "physics.body.create"
+
+      window.AREPhysicsManager.sendMessage
+        def: bodyDef
+        id: @_id
+      , command
+
+    if shapeDef
+      if refresh
+        command = "physics.shape.refresh"
+      else
+        command = "physics.shape.create"
+
+      window.AREPhysicsManager.sendMessage
+        def: shapeDef
+        id: @_id
+      , command
 
     @
 
@@ -658,8 +477,11 @@ class ARERawActor extends Koon
   destroyPhysicsBody: ->
     return unless @_physics
 
-    @broadcast id: @_id, "physics.shape.remove"
-    @broadcast id: @_id, "physics.body.remove" if @_mass != 0
+    window.AREPhysicsManager.sendMessage id: @_id, "physics.shape.remove"
+
+    if @_mass != 0
+      window.AREPhysicsManager.sendMessage id: @_id, "physics.body.remove"
+
     @_physics = false
     @
 
@@ -674,8 +496,7 @@ class ARERawActor extends Koon
   refreshPhysics: ->
     return unless @hasPhysics()
 
-    @destroyPhysicsBody()
-    @createPhysicsBody @_mass, @_friction, @_elasticity
+    @createPhysicsBody @_mass, @_friction, @_elasticity, true
 
   ###
   # @return [Number] mass
@@ -718,12 +539,6 @@ class ARERawActor extends Koon
   setFriction: (@_friction) ->
     @refreshPhysics()
     @
-
-  refreshPhysics: ->
-    return unless @hasPhysics()
-
-    @destroyPhysicsBody()
-    @createPhysicsBody @_mass, @_friction, @_elasticity
 
   ###
   # @return [Number] mass
@@ -786,7 +601,7 @@ class ARERawActor extends Koon
   setPhysicsLayer: (layer) ->
     @_physicsLayer = 1 << param.required(layer, [0...16])
 
-    @broadcast
+    window.AREPhysicsManager.sendMessage
       id: @_id
       layer: @_physicsLayer
     , "physics.shape.set.layer"
@@ -903,9 +718,7 @@ class ARERawActor extends Koon
   ###
   setPhysicsVertices: (verts) ->
     @_psyxVertices = param.required verts
-
-    @destroyPhysicsBody()
-    @createPhysicsBody @_mass, @_friction, @_elasticity
+    @refreshPhysics()
 
   ###
   # Attach texture to render instead of ourselves. This is very useful when
@@ -1282,7 +1095,7 @@ class ARERawActor extends Koon
     @_position = param.required position
 
     if @hasPhysics()
-      @broadcast
+      window.AREPhysicsManager.sendMessage
         id: @_id
         position: position
       ,"physics.body.set.position"
@@ -1302,17 +1115,18 @@ class ARERawActor extends Koon
     radians = !!radians
 
     rotation = Number(rotation) * 0.0174532925 unless radians
+    return unless @_rotation != rotation
+
     @_rotation = rotation
 
     if @hasPhysics()
       if @_mass > 0
-        @broadcast
+        window.AREPhysicsManager.sendMessage
           id: @_id
           rotation: @_rotation
         ,"physics.body.set.rotation"
       else
-        @destroyPhysicsBody()
-        @createPhysicsBody @_mass, @_friction, @_elasticity
+        @refreshPhysics()
 
     @
 
@@ -2751,7 +2565,7 @@ class ARERenderer
       b = @_clearColor.getB true
 
       # Actually set the color if possible
-      @_gl.clearColor r, g, b, 1.0 if @_gl
+      @_gl.clearColor r, g, b, 1.0 if !!@_gl
 
     @
 
@@ -3177,21 +2991,70 @@ class ARERenderer
     @_textures.push tex
     @
 
-class PhysicsManager extends BazarShop
+###
+# PhysicsManager is in charge of starting and communicating with the physics
+# web worker.
+###
+class PhysicsManager
 
   constructor: (@_renderer, depPaths, cb) ->
     param.required _renderer
     param.required depPaths
 
-    super "PhysicsManager", [
+    # Messages that are sent before our worker is initialised
+    @_backlog = []
+
+    dependencies = [
       raw: "cp = exports = {};"
     ,
       url: depPaths.chipmunk
     ,
-      url: depPaths.koon
-    ,
       url: depPaths.physics_worker
-    ], cb
+    ]
+
+    async.map dependencies, (dependency, depCB) ->
+      return depCB(null, dependency.raw) if dependency.raw
+
+      $.ajax
+        url: dependency.url
+        mimeType: "text"
+        success:  (rawDep) ->
+          depCB null, rawDep
+
+    , (error, sources) =>
+      @_initFromSources sources
+      @_emptyBacklog()
+      cb() if cb
+
+  _initFromSources: (sources) ->
+    return if !!@_worker
+
+    data = new Blob [sources.join("\n\n")], type: "text/javascript"
+    @_worker = new Worker (URL || (window.webkitURL)).createObjectURL data
+    @_worker.postMessage ""
+    @_connectWorkerListener()
+
+  _emptyBacklog: ->
+    return unless !!@_worker
+    for item in @_backlog
+      @sendMessage item.message, item.command
+
+  ###
+  # Broadcast a message to the physics manager; this gets passed through to the
+  # underlying web worker.
+  #
+  # @param [Object] message
+  # @param [String] command
+  ###
+  sendMessage: (message, command) ->
+    if !!@_worker
+      @_worker.postMessage
+        message: message
+        command: command
+    else
+      @_backlog.push
+        message: message
+        command: command
 
   _connectWorkerListener: ->
 
@@ -3222,7 +3085,7 @@ class PhysicsManager extends BazarShop
           actor._rotation = dataPacket[ROT_INDEX]
           actor._updateModelMatrix()
       else
-        @broadcast e.data.message, e.data.namespace
+        @broadcast data.message, data.command
 
 # Tiny logging class created to be able to selectively
 # silence all logging in production, or by level. Also supports tags
@@ -4404,17 +4267,19 @@ class AREEngineInterface
     # Should WGL textures be flipped by their Y axis?
     # NOTE. This does not affect existing textures.
     ###
-    @wglFlipTextureY = false
+    @wglFlipTextureY = true
 
-    new ARE width, height, (@_engine) =>
-
-      @_masterInterface.setEngine @_engine
-      @_renderer = @_engine.getRenderer()
-      @_engine.startRendering()
-
+    # Callback fires *after* physics init, which takes awhile
+    @_engine = new ARE width, height, =>
       ad @_engine
-
     , log, id
+
+    # Initiliase our engine as everything is ready at this point (except psyx)
+    @_masterInterface.setEngine @_engine
+    @_renderer = @_engine.getRenderer()
+    @_engine.startRendering()
+
+    @_engine
 
   ###
   # Set global render mode
@@ -4835,8 +4700,6 @@ class AREInterface
     @_Actors.setEngine engine
     @_Animations.setEngine engine
 
-# @depend koon/koon.coffee
-# @depend bazar/bazar.coffee
 # @depend util/util_param.coffee
 #
 # @depend actors/rectangle_actor.coffee
@@ -4869,10 +4732,10 @@ class ARE
 
   @Version:
     MAJOR: 1
-    MINOR: 3
+    MINOR: 4
     PATCH: 0
     BUILD: null
-    STRING: "1.3.0"
+    STRING: "1.4.0"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
@@ -4909,21 +4772,22 @@ class ARE
     if window._ == null or window._ == undefined
       return ARELog.error "Underscore.js is not present!"
 
-    # Initialize messaging system
-    window.AREMessages = new KoonFlock "AREMessages"
-    window.AREMessages.registerKoon window.Bazar
-
     # Initialize physics worker
     @_renderer = new ARERenderer
       canvasId: canvas
       width: width
       height: height
 
+    ###
+    # We expose the physics manager to the window, so actors can directly
+    # communicate with it
+    ###
     @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
-
       @_currentlyRendering = false
       @startRendering()
       cb @
+
+    window.AREPhysicsManager = @_physics
 
   ###
   # Get our internal ARERenderer instance

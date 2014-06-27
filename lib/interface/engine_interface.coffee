@@ -41,17 +41,19 @@ class AREEngineInterface
     # Should WGL textures be flipped by their Y axis?
     # NOTE. This does not affect existing textures.
     ###
-    @wglFlipTextureY = false
+    @wglFlipTextureY = true
 
-    new ARE width, height, (@_engine) =>
-
-      @_masterInterface.setEngine @_engine
-      @_renderer = @_engine.getRenderer()
-      @_engine.startRendering()
-
+    # Callback fires *after* physics init, which takes awhile
+    @_engine = new ARE width, height, =>
       ad @_engine
-
     , log, id
+
+    # Initiliase our engine as everything is ready at this point (except psyx)
+    @_masterInterface.setEngine @_engine
+    @_renderer = @_engine.getRenderer()
+    @_engine.startRendering()
+
+    @_engine
 
   ###
   # Set global render mode

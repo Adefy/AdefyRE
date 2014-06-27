@@ -2,7 +2,7 @@
 # for the specialized actor classes.
 #
 # Constructs itself from the supplied vertex and UV sets
-class ARERawActor extends Koon
+class ARERawActor
 
   @defaultFriction: 0.3
   @defaultMass: 10
@@ -42,9 +42,6 @@ class ARERawActor extends Koon
 
     # Default to flat rendering
     @clearTexture()
-
-    super "Actor_#{@_id}"
-    window.AREMessages.registerKoon @, /^actor\..*/
 
   ###
   # Sets up default values and initializes our data structures.
@@ -346,10 +343,13 @@ class ARERawActor extends Koon
   # @param [Number] mass 0.0 - unbound
   # @param [Number] friction 0.0 - unbound
   # @param [Number] elasticity 0.0 - unbound
+  # @param [Boolean] refresh optionally delete any existing body/shape
   ###
-  createPhysicsBody: (@_mass, @_friction, @_elasticity) ->
+  createPhysicsBody: (@_mass, @_friction, @_elasticity, refresh) ->
+    return if @_physics
     return unless @_mass != null and @_mass != undefined
 
+    refresh = !!refresh
     @_friction ||= ARERawActor.defaultFriction
     @_elasticity ||= ARERawActor.defaultElasticity
 
@@ -410,9 +410,29 @@ class ARERawActor extends Koon
       shapeDef.position = x: 0, y: 0
 
     @_physics = true
-    @broadcast {}, "physics.enable"
-    @broadcast def: bodyDef, "physics.body.create" if bodyDef
-    @broadcast def: shapeDef, "physics.shape.create" if shapeDef
+    window.AREPhysicsManager.sendMessage {}, "physics.enable"
+
+    if bodyDef
+      if refresh
+        command = "physics.body.refresh"
+      else
+        command = "physics.body.create"
+
+      window.AREPhysicsManager.sendMessage
+        def: bodyDef
+        id: @_id
+      , command
+
+    if shapeDef
+      if refresh
+        command = "physics.shape.refresh"
+      else
+        command = "physics.shape.create"
+
+      window.AREPhysicsManager.sendMessage
+        def: shapeDef
+        id: @_id
+      , command
 
     @
 
@@ -422,8 +442,11 @@ class ARERawActor extends Koon
   destroyPhysicsBody: ->
     return unless @_physics
 
-    @broadcast id: @_id, "physics.shape.remove"
-    @broadcast id: @_id, "physics.body.remove" if @_mass != 0
+    window.AREPhysicsManager.sendMessage id: @_id, "physics.shape.remove"
+
+    if @_mass != 0
+      window.AREPhysicsManager.sendMessage id: @_id, "physics.body.remove"
+
     @_physics = false
     @
 
@@ -438,8 +461,7 @@ class ARERawActor extends Koon
   refreshPhysics: ->
     return unless @hasPhysics()
 
-    @destroyPhysicsBody()
-    @createPhysicsBody @_mass, @_friction, @_elasticity
+    @createPhysicsBody @_mass, @_friction, @_elasticity, true
 
   ###
   # @return [Number] mass
@@ -482,12 +504,6 @@ class ARERawActor extends Koon
   setFriction: (@_friction) ->
     @refreshPhysics()
     @
-
-  refreshPhysics: ->
-    return unless @hasPhysics()
-
-    @destroyPhysicsBody()
-    @createPhysicsBody @_mass, @_friction, @_elasticity
 
   ###
   # @return [Number] mass
@@ -550,7 +566,7 @@ class ARERawActor extends Koon
   setPhysicsLayer: (layer) ->
     @_physicsLayer = 1 << param.required(layer, [0...16])
 
-    @broadcast
+    window.AREPhysicsManager.sendMessage
       id: @_id
       layer: @_physicsLayer
     , "physics.shape.set.layer"
@@ -667,9 +683,7 @@ class ARERawActor extends Koon
   ###
   setPhysicsVertices: (verts) ->
     @_psyxVertices = param.required verts
-
-    @destroyPhysicsBody()
-    @createPhysicsBody @_mass, @_friction, @_elasticity
+    @refreshPhysics()
 
   ###
   # Attach texture to render instead of ourselves. This is very useful when
@@ -1046,7 +1060,7 @@ class ARERawActor extends Koon
     @_position = param.required position
 
     if @hasPhysics()
-      @broadcast
+      window.AREPhysicsManager.sendMessage
         id: @_id
         position: position
       ,"physics.body.set.position"
@@ -1066,17 +1080,18 @@ class ARERawActor extends Koon
     radians = !!radians
 
     rotation = Number(rotation) * 0.0174532925 unless radians
+    return unless @_rotation != rotation
+
     @_rotation = rotation
 
     if @hasPhysics()
       if @_mass > 0
-        @broadcast
+        window.AREPhysicsManager.sendMessage
           id: @_id
           rotation: @_rotation
         ,"physics.body.set.rotation"
       else
-        @destroyPhysicsBody()
-        @createPhysicsBody @_mass, @_friction, @_elasticity
+        @refreshPhysics()
 
     @
 

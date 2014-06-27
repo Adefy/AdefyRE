@@ -748,301 +748,9 @@ Matrix4 = window.m4x4
 Matrix4.prototype.flatten = function() {
   return this.elements;
 }
-var ARE, AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, ARETriangleActor, AREUtilParam, AREVector2, AREVertAnimation, BazarShop, CBazar, Koon, KoonFlock, KoonNetworkMember, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
+var ARE, AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, ARETriangleActor, AREUtilParam, AREVector2, AREVertAnimation, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-KoonNetworkMember = (function() {
-  function KoonNetworkMember(name) {
-    this._name = name || "GenericKoonNetworkMember";
-    this._uuid = KoonNetworkMember.generateUUID();
-    this._subscribers = [];
-  }
-
-
-  /*
-   * Returns a valid receiver for the specified subscriber. Expects the
-   * subscriber to have a receiveMessage method.
-   *
-   * @param [Object] subscriber
-   * @return [Method] receiver
-   * @private
-   */
-
-  KoonNetworkMember.prototype._generateReceiver = function(subscriber) {
-    return (function(_this) {
-      return function(message, namespace) {
-        return subscriber.receiveMessage(message, namespace);
-      };
-    })(this);
-  };
-
-
-  /*
-   * Register a new subscriber. 
-   *
-   * @param [Object] subscriber
-   * @param [String] namespace
-   * @return [Koon] self
-   */
-
-  KoonNetworkMember.prototype.subscribe = function(subscriber, namespace) {
-    return this._subscribers.push({
-      namespace: namespace || "",
-      receiver: this._generateReceiver(subscriber)
-    });
-  };
-
-
-  /*
-   * Broadcast message to the koon. Message is sent out to all subscribers and
-   * other koons.
-   *
-   * @param [Object] message message object as passed directly to listeners
-   * @param [String] namespace optional, defaults to the wildcard namespace *
-   */
-
-  KoonNetworkMember.prototype.broadcast = function(message, namespace) {
-    var l, _results;
-    namespace = namespace || "";
-    if (this.hasSent(message)) {
-      return;
-    }
-    message = this.tagAsSent(message);
-    l = this._subscribers.length;
-    _results = [];
-    while (l--) {
-      _results.push(this._subscribers[l].receiver(message, namespace));
-    }
-    return _results;
-  };
-
-
-  /*
-   * Get our UUID
-   *
-   * @return [String] uuid
-   */
-
-  KoonNetworkMember.prototype.getId = function() {
-    return this._uuid;
-  };
-
-
-  /*
-   * Get our name
-   *
-   * @return [String] name
-   */
-
-  KoonNetworkMember.prototype.getName = function() {
-    return this._name;
-  };
-
-
-  /*
-   * Returns an RFC4122 v4 compliant UUID
-   *
-   * StackOverflow link: http://goo.gl/z2RxK
-   *
-   * @return [String] uuid
-   */
-
-  KoonNetworkMember.generateUUID = function() {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-      var r;
-      r = Math.random() * 16 | 0;
-      if (c === "x") {
-        return r.toString(16);
-      } else {
-        return (r & 0x3 | 0x8).toString(16);
-      }
-    });
-  };
-
-  KoonNetworkMember.prototype.tagAsSent = function(message) {
-    if (!message._senders) {
-      message._senders = [this._name];
-    } else {
-      message._senders.push(this._name);
-    }
-    return message;
-  };
-
-  KoonNetworkMember.prototype.hasSent = function(message) {
-    var sender, _i, _len, _ref;
-    if (message && message._senders) {
-      _ref = message._senders;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        sender = _ref[_i];
-        if (sender === this._name) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
-  return KoonNetworkMember;
-
-})();
-
-Koon = (function(_super) {
-  __extends(Koon, _super);
-
-  function Koon(name) {
-    Koon.__super__.constructor.call(this, name || "GenericKoon");
-  }
-
-  Koon.prototype.receiveMessage = function(message, namespace) {
-    return console.log("<" + message._sender + "> --> <" + (this.getName()) + ">  [" + namespace + "] " + (JSON.stringify(message)));
-  };
-
-  Koon.prototype.broadcast = function(message, namespace) {
-    if (typeof message !== "object") {
-      return;
-    }
-    message._sender = this._name;
-    return Koon.__super__.broadcast.call(this, message, namespace);
-  };
-
-  return Koon;
-
-})(KoonNetworkMember);
-
-KoonFlock = (function(_super) {
-  __extends(KoonFlock, _super);
-
-  function KoonFlock(name) {
-    KoonFlock.__super__.constructor.call(this, name || "GenericKoonFlock");
-  }
-
-  KoonFlock.prototype.registerKoon = function(koon, namespace) {
-    this.subscribe(koon, namespace);
-    return koon.subscribe(this);
-  };
-
-  KoonFlock.prototype.receiveMessage = function(message, namespace) {
-    return this.broadcast(message, namespace);
-  };
-
-
-  /*
-   * Returns a valid receiver for the specified koon.
-   *
-   * @param [Object] koon
-   * @return [Method] receiver
-   * @private
-   */
-
-  KoonFlock.prototype._generateReceiver = function(koon) {
-    return function(message, namespace) {
-      if (!koon.hasSent(message)) {
-        return koon.receiveMessage(message, namespace);
-      }
-    };
-  };
-
-  return KoonFlock;
-
-})(KoonNetworkMember);
-
-
-/*
- * Note that shops cannot be accessed directly, they can only be messaged!
- */
-
-CBazar = (function(_super) {
-  __extends(CBazar, _super);
-
-  function CBazar() {
-    CBazar.__super__.constructor.call(this, "Bazar");
-  }
-
-  return CBazar;
-
-})(KoonFlock);
-
-BazarShop = (function(_super) {
-  __extends(BazarShop, _super);
-
-  function BazarShop(name, deps, readyCB) {
-    BazarShop.__super__.constructor.call(this, name);
-    async.map(deps, function(dependency, cb) {
-      if (dependency.raw) {
-        return cb(null, dependency.raw);
-      }
-      return $.ajax({
-        url: dependency.url,
-        mimeType: "text",
-        success: function(rawDep) {
-          return cb(null, rawDep);
-        }
-      });
-    }, (function(_this) {
-      return function(error, sources) {
-        _this._initFromSources(sources);
-        _this._registerWithBazar();
-        if (readyCB) {
-          return readyCB();
-        }
-      };
-    })(this));
-  }
-
-  BazarShop.prototype._initFromSources = function(sources) {
-    var data;
-    if (this._worker) {
-      return;
-    }
-    data = new Blob([sources.join("\n\n")], {
-      type: "text/javascript"
-    });
-    this._worker = new Worker((URL || window.webkitURL).createObjectURL(data));
-    this._connectWorkerListener();
-    return this._worker.postMessage("");
-  };
-
-  BazarShop.prototype._connectWorkerListener = function() {
-    return this._worker.onmessage = (function(_this) {
-      return function(e) {
-        var message, _i, _len, _ref, _results;
-        if (e.data instanceof Array) {
-          _ref = e.data;
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            message = _ref[_i];
-            _results.push(_this.broadcast(message.message, message.namespace));
-          }
-          return _results;
-        } else {
-          return _this.broadcast(e.data.message, e.data.namespace);
-        }
-      };
-    })(this);
-  };
-
-  BazarShop.prototype._registerWithBazar = function() {
-    return window.Bazar.registerKoon(this);
-  };
-
-  BazarShop.prototype.receiveMessage = function(message, namespace) {
-    if (!this._worker) {
-      return;
-    }
-    return this._worker.postMessage({
-      message: message,
-      namespace: namespace
-    });
-  };
-
-  return BazarShop;
-
-})(Koon);
-
-if (!window.Bazar) {
-  window.Bazar = new CBazar();
-}
 
 AREUtilParam = (function() {
   function AREUtilParam() {}
@@ -1081,9 +789,7 @@ if (window.param === void 0) {
   window.param = AREUtilParam;
 }
 
-ARERawActor = (function(_super) {
-  __extends(ARERawActor, _super);
-
+ARERawActor = (function() {
   ARERawActor.defaultFriction = 0.3;
 
   ARERawActor.defaultMass = 10;
@@ -1122,8 +828,6 @@ ARERawActor = (function(_super) {
     this.updateVertices(verts, texverts);
     this.setColor(new AREColor3(255, 255, 255));
     this.clearTexture();
-    ARERawActor.__super__.constructor.call(this, "Actor_" + this._id);
-    window.AREMessages.registerKoon(this, /^actor\..*/);
   }
 
 
@@ -1491,16 +1195,21 @@ ARERawActor = (function(_super) {
    * @param [Number] mass 0.0 - unbound
    * @param [Number] friction 0.0 - unbound
    * @param [Number] elasticity 0.0 - unbound
+   * @param [Boolean] refresh optionally delete any existing body/shape
    */
 
-  ARERawActor.prototype.createPhysicsBody = function(_mass, _friction, _elasticity) {
-    var a, bodyDef, i, origVerts, shapeDef, vertIndex, verts, x, y, _i, _ref;
+  ARERawActor.prototype.createPhysicsBody = function(_mass, _friction, _elasticity, refresh) {
+    var a, bodyDef, command, i, origVerts, shapeDef, vertIndex, verts, x, y, _i, _ref;
     this._mass = _mass;
     this._friction = _friction;
     this._elasticity = _elasticity;
+    if (this._physics) {
+      return;
+    }
     if (!(this._mass !== null && this._mass !== void 0)) {
       return;
     }
+    refresh = !!refresh;
     this._friction || (this._friction = ARERawActor.defaultFriction);
     this._elasticity || (this._elasticity = ARERawActor.defaultElasticity);
     if (this._mass < 0) {
@@ -1563,16 +1272,28 @@ ARERawActor = (function(_super) {
       };
     }
     this._physics = true;
-    this.broadcast({}, "physics.enable");
+    window.AREPhysicsManager.sendMessage({}, "physics.enable");
     if (bodyDef) {
-      this.broadcast({
-        def: bodyDef
-      }, "physics.body.create");
+      if (refresh) {
+        command = "physics.body.refresh";
+      } else {
+        command = "physics.body.create";
+      }
+      window.AREPhysicsManager.sendMessage({
+        def: bodyDef,
+        id: this._id
+      }, command);
     }
     if (shapeDef) {
-      this.broadcast({
-        def: shapeDef
-      }, "physics.shape.create");
+      if (refresh) {
+        command = "physics.shape.refresh";
+      } else {
+        command = "physics.shape.create";
+      }
+      window.AREPhysicsManager.sendMessage({
+        def: shapeDef,
+        id: this._id
+      }, command);
     }
     return this;
   };
@@ -1586,11 +1307,11 @@ ARERawActor = (function(_super) {
     if (!this._physics) {
       return;
     }
-    this.broadcast({
+    window.AREPhysicsManager.sendMessage({
       id: this._id
     }, "physics.shape.remove");
     if (this._mass !== 0) {
-      this.broadcast({
+      window.AREPhysicsManager.sendMessage({
         id: this._id
       }, "physics.body.remove");
     }
@@ -1616,8 +1337,7 @@ ARERawActor = (function(_super) {
     if (!this.hasPhysics()) {
       return;
     }
-    this.destroyPhysicsBody();
-    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    return this.createPhysicsBody(this._mass, this._friction, this._elasticity, true);
   };
 
 
@@ -1684,14 +1404,6 @@ ARERawActor = (function(_super) {
     this._friction = _friction;
     this.refreshPhysics();
     return this;
-  };
-
-  ARERawActor.prototype.refreshPhysics = function() {
-    if (!this.hasPhysics()) {
-      return;
-    }
-    this.destroyPhysicsBody();
-    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
   };
 
 
@@ -1783,7 +1495,7 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setPhysicsLayer = function(layer) {
     this._physicsLayer = 1 << param.required(layer, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-    return this.broadcast({
+    return window.AREPhysicsManager.sendMessage({
       id: this._id,
       layer: this._physicsLayer
     }, "physics.shape.set.layer");
@@ -1919,8 +1631,7 @@ ARERawActor = (function(_super) {
 
   ARERawActor.prototype.setPhysicsVertices = function(verts) {
     this._psyxVertices = param.required(verts);
-    this.destroyPhysicsBody();
-    return this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+    return this.refreshPhysics();
   };
 
 
@@ -2323,7 +2034,7 @@ ARERawActor = (function(_super) {
   ARERawActor.prototype.setPosition = function(position) {
     this._position = param.required(position);
     if (this.hasPhysics()) {
-      this.broadcast({
+      window.AREPhysicsManager.sendMessage({
         id: this._id,
         position: position
       }, "physics.body.set.position");
@@ -2347,16 +2058,18 @@ ARERawActor = (function(_super) {
     if (!radians) {
       rotation = Number(rotation) * 0.0174532925;
     }
+    if (this._rotation === rotation) {
+      return;
+    }
     this._rotation = rotation;
     if (this.hasPhysics()) {
       if (this._mass > 0) {
-        this.broadcast({
+        window.AREPhysicsManager.sendMessage({
           id: this._id,
           rotation: this._rotation
         }, "physics.body.set.rotation");
       } else {
-        this.destroyPhysicsBody();
-        this.createPhysicsBody(this._mass, this._friction, this._elasticity);
+        this.refreshPhysics();
       }
     }
     return this;
@@ -2580,7 +2293,7 @@ ARERawActor = (function(_super) {
 
   return ARERawActor;
 
-})(Koon);
+})();
 
 ARERectangleActor = (function(_super) {
   __extends(ARERectangleActor, _super);
@@ -3924,7 +3637,7 @@ ARERenderer = (function() {
       r = this._clearColor.getR(true);
       g = this._clearColor.getG(true);
       b = this._clearColor.getB(true);
-      if (this._gl) {
+      if (!!this._gl) {
         this._gl.clearColor(r, g, b, 1.0);
       }
     }
@@ -4369,25 +4082,99 @@ ARERenderer = (function() {
 
 })();
 
-PhysicsManager = (function(_super) {
-  __extends(PhysicsManager, _super);
 
+/*
+ * PhysicsManager is in charge of starting and communicating with the physics
+ * web worker.
+ */
+
+PhysicsManager = (function() {
   function PhysicsManager(_renderer, depPaths, cb) {
+    var dependencies;
     this._renderer = _renderer;
     param.required(_renderer);
     param.required(depPaths);
-    PhysicsManager.__super__.constructor.call(this, "PhysicsManager", [
+    this._backlog = [];
+    dependencies = [
       {
         raw: "cp = exports = {};"
       }, {
         url: depPaths.chipmunk
       }, {
-        url: depPaths.koon
-      }, {
         url: depPaths.physics_worker
       }
-    ], cb);
+    ];
+    async.map(dependencies, function(dependency, depCB) {
+      if (dependency.raw) {
+        return depCB(null, dependency.raw);
+      }
+      return $.ajax({
+        url: dependency.url,
+        mimeType: "text",
+        success: function(rawDep) {
+          return depCB(null, rawDep);
+        }
+      });
+    }, (function(_this) {
+      return function(error, sources) {
+        _this._initFromSources(sources);
+        _this._emptyBacklog();
+        if (cb) {
+          return cb();
+        }
+      };
+    })(this));
   }
+
+  PhysicsManager.prototype._initFromSources = function(sources) {
+    var data;
+    if (!!this._worker) {
+      return;
+    }
+    data = new Blob([sources.join("\n\n")], {
+      type: "text/javascript"
+    });
+    this._worker = new Worker((URL || window.webkitURL).createObjectURL(data));
+    this._worker.postMessage("");
+    return this._connectWorkerListener();
+  };
+
+  PhysicsManager.prototype._emptyBacklog = function() {
+    var item, _i, _len, _ref, _results;
+    if (!this._worker) {
+      return;
+    }
+    _ref = this._backlog;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      _results.push(this.sendMessage(item.message, item.command));
+    }
+    return _results;
+  };
+
+
+  /*
+   * Broadcast a message to the physics manager; this gets passed through to the
+   * underlying web worker.
+   *
+   * @param [Object] message
+   * @param [String] command
+   */
+
+  PhysicsManager.prototype.sendMessage = function(message, command) {
+    if (!!this._worker) {
+      return this._worker.postMessage({
+        message: message,
+        command: command
+      });
+    } else {
+      return this._backlog.push({
+        message: message,
+        command: command
+      });
+    }
+  };
 
   PhysicsManager.prototype._connectWorkerListener = function() {
     var ID_INDEX, POS_INDEX, ROT_INDEX, actor, data, dataPacket;
@@ -4413,7 +4200,7 @@ PhysicsManager = (function(_super) {
           }
           return _results;
         } else {
-          return _this.broadcast(e.data.message, e.data.namespace);
+          return _this.broadcast(data.message, data.command);
         }
       };
     })(this);
@@ -4421,7 +4208,7 @@ PhysicsManager = (function(_super) {
 
   return PhysicsManager;
 
-})(BazarShop);
+})();
 
 ARELog = (function() {
   function ARELog() {}
@@ -5894,16 +5681,16 @@ AREEngineInterface = (function() {
      * Should WGL textures be flipped by their Y axis?
      * NOTE. This does not affect existing textures.
      */
-    this.wglFlipTextureY = false;
-    return new ARE(width, height, (function(_this) {
-      return function(_engine) {
-        _this._engine = _engine;
-        _this._masterInterface.setEngine(_this._engine);
-        _this._renderer = _this._engine.getRenderer();
-        _this._engine.startRendering();
+    this.wglFlipTextureY = true;
+    this._engine = new ARE(width, height, (function(_this) {
+      return function() {
         return ad(_this._engine);
       };
     })(this), log, id);
+    this._masterInterface.setEngine(this._engine);
+    this._renderer = this._engine.getRenderer();
+    this._engine.startRendering();
+    return this._engine;
   };
 
 
@@ -6361,10 +6148,10 @@ ARE = (function() {
 
   ARE.Version = {
     MAJOR: 1,
-    MINOR: 3,
+    MINOR: 4,
     PATCH: 0,
     BUILD: null,
-    STRING: "1.3.0"
+    STRING: "1.4.0"
   };
 
 
@@ -6396,13 +6183,16 @@ ARE = (function() {
     if (window._ === null || window._ === void 0) {
       return ARELog.error("Underscore.js is not present!");
     }
-    window.AREMessages = new KoonFlock("AREMessages");
-    window.AREMessages.registerKoon(window.Bazar);
     this._renderer = new ARERenderer({
       canvasId: canvas,
       width: width,
       height: height
     });
+
+    /*
+     * We expose the physics manager to the window, so actors can directly
+     * communicate with it
+     */
     this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
       return function() {
         _this._currentlyRendering = false;
@@ -6410,6 +6200,7 @@ ARE = (function() {
         return cb(_this);
       };
     })(this));
+    window.AREPhysicsManager = this._physics;
   }
 
 

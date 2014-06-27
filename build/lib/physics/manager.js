@@ -1,26 +1,97 @@
-var PhysicsManager,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-PhysicsManager = (function(_super) {
-  __extends(PhysicsManager, _super);
+/*
+ * PhysicsManager is in charge of starting and communicating with the physics
+ * web worker.
+ */
+var PhysicsManager;
 
+PhysicsManager = (function() {
   function PhysicsManager(_renderer, depPaths, cb) {
+    var dependencies;
     this._renderer = _renderer;
     param.required(_renderer);
     param.required(depPaths);
-    PhysicsManager.__super__.constructor.call(this, "PhysicsManager", [
+    this._backlog = [];
+    dependencies = [
       {
         raw: "cp = exports = {};"
       }, {
         url: depPaths.chipmunk
       }, {
-        url: depPaths.koon
-      }, {
         url: depPaths.physics_worker
       }
-    ], cb);
+    ];
+    async.map(dependencies, function(dependency, depCB) {
+      if (dependency.raw) {
+        return depCB(null, dependency.raw);
+      }
+      return $.ajax({
+        url: dependency.url,
+        mimeType: "text",
+        success: function(rawDep) {
+          return depCB(null, rawDep);
+        }
+      });
+    }, (function(_this) {
+      return function(error, sources) {
+        _this._initFromSources(sources);
+        _this._emptyBacklog();
+        if (cb) {
+          return cb();
+        }
+      };
+    })(this));
   }
+
+  PhysicsManager.prototype._initFromSources = function(sources) {
+    var data;
+    if (!!this._worker) {
+      return;
+    }
+    data = new Blob([sources.join("\n\n")], {
+      type: "text/javascript"
+    });
+    this._worker = new Worker((URL || window.webkitURL).createObjectURL(data));
+    this._worker.postMessage("");
+    return this._connectWorkerListener();
+  };
+
+  PhysicsManager.prototype._emptyBacklog = function() {
+    var item, _i, _len, _ref, _results;
+    if (!this._worker) {
+      return;
+    }
+    _ref = this._backlog;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      _results.push(this.sendMessage(item.message, item.command));
+    }
+    return _results;
+  };
+
+
+  /*
+   * Broadcast a message to the physics manager; this gets passed through to the
+   * underlying web worker.
+   *
+   * @param [Object] message
+   * @param [String] command
+   */
+
+  PhysicsManager.prototype.sendMessage = function(message, command) {
+    if (!!this._worker) {
+      return this._worker.postMessage({
+        message: message,
+        command: command
+      });
+    } else {
+      return this._backlog.push({
+        message: message,
+        command: command
+      });
+    }
+  };
 
   PhysicsManager.prototype._connectWorkerListener = function() {
     var ID_INDEX, POS_INDEX, ROT_INDEX, actor, data, dataPacket;
@@ -46,7 +117,7 @@ PhysicsManager = (function(_super) {
           }
           return _results;
         } else {
-          return _this.broadcast(e.data.message, e.data.namespace);
+          return _this.broadcast(data.message, data.command);
         }
       };
     })(this);
@@ -54,4 +125,4 @@ PhysicsManager = (function(_super) {
 
   return PhysicsManager;
 
-})(BazarShop);
+})();

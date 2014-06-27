@@ -1,18 +1,12 @@
 ARE_PHYSICS_UPDATE_PACKET = []
 
-###
-# Physics worker, implements a BazarShop and uses Koon for message passing
-###
-class AREPhysicsWorker extends Koon
+class AREPhysicsWorker
 
   constructor: ->
-    super "PhysicsWorker"
-
     @_shapes = []
     @_bodies = []
 
     @_initDefaults()
-    @_setBazarNamespace /^physics\..*/
 
     @_createWorld()
 
@@ -37,11 +31,6 @@ class AREPhysicsWorker extends Koon
     @_world.iterations = 30
     @_world.collisionSlop = 0.5
     @_world.sleepTimeThreshold = 0.5
-
-  _setBazarNamespace: (match) ->
-    postMessage
-      namespace: "bazar.set_namespace"
-      message: match
 
   ###
   # Converts screen coords to world coords
@@ -126,9 +115,9 @@ class AREPhysicsWorker extends Koon
 
     postMessage ARE_PHYSICS_UPDATE_PACKET
 
-  receiveMessage: (message, namespace) ->
-    return unless namespace
-    command = namespace.split(".")
+  receiveMessage: (message, command) ->
+    return unless command
+    command = command.split "."
 
     switch command[1]
       when "ppm" then @_PPM = message.value
@@ -149,6 +138,10 @@ class AREPhysicsWorker extends Koon
           when "position" then @bodySetPosition message
           when "rotation" then @bodySetRotation message
 
+        when "refresh"
+          @removeBody message
+          @createBody message
+
       when "shape" then switch command[2]
         when "create" then @createShape message
         when "remove" then @removeShape message
@@ -156,11 +149,12 @@ class AREPhysicsWorker extends Koon
         when "set" then switch command[3]
           when "layer" then @shapeSetLayer message
 
+        when "refresh"
+          @removeShape message
+          @createShape message
+
       when "gravity" then switch command[2]
         when "set" then @setGravity message
-
-    # Super does logging for us
-    # super message, namespace
 
   ###
   # Get body by id
@@ -230,6 +224,9 @@ class AREPhysicsWorker extends Koon
     body.setPos @screenToWorld(def.position) if def.position
     body.setAngle def.angle if def.angle
 
+    if def.mass == 0
+      console.log "Physics worker created physics body #{def.position}"
+
     @_bodies.push body
 
   createShape: (message) ->
@@ -289,4 +286,4 @@ class AREPhysicsWorker extends Koon
 
 worker = new AREPhysicsWorker()
 onmessage = (e) ->
-  worker.receiveMessage e.data.message, e.data.namespace
+  worker.receiveMessage e.data.message, e.data.command
