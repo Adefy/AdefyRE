@@ -168,7 +168,7 @@ class ARERenderer
 
     ARELog.info "Using the #{@_activeRendererMode} renderer mode"
 
-    @setClearColor 0, 0, 0
+    @setClearColor 255, 255, 255
     @switchMaterial ARERenderer.MATERIAL_FLAT
 
   ###

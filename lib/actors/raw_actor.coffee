@@ -263,6 +263,14 @@ class ARERawActor
     @_renderer.addActor @, layer
 
   ###
+  # Check if we have a texture set
+  #
+  # @return [Boolean] hasTexture
+  ###
+  hasTexture: ->
+    !!@_texture
+
+  ###
   # We support a single texture per actor for the time being. UV coords are
   # generated automatically internally, for a flat map.
   #

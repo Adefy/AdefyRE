@@ -82,7 +82,7 @@ void main() {
   vec4 baseColor = texture2D(uSampler,
                              uClipRect.xy +
                              vTexCoord * uClipRect.zw);
-  baseColor *= uColor;
+  // baseColor *= uColor;
   baseColor.a *= uOpacity;
 
   gl_FragColor = baseColor;

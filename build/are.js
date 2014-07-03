@@ -344,6 +344,17 @@ ARERawActor = (function() {
 
 
   /*
+   * Check if we have a texture set
+   *
+   * @return [Boolean] hasTexture
+   */
+
+  ARERawActor.prototype.hasTexture = function() {
+    return !!this._texture;
+  };
+
+
+  /*
    * We support a single texture per actor for the time being. UV coords are
    * generated automatically internally, for a flat map.
    *
@@ -2438,7 +2449,7 @@ AREShader.shaders.solid.fragment = "" + precision_declaration + "\n\nuniform vec
 
 AREShader.shaders.texture.vertex = "" + precision_declaration + "\n\nattribute vec2 aPosition;\nattribute vec2 aTexCoord;\n\nuniform mat4 uProjection;\nuniform mat4 uModelView;\n\nvarying " + varying_precision + " vec2 vTexCoord;\n\nvoid main() {\n  gl_Position = uProjection * uModelView * vec4(aPosition, 1, 1);\n  vTexCoord = aTexCoord;\n}";
 
-AREShader.shaders.texture.fragment = "" + precision_declaration + "\n\nuniform sampler2D uSampler;\nuniform vec4 uColor;\nuniform float uOpacity;\nuniform vec4 uClipRect;\n\nvarying " + varying_precision + " vec2 vTexCoord;\n\nvoid main() {\n  vec4 baseColor = texture2D(uSampler,\n                             uClipRect.xy +\n                             vTexCoord * uClipRect.zw);\n  baseColor *= uColor;\n  baseColor.a *= uOpacity;\n\n  gl_FragColor = baseColor;\n}";
+AREShader.shaders.texture.fragment = "" + precision_declaration + "\n\nuniform sampler2D uSampler;\nuniform vec4 uColor;\nuniform float uOpacity;\nuniform vec4 uClipRect;\n\nvarying " + varying_precision + " vec2 vTexCoord;\n\nvoid main() {\n  vec4 baseColor = texture2D(uSampler,\n                             uClipRect.xy +\n                             vTexCoord * uClipRect.zw);\n  // baseColor *= uColor;\n  baseColor.a *= uOpacity;\n\n  gl_FragColor = baseColor;\n}";
 
 ARERenderer = (function() {
 
@@ -2607,7 +2618,7 @@ ARERenderer = (function() {
         throw new Error("Invalid Renderer " + rendererMode);
     }
     ARELog.info("Using the " + this._activeRendererMode + " renderer mode");
-    this.setClearColor(0, 0, 0);
+    this.setClearColor(255, 255, 255);
     this.switchMaterial(ARERenderer.MATERIAL_FLAT);
   }
 
@@ -5390,7 +5401,6 @@ ARE = (function() {
     deps: {
       physics: {
         chipmunk: "/components/chipmunk/cp.js",
-        koon: "/lib/koon/koon.js",
         physics_worker: "/lib/physics/worker.js"
       }
     }
@@ -5399,9 +5409,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 4,
-    PATCH: 0,
+    PATCH: 1,
     BUILD: null,
-    STRING: "1.4.0"
+    STRING: "1.4.1"
   };
 
 

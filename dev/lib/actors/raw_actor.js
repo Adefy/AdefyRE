@@ -305,6 +305,17 @@ ARERawActor = (function() {
 
 
   /*
+   * Check if we have a texture set
+   *
+   * @return [Boolean] hasTexture
+   */
+
+  ARERawActor.prototype.hasTexture = function() {
+    return !!this._texture;
+  };
+
+
+  /*
    * We support a single texture per actor for the time being. UV coords are
    * generated automatically internally, for a flat map.
    *

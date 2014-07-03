@@ -298,6 +298,14 @@ class ARERawActor
     @_renderer.addActor @, layer
 
   ###
+  # Check if we have a texture set
+  #
+  # @return [Boolean] hasTexture
+  ###
+  hasTexture: ->
+    !!@_texture
+
+  ###
   # We support a single texture per actor for the time being. UV coords are
   # generated automatically internally, for a flat map.
   #
@@ -2125,7 +2133,7 @@ void main() {
   vec4 baseColor = texture2D(uSampler,
                              uClipRect.xy +
                              vTexCoord * uClipRect.zw);
-  baseColor *= uColor;
+  // baseColor *= uColor;
   baseColor.a *= uOpacity;
 
   gl_FragColor = baseColor;
@@ -2302,7 +2310,7 @@ class ARERenderer
 
     ARELog.info "Using the #{@_activeRendererMode} renderer mode"
 
-    @setClearColor 0, 0, 0
+    @setClearColor 255, 255, 255
     @switchMaterial ARERenderer.MATERIAL_FLAT
 
   ###
@@ -4727,15 +4735,14 @@ class ARE
     deps:
       physics:
         chipmunk: "/components/chipmunk/cp.js"
-        koon: "/lib/koon/koon.js"
         physics_worker: "/lib/physics/worker.js"
 
   @Version:
     MAJOR: 1
     MINOR: 4
-    PATCH: 0
+    PATCH: 1
     BUILD: null
-    STRING: "1.4.0"
+    STRING: "1.4.1"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.

@@ -167,7 +167,7 @@ ARERenderer = (function() {
         throw new Error("Invalid Renderer " + rendererMode);
     }
     ARELog.info("Using the " + this._activeRendererMode + " renderer mode");
-    this.setClearColor(0, 0, 0);
+    this.setClearColor(255, 255, 255);
     this.switchMaterial(ARERenderer.MATERIAL_FLAT);
   }
 

@@ -25,15 +25,14 @@ class ARE
     deps:
       physics:
         chipmunk: "/components/chipmunk/cp.js"
-        koon: "/lib/koon/koon.js"
         physics_worker: "/lib/physics/worker.js"
 
   @Version:
     MAJOR: 1
     MINOR: 4
-    PATCH: 0
+    PATCH: 1
     BUILD: null
-    STRING: "1.4.0"
+    STRING: "1.4.1"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
