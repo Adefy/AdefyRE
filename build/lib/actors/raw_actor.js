@@ -68,12 +68,12 @@ ARERawActor = (function() {
       y: 0
     };
     this._rotation = 0;
+    this._bounds = {
+      w: 0,
+      h: 0
+    };
     this._initializeModelMatrix();
     this._updateModelMatrix();
-    this._size = {
-      x: 0,
-      y: 0
-    };
 
     /*
      * Physics values
@@ -784,10 +784,13 @@ ARERawActor = (function() {
         mxy = this._vertices[i * 2 + 1];
       }
     }
-    this._size = {
-      x: mxx - mnx,
-      y: mxy - mny
+    this._bounds = {
+      w: mxx - mnx,
+      h: mxy - mny
     };
+    if (this._onSizeChange) {
+      this._onSizeChange(this._bounds);
+    }
     return this._renderer.requestVBORefresh();
   };
 
@@ -1176,7 +1179,7 @@ ARERawActor = (function() {
         if ((this._renderStyle & ARERenderer.RENDER_STYLE_FILL) > 0) {
           if (this._renderer._currentMaterial === ARERenderer.MATERIAL_TEXTURE) {
             context.clip();
-            context.drawImage(this._texture.texture, -this._size.x / 2, -this._size.y / 2, this._size.x, this._size.y);
+            context.drawImage(this._texture.texture, -this._bounds.w / 2, -this._bounds.h / 2, this._bounds.w, this._bounds.h);
           } else {
             context.fill();
           }
@@ -1246,6 +1249,28 @@ ARERawActor = (function() {
 
 
   /*
+   * Register an orientation change listener
+   *
+   * @param [Method] cb
+   */
+
+  ARERawActor.prototype.setOnOrientationChange = function(cb) {
+    return this._onOrientationChange = cb;
+  };
+
+
+  /*
+   * Register a size change listener
+   *
+   * @param [Method] cb
+   */
+
+  ARERawActor.prototype.setOnSizeChange = function(cb) {
+    return this._onSizeChange = cb;
+  };
+
+
+  /*
    * Set actor position, affects either the actor or the body directly if one
    * exists
    *
@@ -1260,6 +1285,11 @@ ARERawActor = (function() {
         id: this._id,
         position: position
       }, "physics.body.set.position");
+    }
+    if (this._onOrientationChange) {
+      this._onOrientationChange({
+        position: this._position
+      });
     }
     return this;
   };
@@ -1293,6 +1323,11 @@ ARERawActor = (function() {
       } else {
         this.refreshPhysics();
       }
+    }
+    if (this._onOrientationChange) {
+      this._onOrientationChange({
+        rotation: this._rotation
+      });
     }
     return this;
   };
@@ -1509,7 +1544,13 @@ ARERawActor = (function() {
     switch (command[1]) {
       case "update":
         this._position = message.position;
-        return this._rotation = message.rotation;
+        this._rotation = message.rotation;
+        if (this._onOrientationChange) {
+          return this._onOrientationChange({
+            position: this._position,
+            rotation: this._rotation
+          });
+        }
     }
   };
 

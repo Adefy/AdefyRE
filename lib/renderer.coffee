@@ -561,10 +561,10 @@ class ARERenderer
         if a._visible
 
           # Only draw if the actor is visible onscreen
-          leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0
-          rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth
-          topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0
-          bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight
+          leftEdge = (a._position.x - camPos.x) + (a._bounds.w / 2) < 0
+          rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > window.innerWidth
+          topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < 0
+          bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > window.innerHeight
 
           unless bottomEdge or topEdge or leftEdge or rightEdge
 

@@ -68,13 +68,11 @@ class ARERawActor
 
     @_id = -1
     @_position = x: 0, y: 0
-    @_rotation = 0 # Radians, but set in degrees by default
+    @_rotation = 0
+    @_bounds = w: 0, h: 0
 
     @_initializeModelMatrix()
     @_updateModelMatrix()
-
-    ## size calculated from vertices
-    @_size = x: 0, y: 0
 
     ###
     # Physics values
@@ -634,7 +632,8 @@ class ARERawActor
       mny = @_vertices[i * 2 + 1] if mny > @_vertices[i * 2 + 1]
       mxy = @_vertices[i * 2 + 1] if mxy < @_vertices[i * 2 + 1]
 
-    @_size = x: mxx - mnx, y: mxy - mny
+    @_bounds = w: mxx - mnx, h: mxy - mny
+    @_onSizeChange @_bounds if @_onSizeChange
 
     # Notify renderer our vertices have changed
     @_renderer.requestVBORefresh()
@@ -1007,7 +1006,8 @@ class ARERawActor
           if @_renderer._currentMaterial == ARERenderer.MATERIAL_TEXTURE
             context.clip()
             context.drawImage @_texture.texture,
-                              -@_size.x / 2, -@_size.y / 2, @_size.x, @_size.y
+                              -@_bounds.w / 2, -@_bounds.h / 2,
+                              @_bounds.w, @_bounds.h
 
           else
             context.fill()
@@ -1058,6 +1058,22 @@ class ARERawActor
     @
 
   ###
+  # Register an orientation change listener
+  #
+  # @param [Method] cb
+  ###
+  setOnOrientationChange: (cb) ->
+    @_onOrientationChange = cb
+
+  ###
+  # Register a size change listener
+  #
+  # @param [Method] cb
+  ###
+  setOnSizeChange: (cb) ->
+    @_onSizeChange = cb
+
+  ###
   # Set actor position, affects either the actor or the body directly if one
   # exists
   #
@@ -1073,6 +1089,7 @@ class ARERawActor
         position: position
       ,"physics.body.set.position"
 
+    @_onOrientationChange position: @_position if @_onOrientationChange
     @
 
   ###
@@ -1101,6 +1118,7 @@ class ARERawActor
       else
         @refreshPhysics()
 
+    @_onOrientationChange rotation: @_rotation if @_onOrientationChange
     @
 
   ###
@@ -1282,3 +1300,8 @@ class ARERawActor
 
         @_position = message.position
         @_rotation = message.rotation
+
+        if @_onOrientationChange
+          @_onOrientationChange
+            position: @_position
+            rotation: @_rotation

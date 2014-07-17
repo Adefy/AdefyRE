@@ -551,10 +551,10 @@ ARERenderer = (function() {
       while (actorIterator--) {
         a = this._actors[actorCount - actorIterator - 1];
         if (a._visible) {
-          leftEdge = (a._position.x - camPos.x) + (a._size.x / 2) < 0;
-          rightEdge = (a._position.x - camPos.x) - (a._size.x / 2) > window.innerWidth;
-          topEdge = (a._position.y - camPos.y) + (a._size.y / 2) < 0;
-          bottomEdge = (a._position.y - camPos.y) - (a._size.y / 2) > window.innerHeight;
+          leftEdge = (a._position.x - camPos.x) + (a._bounds.w / 2) < 0;
+          rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > window.innerWidth;
+          topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < 0;
+          bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > window.innerHeight;
           if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
             if (a._attachedTexture) {
               a = a.updateAttachment();
