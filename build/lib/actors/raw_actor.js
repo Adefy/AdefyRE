@@ -1470,6 +1470,10 @@ ARERawActor = (function() {
     return this._position;
   };
 
+  ARERawActor.prototype.getBounds = function() {
+    return this._bounds;
+  };
+
 
   /*
    * Returns actor rotation as an angle in degrees

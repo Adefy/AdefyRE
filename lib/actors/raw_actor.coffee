@@ -1249,6 +1249,8 @@ class ARERawActor
   ###
   getPosition: -> @_position
 
+  getBounds: -> @_bounds
+
   ###
   # Returns actor rotation as an angle in degrees
   #

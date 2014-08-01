@@ -2259,6 +2259,10 @@ ARERawActor = (function() {
     return this._position;
   };
 
+  ARERawActor.prototype.getBounds = function() {
+    return this._bounds;
+  };
+
 
   /*
    * Returns actor rotation as an angle in degrees
@@ -6200,9 +6204,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 4,
-    PATCH: 1,
+    PATCH: 2,
     BUILD: null,
-    STRING: "1.4.1"
+    STRING: "1.4.2"
   };
 
 
