@@ -91,5 +91,3 @@ class PhysicsManager
           actor._position = dataPacket[POS_INDEX]
           actor._rotation = dataPacket[ROT_INDEX]
           actor._updateModelMatrix()
-      else
-        @broadcast data.message, data.command

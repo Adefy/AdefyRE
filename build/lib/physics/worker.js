@@ -1,6 +1,4 @@
-var AREPhysicsWorker, ARE_PHYSICS_UPDATE_PACKET, onmessage, worker;
-
-ARE_PHYSICS_UPDATE_PACKET = [];
+var AREPhysicsWorker, onmessage, worker;
 
 AREPhysicsWorker = (function() {
   function AREPhysicsWorker() {
@@ -108,13 +106,16 @@ AREPhysicsWorker = (function() {
   };
 
   AREPhysicsWorker.prototype._broadcastBodyPositions = function() {
-    var body, l;
+    var body, l, updatePacket;
     l = this._bodies.length;
+    updatePacket = [];
     while (l--) {
       body = this._bodies[l];
-      ARE_PHYSICS_UPDATE_PACKET[l] = [body.__are_id, this.worldToScreenFast(body.getPos()), body.a];
+      updatePacket[l] = [body.__are_id, this.worldToScreenFast(body.getPos()), body.a];
     }
-    return postMessage(ARE_PHYSICS_UPDATE_PACKET);
+    if (updatePacket.length > 0) {
+      return postMessage(updatePacket);
+    }
   };
 
   AREPhysicsWorker.prototype.receiveMessage = function(message, command) {

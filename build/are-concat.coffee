@@ -3117,8 +3117,6 @@ class PhysicsManager
           actor._position = dataPacket[POS_INDEX]
           actor._rotation = dataPacket[ROT_INDEX]
           actor._updateModelMatrix()
-      else
-        @broadcast data.message, data.command
 
 # Tiny logging class created to be able to selectively
 # silence all logging in production, or by level. Also supports tags
@@ -4765,9 +4763,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 4
-    PATCH: 2
+    PATCH: 3
     BUILD: null
-    STRING: "1.4.2"
+    STRING: "1.4.3"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.

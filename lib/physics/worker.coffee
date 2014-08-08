@@ -1,5 +1,3 @@
-ARE_PHYSICS_UPDATE_PACKET = []
-
 class AREPhysicsWorker
 
   constructor: ->
@@ -103,17 +101,18 @@ class AREPhysicsWorker
 
     # We use the same array for pushing updates
     l = @_bodies.length
+    updatePacket = []
     
     while l--
       body = @_bodies[l]
 
-      ARE_PHYSICS_UPDATE_PACKET[l] = [
+      updatePacket[l] = [
         body.__are_id
         @worldToScreenFast body.getPos()
         body.a
       ]
 
-    postMessage ARE_PHYSICS_UPDATE_PACKET
+    postMessage updatePacket if updatePacket.length > 0
 
   receiveMessage: (message, command) ->
     return unless command

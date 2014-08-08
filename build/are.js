@@ -3505,8 +3505,6 @@ PhysicsManager = (function() {
             _results.push(actor._updateModelMatrix());
           }
           return _results;
-        } else {
-          return _this.broadcast(data.message, data.command);
         }
       };
     })(this);
@@ -5454,9 +5452,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 4,
-    PATCH: 2,
+    PATCH: 3,
     BUILD: null,
-    STRING: "1.4.2"
+    STRING: "1.4.3"
   };
 
 

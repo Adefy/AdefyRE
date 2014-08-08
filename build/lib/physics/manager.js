@@ -116,8 +116,6 @@ PhysicsManager = (function() {
             _results.push(actor._updateModelMatrix());
           }
           return _results;
-        } else {
-          return _this.broadcast(data.message, data.command);
         }
       };
     })(this);
