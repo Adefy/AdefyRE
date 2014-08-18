@@ -3325,6 +3325,10 @@ ARERenderer = (function() {
     return !!removedActor;
   };
 
+  ARERenderer.prototype.makeOrthoMatrix = function(left, right, bottom, top, znear, zfar) {
+    return new Float32Array([2 / (right - left), 0, 0, 0, 0, 2 / (top - bottom), 0, 0, 0, 0, -2 / (zfar - znear), 0, -(right + left) / (right - left), -(top + bottom) / (top - bottom), -(zfar + znear) / (zfar - znear), 1]);
+  };
+
 
   /*
    * Reconstructs our viewport based on the camera scale, and uploads a fresh
@@ -3335,8 +3339,7 @@ ARERenderer = (function() {
     var handles, height, ortho, width;
     width = this._width * this._zoomFactor;
     height = this._height * this._zoomFactor;
-    ortho = Matrix4.makeOrtho(-width / 2, width / 2, height / 2, -height / 2, -10, 10).flatten();
-    ortho[15] = 1.0;
+    ortho = this.makeOrthoMatrix(-width / 2, width / 2, height / 2, -height / 2, -10, 10);
     handles = material.getHandles();
     return this._gl.uniformMatrix4fv(handles.uProjection, false, ortho);
   };
@@ -3476,16 +3479,23 @@ PhysicsManager = (function() {
       }
     ];
     async.map(dependencies, function(dependency, depCB) {
+      var request;
       if (dependency.raw) {
         return depCB(null, dependency.raw);
       }
-      return $.ajax({
-        url: dependency.url,
-        mimeType: "text",
-        success: function(rawDep) {
-          return depCB(null, rawDep);
+      request = new XMLHttpRequest();
+      request.open("GET", dependency.url, true);
+      request.onerror = function(e) {
+        return depCB("Connection error: " + e, null);
+      };
+      request.onload = function() {
+        if (request.status >= 200 && request.status < 400) {
+          return depCB(null, request.responseText);
+        } else {
+          return depCB("Request returned " + request.status, null);
         }
-      });
+      };
+      return request.send();
     }, (function(_this) {
       return function(error, sources) {
         _this._initFromSources(sources);
@@ -5516,10 +5526,10 @@ ARE = (function() {
 
   ARE.Version = {
     MAJOR: 1,
-    MINOR: 4,
-    PATCH: 4,
+    MINOR: 5,
+    PATCH: 0,
     BUILD: null,
-    STRING: "1.4.4"
+    STRING: "1.5.0"
   };
 
 

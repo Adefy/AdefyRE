@@ -22,11 +22,16 @@ class PhysicsManager
     async.map dependencies, (dependency, depCB) ->
       return depCB(null, dependency.raw) if dependency.raw
 
-      $.ajax
-        url: dependency.url
-        mimeType: "text"
-        success:  (rawDep) ->
-          depCB null, rawDep
+      request = new XMLHttpRequest()
+      request.open "GET", dependency.url, true
+      request.onerror = (e) -> depCB "Connection error: #{e}", null
+      request.onload = ->
+        if request.status >= 200 && request.status < 400
+          depCB null, request.responseText
+        else
+          depCB "Request returned #{request.status}", null
+
+      request.send()
 
     , (error, sources) =>
       @_initFromSources sources

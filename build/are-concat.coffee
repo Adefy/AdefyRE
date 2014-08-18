@@ -2966,6 +2966,26 @@ class ARERenderer
 
     !!removedActor
 
+  makeOrthoMatrix: (left, right, bottom, top, znear, zfar) ->
+    new Float32Array [
+      2 / (right - left)
+      0
+      0
+      0
+      0
+      2 / (top - bottom)
+      0
+      0
+      0
+      0
+      -2 / (zfar - znear)
+      0
+      -(right + left) / (right - left)
+      -(top + bottom) / (top - bottom)
+      -(zfar + znear) / (zfar - znear)
+      1
+    ]
+
   ###
   # Reconstructs our viewport based on the camera scale, and uploads a fresh
   # projection matrix for the provided material (should be our current shader)
@@ -2974,8 +2994,7 @@ class ARERenderer
     width = @_width * @_zoomFactor
     height = @_height * @_zoomFactor
 
-    ortho = Matrix4.makeOrtho(-width/2, width/2, height/2, -height/2, -10, 10).flatten()
-    ortho[15] = 1.0 # Its a "Gotcha" from using EWGL
+    ortho = @makeOrthoMatrix -width/2, width/2, height/2, -height/2, -10, 10
 
     handles = material.getHandles()
     @_gl.uniformMatrix4fv handles.uProjection, false, ortho
@@ -3082,11 +3101,16 @@ class PhysicsManager
     async.map dependencies, (dependency, depCB) ->
       return depCB(null, dependency.raw) if dependency.raw
 
-      $.ajax
-        url: dependency.url
-        mimeType: "text"
-        success:  (rawDep) ->
-          depCB null, rawDep
+      request = new XMLHttpRequest()
+      request.open "GET", dependency.url, true
+      request.onerror = (e) -> depCB "Connection error: #{e}", null
+      request.onload = ->
+        if request.status >= 200 && request.status < 400
+          depCB null, request.responseText
+        else
+          depCB "Request returned #{request.status}", null
+
+      request.send()
 
     , (error, sources) =>
       @_initFromSources sources
@@ -4796,10 +4820,10 @@ class ARE
 
   @Version:
     MAJOR: 1
-    MINOR: 4
-    PATCH: 4
+    MINOR: 5
+    PATCH: 0
     BUILD: null
-    STRING: "1.4.4"
+    STRING: "1.5.0"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.

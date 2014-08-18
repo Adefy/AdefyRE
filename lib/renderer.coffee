@@ -799,6 +799,26 @@ class ARERenderer
 
     !!removedActor
 
+  makeOrthoMatrix: (left, right, bottom, top, znear, zfar) ->
+    new Float32Array [
+      2 / (right - left)
+      0
+      0
+      0
+      0
+      2 / (top - bottom)
+      0
+      0
+      0
+      0
+      -2 / (zfar - znear)
+      0
+      -(right + left) / (right - left)
+      -(top + bottom) / (top - bottom)
+      -(zfar + znear) / (zfar - znear)
+      1
+    ]
+
   ###
   # Reconstructs our viewport based on the camera scale, and uploads a fresh
   # projection matrix for the provided material (should be our current shader)
@@ -807,8 +827,7 @@ class ARERenderer
     width = @_width * @_zoomFactor
     height = @_height * @_zoomFactor
 
-    ortho = Matrix4.makeOrtho(-width/2, width/2, height/2, -height/2, -10, 10).flatten()
-    ortho[15] = 1.0 # Its a "Gotcha" from using EWGL
+    ortho = @makeOrthoMatrix -width/2, width/2, height/2, -height/2, -10, 10
 
     handles = material.getHandles()
     @_gl.uniformMatrix4fv handles.uProjection, false, ortho

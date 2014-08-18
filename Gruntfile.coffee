@@ -18,10 +18,11 @@ module.exports = (grunt) ->
   productionFullMin = "#{buildDir}/#{productionNameFullMin}"
 
   productionConcatFull = [
-    "#{devDir}/components/underscore/underscore.js"
+    "#{devDir}/components/lodash/dist/lodash.min.js"
     "#{devDir}/components/chipmunk/cp.min.js"
-    "#{devDir}/js/EWGL_math.js"
-    "#{devDir}/js/inkyEWGL.js"
+    "#{devDir}/components/async/lib/async.js"
+    # "#{devDir}/js/EWGL_math.js"
+    # "#{devDir}/js/inkyEWGL.js"
     "#{devDir}/are.js"
   ]
 

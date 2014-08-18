@@ -829,6 +829,10 @@ ARERenderer = (function() {
     return !!removedActor;
   };
 
+  ARERenderer.prototype.makeOrthoMatrix = function(left, right, bottom, top, znear, zfar) {
+    return new Float32Array([2 / (right - left), 0, 0, 0, 0, 2 / (top - bottom), 0, 0, 0, 0, -2 / (zfar - znear), 0, -(right + left) / (right - left), -(top + bottom) / (top - bottom), -(zfar + znear) / (zfar - znear), 1]);
+  };
+
 
   /*
    * Reconstructs our viewport based on the camera scale, and uploads a fresh
@@ -839,8 +843,7 @@ ARERenderer = (function() {
     var handles, height, ortho, width;
     width = this._width * this._zoomFactor;
     height = this._height * this._zoomFactor;
-    ortho = Matrix4.makeOrtho(-width / 2, width / 2, height / 2, -height / 2, -10, 10).flatten();
-    ortho[15] = 1.0;
+    ortho = this.makeOrthoMatrix(-width / 2, width / 2, height / 2, -height / 2, -10, 10);
     handles = material.getHandles();
     return this._gl.uniformMatrix4fv(handles.uProjection, false, ortho);
   };

@@ -22,16 +22,23 @@ PhysicsManager = (function() {
       }
     ];
     async.map(dependencies, function(dependency, depCB) {
+      var request;
       if (dependency.raw) {
         return depCB(null, dependency.raw);
       }
-      return $.ajax({
-        url: dependency.url,
-        mimeType: "text",
-        success: function(rawDep) {
-          return depCB(null, rawDep);
+      request = new XMLHttpRequest();
+      request.open("GET", dependency.url, true);
+      request.onerror = function(e) {
+        return depCB("Connection error: " + e, null);
+      };
+      request.onload = function() {
+        if (request.status >= 200 && request.status < 400) {
+          return depCB(null, request.responseText);
+        } else {
+          return depCB("Request returned " + request.status, null);
         }
-      });
+      };
+      return request.send();
     }, (function(_this) {
       return function(error, sources) {
         _this._initFromSources(sources);
