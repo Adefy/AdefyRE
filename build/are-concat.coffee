@@ -2271,6 +2271,7 @@ class ARERenderer
     @_currentMaterial = "none" # When this changes, the shader program changes
     @_activeRendererMode = null
     @_cameraPosition = x: 0, y: 0
+    @_zoomFactor = 1
 
     # Pick render parameters
     @_pickRenderRequested = false    # When true, triggers a pick render
@@ -2556,11 +2557,33 @@ class ARERenderer
   ###
   getHeight: -> @_height
 
+  ###
   # @param [Object] position hash with x, y values
+  ###
   setCameraPosition: (@_cameraPosition) ->
 
+  ###
   # @return [Object] position hash with x, y values
-  getCameraPosition: -> @_cameraPosition
+  ###
+  getCameraPosition: ->
+    {
+      x: @_cameraPosition.x
+      y: @_cameraPosition.y
+    }
+
+  ###
+  # Sets a new zoom factor, and triggers a viewport refresh!
+  #
+  # @param [Number] zoom
+  ###
+  setCameraZoom: (@_zoomFactor) ->
+    return unless shader = @getShaderForMaterial @_currentMaterial
+    @refreshViewport shader
+
+  ###
+  # @return [Number] zoom
+  ###
+  getCameraZoom: -> @_zoomFactor
 
   ###
   # Returns the clear color
@@ -2719,6 +2742,8 @@ class ARERenderer
 
     else
 
+      windowWidth_h = window.innerWidth * @_zoomFactor * 0.5
+      windowHeight_h = window.innerHeight * @_zoomFactor * 0.5
       leftEdge = rightEdge = topEdge = bottomEdge = true
       camPos = @_cameraPosition
 
@@ -2728,10 +2753,10 @@ class ARERenderer
         if a._visible
 
           # Only draw if the actor is visible onscreen
-          leftEdge = (a._position.x - camPos.x) + (a._bounds.w / 2) < 0
-          rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > window.innerWidth
-          topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < 0
-          bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > window.innerHeight
+          leftEdge = (a._position.x - camPos.x) + (a._bounds.w / 2) < -windowWidth_h
+          rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > windowWidth_h
+          topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < -windowHeight_h
+          bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > windowHeight_h
 
           unless bottomEdge or topEdge or leftEdge or rightEdge
 
@@ -2942,6 +2967,34 @@ class ARERenderer
     !!removedActor
 
   ###
+  # Reconstructs our viewport based on the camera scale, and uploads a fresh
+  # projection matrix for the provided material (should be our current shader)
+  ###
+  refreshViewport: (material) ->
+    width = @_width * @_zoomFactor
+    height = @_height * @_zoomFactor
+
+    ortho = Matrix4.makeOrtho(-width/2, width/2, height/2, -height/2, -10, 10).flatten()
+    ortho[15] = 1.0 # Its a "Gotcha" from using EWGL
+
+    handles = material.getHandles()
+    @_gl.uniformMatrix4fv handles.uProjection, false, ortho
+
+  ###
+  # Get the shader we are using for the specified material. Returns null if we
+  # don't recognize it.
+  #
+  # @param [String] material
+  # @return [AREShader] shader
+  ###
+  getShaderForMaterial: (material) ->
+    switch material
+      when ARERenderer.MATERIAL_FLAT then return @_defaultShader
+      when ARERenderer.MATERIAL_TEXTURE then return @_texShader
+      else
+        return null
+
+  ###
   # Switch material (shader program)
   #
   # @param [String] material
@@ -2951,30 +3004,11 @@ class ARERenderer
     return false if material == @_currentMaterial
 
     if @isWGLRendererActive()
+      unless shader = @getShaderForMaterial material
+        throw new Error "Unknown material #{material}"
 
-      ortho = Matrix4.makeOrtho(0, @_width, @_height, 0, -10, 10).flatten()
-
-      ##
-      # Its a "Gotcha" from using EWGL
-      ortho[15] = 1.0
-
-      gl = @_gl
-
-      switch material
-        when ARERenderer.MATERIAL_FLAT
-          gl.useProgram @_defaultShader.getProgram()
-
-          handles = @_defaultShader.getHandles()
-          gl.uniformMatrix4fv handles.uProjection, false, ortho
-
-        when ARERenderer.MATERIAL_TEXTURE
-          gl.useProgram @_texShader.getProgram()
-
-          handles = @_texShader.getHandles()
-          gl.uniformMatrix4fv handles.uProjection, false, ortho
-
-        else
-          throw new Error "Unknown material #{material}"
+      @_gl.useProgram shader.getProgram()
+      @refreshViewport shader
 
     @_currentMaterial = material
     @
@@ -4763,9 +4797,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 4
-    PATCH: 3
+    PATCH: 4
     BUILD: null
-    STRING: "1.4.3"
+    STRING: "1.4.4"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.

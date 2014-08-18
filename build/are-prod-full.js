@@ -3360,6 +3360,7 @@ ARERenderer = (function() {
       x: 0,
       y: 0
     };
+    this._zoomFactor = 1;
     this._pickRenderRequested = false;
     this._pickRenderBuff = null;
     this._pickRenderSelectionRect = null;
@@ -3643,12 +3644,50 @@ ARERenderer = (function() {
     return this._height;
   };
 
+
+  /*
+   * @param [Object] position hash with x, y values
+   */
+
   ARERenderer.prototype.setCameraPosition = function(_cameraPosition) {
     this._cameraPosition = _cameraPosition;
   };
 
+
+  /*
+   * @return [Object] position hash with x, y values
+   */
+
   ARERenderer.prototype.getCameraPosition = function() {
-    return this._cameraPosition;
+    return {
+      x: this._cameraPosition.x,
+      y: this._cameraPosition.y
+    };
+  };
+
+
+  /*
+   * Sets a new zoom factor, and triggers a viewport refresh!
+   *
+   * @param [Number] zoom
+   */
+
+  ARERenderer.prototype.setCameraZoom = function(_zoomFactor) {
+    var shader;
+    this._zoomFactor = _zoomFactor;
+    if (!(shader = this.getShaderForMaterial(this._currentMaterial))) {
+      return;
+    }
+    return this.refreshViewport(shader);
+  };
+
+
+  /*
+   * @return [Number] zoom
+   */
+
+  ARERenderer.prototype.getCameraZoom = function() {
+    return this._zoomFactor;
   };
 
 
@@ -3754,7 +3793,7 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype._wglRender = function() {
-    var a, a_id, actorCount, actorIterator, bottomEdge, camPos, gl, leftEdge, rightEdge, topEdge, _id, _idSector, _savedColor, _savedOpacity;
+    var a, a_id, actorCount, actorIterator, bottomEdge, camPos, gl, leftEdge, rightEdge, topEdge, windowHeight_h, windowWidth_h, _id, _idSector, _savedColor, _savedOpacity;
     gl = this._gl;
     if (this._pickRenderRequested) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this._pickRenderBuff);
@@ -3792,15 +3831,17 @@ ARERenderer = (function() {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       this.render();
     } else {
+      windowWidth_h = window.innerWidth * this._zoomFactor * 0.5;
+      windowHeight_h = window.innerHeight * this._zoomFactor * 0.5;
       leftEdge = rightEdge = topEdge = bottomEdge = true;
       camPos = this._cameraPosition;
       while (actorIterator--) {
         a = this._actors[actorCount - actorIterator - 1];
         if (a._visible) {
-          leftEdge = (a._position.x - camPos.x) + (a._bounds.w / 2) < 0;
-          rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > window.innerWidth;
-          topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < 0;
-          bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > window.innerHeight;
+          leftEdge = (a._position.x - camPos.x) + (a._bounds.w / 2) < -windowWidth_h;
+          rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > windowWidth_h;
+          topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < -windowHeight_h;
+          bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > windowHeight_h;
           if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
             if (a._attachedTexture) {
               a = a.updateAttachment();
@@ -4036,35 +4077,59 @@ ARERenderer = (function() {
 
 
   /*
+   * Reconstructs our viewport based on the camera scale, and uploads a fresh
+   * projection matrix for the provided material (should be our current shader)
+   */
+
+  ARERenderer.prototype.refreshViewport = function(material) {
+    var handles, height, ortho, width;
+    width = this._width * this._zoomFactor;
+    height = this._height * this._zoomFactor;
+    ortho = Matrix4.makeOrtho(-width / 2, width / 2, height / 2, -height / 2, -10, 10).flatten();
+    ortho[15] = 1.0;
+    handles = material.getHandles();
+    return this._gl.uniformMatrix4fv(handles.uProjection, false, ortho);
+  };
+
+
+  /*
+   * Get the shader we are using for the specified material. Returns null if we
+   * don't recognize it.
+   *
+   * @param [String] material
+   * @return [AREShader] shader
+   */
+
+  ARERenderer.prototype.getShaderForMaterial = function(material) {
+    switch (material) {
+      case ARERenderer.MATERIAL_FLAT:
+        return this._defaultShader;
+      case ARERenderer.MATERIAL_TEXTURE:
+        return this._texShader;
+      default:
+        return null;
+    }
+  };
+
+
+  /*
    * Switch material (shader program)
    *
    * @param [String] material
    */
 
   ARERenderer.prototype.switchMaterial = function(material) {
-    var gl, handles, ortho;
+    var shader;
     param.required(material);
     if (material === this._currentMaterial) {
       return false;
     }
     if (this.isWGLRendererActive()) {
-      ortho = Matrix4.makeOrtho(0, this._width, this._height, 0, -10, 10).flatten();
-      ortho[15] = 1.0;
-      gl = this._gl;
-      switch (material) {
-        case ARERenderer.MATERIAL_FLAT:
-          gl.useProgram(this._defaultShader.getProgram());
-          handles = this._defaultShader.getHandles();
-          gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-          break;
-        case ARERenderer.MATERIAL_TEXTURE:
-          gl.useProgram(this._texShader.getProgram());
-          handles = this._texShader.getHandles();
-          gl.uniformMatrix4fv(handles.uProjection, false, ortho);
-          break;
-        default:
-          throw new Error("Unknown material " + material);
+      if (!(shader = this.getShaderForMaterial(material))) {
+        throw new Error("Unknown material " + material);
       }
+      this._gl.useProgram(shader.getProgram());
+      this.refreshViewport(shader);
     }
     this._currentMaterial = material;
     return this;
@@ -6202,9 +6267,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 4,
-    PATCH: 3,
+    PATCH: 4,
     BUILD: null,
-    STRING: "1.4.3"
+    STRING: "1.4.4"
   };
 
 

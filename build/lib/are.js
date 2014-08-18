@@ -13,9 +13,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 4,
-    PATCH: 3,
+    PATCH: 4,
     BUILD: null,
-    STRING: "1.4.3"
+    STRING: "1.4.4"
   };
 
 
