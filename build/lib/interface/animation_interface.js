@@ -41,8 +41,6 @@ AREAnimationInterface = (function() {
 
   AREAnimationInterface.prototype.animate = function(actorID, property, options) {
     var a, actor, name, _i, _len, _ref, _spawnAnim;
-    property = JSON.parse(param.required(property));
-    options = JSON.parse(param.required(options));
     options.start || (options.start = 0);
     actor = null;
     _ref = this._renderer._actors;
@@ -81,12 +79,9 @@ AREAnimationInterface = (function() {
   };
 
   AREAnimationInterface.prototype.preCalculateBez = function(options) {
-    var ret;
-    options = JSON.parse(param.required(options));
     options.controlPoints || (options.controlPoints = 0);
     options.fps || (options.fps = 30);
-    ret = new AREBezAnimation(null, options, true).preCalculate();
-    return JSON.stringify(ret);
+    return new AREBezAnimation(null, options, true).preCalculate();
   };
 
   return AREAnimationInterface;

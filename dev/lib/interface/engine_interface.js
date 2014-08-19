@@ -34,7 +34,9 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.initialize = function(width, height, ad, log, id) {
     param.required(ad);
-    log || (log = 4);
+    if (isNaN(log)) {
+      log = 4;
+    }
     id || (id = "");
     if (this._engine) {
       ARELog.warn("Re-initialize attempt, ignoring and passing through");
@@ -53,7 +55,6 @@ AREEngineInterface = (function() {
     })(this), log, id);
     this._masterInterface.setEngine(this._engine);
     this._renderer = this._engine.getRenderer();
-    this._engine.startRendering();
     return this._engine;
   };
 

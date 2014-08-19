@@ -66,7 +66,7 @@ class AREBezAnimation
     else
 
       # Getting our starting value based on our animated property
-      if @_property == "rotation"
+      if @_property[0] == "rotation"
         @bezOpt.startPos = @actor.getRotation()
 
       if @_property[0] == "position"
@@ -96,10 +96,8 @@ class AREBezAnimation
     param.required t
     apply ||= true
 
-    # Throw an error if t is out of bounds. We could just cap it, but it should
-    # never be provided out of bounds. If it is, something is wrong with the
-    # code calling us
-    if t > 1 or t < 0 then throw new Error "t out of bounds! #{t}"
+    t = 0 if t < 0
+    t = 1 if t > 1
 
     # 0th degree, linear interpolation
     if @bezOpt.degree == 0
@@ -139,7 +137,7 @@ class AREBezAnimation
     # provided
     if apply
       @_applyValue val
-      if @options.cbStep != undefined then @options.cbStep val
+      @options.cbStep val if @options.cbStep
 
     val
 
@@ -171,15 +169,17 @@ class AREBezAnimation
   # @private
   ###
   _applyValue: (val) ->
-    if @_property == "rotation" then @actor.setRotation val
+    if @_property[0] == "rotation" then @actor.setRotation val
 
     if @_property[0] == "position"
       if @_property[1] == "x"
-        pos = new cp.v val, @actor.getPosition().y
-        @actor.setPosition pos
+        @actor.setPosition
+          x: val
+          y: @actor.getPosition().y
       else if @_property[1] == "y"
-        pos = new cp.v @actor.getPosition().x, val
-        @actor.setPosition pos
+        @actor.setPosition
+          x: @actor.getPosition().x
+          y: val
 
     if @_property[0] == "color"
       if @_property[1] == "r"
@@ -210,12 +210,14 @@ class AREBezAnimation
 
     @_intervalID = setInterval =>
       t += @tIncr
+      t = 1 if t > 1
 
-      if t > 1
+      @_update t
+
+      if t == 1
         clearInterval @_intervalID
-        if @options.cbEnd != undefined then @options.cbEnd()
+        @options.cbEnd() if @options.cbEnd
       else
-        @_update t
-        if @options.cbStep != undefined then @options.cbStep()
+        @options.cbStep() if @options.cbStep
 
     , 1000 / @_fps

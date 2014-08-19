@@ -22,6 +22,11 @@
 class ARE
 
   @config:
+
+    # When false, the physics engine will not be available, and chipmunk is
+    # not needed!
+    physics: true
+
     deps:
       physics:
         chipmunk: "/components/chipmunk/cp.js"
@@ -30,9 +35,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 5
-    PATCH: 0
+    PATCH: 1
     BUILD: null
-    STRING: "1.5.0"
+    STRING: "1.5.1"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
@@ -54,12 +59,13 @@ class ARE
     param.required height
     param.required cb
 
-    ARELog.level = logLevel or 4
+    logLevel = 4 if isNaN logLevel
+    ARELog.level = logLevel
     canvas ||= ""
 
     # Holds a handle on the render loop interval
     @_renderIntervalId = null
-
+    @_currentlyRendering = false
     @benchmark = false
 
     # Framerate for renderer, defaults to 60FPS
@@ -75,16 +81,28 @@ class ARE
       width: width
       height: height
 
-    ###
-    # We expose the physics manager to the window, so actors can directly
-    # communicate with it
-    ###
-    @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
-      @_currentlyRendering = false
-      @startRendering()
-      cb @
+    # Don't initialise physics if flagged otherwise
+    if ARE.config.physics
 
-    window.AREPhysicsManager = @_physics
+      ###
+      # We expose the physics manager to the window, so actors can directly
+      # communicate with it
+      ###
+      @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
+        @startRendering()
+        cb @
+
+      window.AREPhysicsManager = @_physics
+
+    else
+
+      # We call the cb in a timeout so any init after us can finish
+      ARELog.info "Proceeding without physics..."
+      setTimeout =>
+        @startRendering()
+        cb @
+
+    @
 
   ###
   # Get our internal ARERenderer instance

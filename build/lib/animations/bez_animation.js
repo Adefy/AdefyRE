@@ -58,7 +58,7 @@ AREBezAnimation = (function() {
     if (dryRun) {
       this.bezOpt.startPos = options.startVal;
     } else {
-      if (this._property === "rotation") {
+      if (this._property[0] === "rotation") {
         this.bezOpt.startPos = this.actor.getRotation();
       }
       if (this._property[0] === "position") {
@@ -95,8 +95,11 @@ AREBezAnimation = (function() {
     var val, _Mt, _Mt2, _Mt3, _t2, _t3;
     param.required(t);
     apply || (apply = true);
-    if (t > 1 || t < 0) {
-      throw new Error("t out of bounds! " + t);
+    if (t < 0) {
+      t = 0;
+    }
+    if (t > 1) {
+      t = 1;
     }
     if (this.bezOpt.degree === 0) {
       val = this.bezOpt.startPos + ((this.bezOpt.endPos - this.bezOpt.startPos) * t);
@@ -117,7 +120,7 @@ AREBezAnimation = (function() {
     }
     if (apply) {
       this._applyValue(val);
-      if (this.options.cbStep !== void 0) {
+      if (this.options.cbStep) {
         this.options.cbStep(val);
       }
     }
@@ -160,17 +163,21 @@ AREBezAnimation = (function() {
    */
 
   AREBezAnimation.prototype._applyValue = function(val) {
-    var pos, _b, _g, _r;
-    if (this._property === "rotation") {
+    var _b, _g, _r;
+    if (this._property[0] === "rotation") {
       this.actor.setRotation(val);
     }
     if (this._property[0] === "position") {
       if (this._property[1] === "x") {
-        pos = new cp.v(val, this.actor.getPosition().y);
-        this.actor.setPosition(pos);
+        this.actor.setPosition({
+          x: val,
+          y: this.actor.getPosition().y
+        });
       } else if (this._property[1] === "y") {
-        pos = new cp.v(this.actor.getPosition().x, val);
-        this.actor.setPosition(pos);
+        this.actor.setPosition({
+          x: this.actor.getPosition().x,
+          y: val
+        });
       }
     }
     if (this._property[0] === "color") {
@@ -214,13 +221,16 @@ AREBezAnimation = (function() {
       return function() {
         t += _this.tIncr;
         if (t > 1) {
+          t = 1;
+        }
+        _this._update(t);
+        if (t === 1) {
           clearInterval(_this._intervalID);
-          if (_this.options.cbEnd !== void 0) {
+          if (_this.options.cbEnd) {
             return _this.options.cbEnd();
           }
         } else {
-          _this._update(t);
-          if (_this.options.cbStep !== void 0) {
+          if (_this.options.cbStep) {
             return _this.options.cbStep();
           }
         }

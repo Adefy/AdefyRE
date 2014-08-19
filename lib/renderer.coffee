@@ -100,6 +100,7 @@ class ARERenderer
     @_actors = []           # Internal actors collection
     @_actor_hash = {}       # Actors keyed by id for faster access
     @_textures = []         # Texture objects, with names and gl textures
+    @_culling = false       # Whether we cull off-screen actors
 
     @_currentMaterial = "none" # When this changes, the shader program changes
     @_activeRendererMode = null
@@ -280,6 +281,14 @@ class ARERenderer
   # methods.
   ###
   render: ->
+
+  enableCulling: ->
+    @_culling = true
+    @
+
+  disableCulling: ->
+    @_culling = false
+    @
 
   ###
   # Called once per frame, we perform various internal updates if needed
@@ -591,7 +600,7 @@ class ARERenderer
           topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < -windowHeight_h
           bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > windowHeight_h
 
-          unless bottomEdge or topEdge or leftEdge or rightEdge
+          if !@_culling or !(bottomEdge or topEdge or leftEdge or rightEdge)
 
             a = a.updateAttachment() if a._attachedTexture
 

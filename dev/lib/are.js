@@ -2,6 +2,7 @@ var ARE;
 
 ARE = (function() {
   ARE.config = {
+    physics: true,
     deps: {
       physics: {
         chipmunk: "/components/chipmunk/cp.js",
@@ -13,9 +14,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 5,
-    PATCH: 0,
+    PATCH: 1,
     BUILD: null,
-    STRING: "1.5.0"
+    STRING: "1.5.1"
   };
 
 
@@ -39,9 +40,13 @@ ARE = (function() {
     param.required(width);
     param.required(height);
     param.required(cb);
-    ARELog.level = logLevel || 4;
+    if (isNaN(logLevel)) {
+      logLevel = 4;
+    }
+    ARELog.level = logLevel;
     canvas || (canvas = "");
     this._renderIntervalId = null;
+    this._currentlyRendering = false;
     this.benchmark = false;
     this.setFPS(60);
     if (window._ === null || window._ === void 0) {
@@ -52,19 +57,29 @@ ARE = (function() {
       width: width,
       height: height
     });
+    if (ARE.config.physics) {
 
-    /*
-     * We expose the physics manager to the window, so actors can directly
-     * communicate with it
-     */
-    this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
-      return function() {
-        _this._currentlyRendering = false;
-        _this.startRendering();
-        return cb(_this);
-      };
-    })(this));
-    window.AREPhysicsManager = this._physics;
+      /*
+       * We expose the physics manager to the window, so actors can directly
+       * communicate with it
+       */
+      this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
+        return function() {
+          _this.startRendering();
+          return cb(_this);
+        };
+      })(this));
+      window.AREPhysicsManager = this._physics;
+    } else {
+      ARELog.info("Proceeding without physics...");
+      setTimeout((function(_this) {
+        return function() {
+          _this.startRendering();
+          return cb(_this);
+        };
+      })(this));
+    }
+    this;
   }
 
 

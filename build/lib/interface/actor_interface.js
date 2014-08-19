@@ -491,17 +491,17 @@ AREActorInterface = (function() {
 
 
   /*
-   * Refresh actor vertices, passed in as a JSON representation of a flat array
+   * Refresh actor vertices, passed in as a flat array
    *
    * @param [Number] id actor id
-   * @param [String] verts
+   * @param [Array<Number<] verts
    * @return [Boolean] success
    */
 
   AREActorInterface.prototype.setVertices = function(id, verts) {
     var a;
     if (a = this._findActor(id)) {
-      a.updateVertices(JSON.parse(verts));
+      a.updateVertices(verts);
       return true;
     } else {
       return false;

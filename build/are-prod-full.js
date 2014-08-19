@@ -3716,6 +3716,7 @@ ARERenderer = (function() {
     this._actors = [];
     this._actor_hash = {};
     this._textures = [];
+    this._culling = false;
     this._currentMaterial = "none";
     this._activeRendererMode = null;
     this._cameraPosition = {
@@ -3866,6 +3867,16 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.render = function() {};
+
+  ARERenderer.prototype.enableCulling = function() {
+    this._culling = true;
+    return this;
+  };
+
+  ARERenderer.prototype.disableCulling = function() {
+    this._culling = false;
+    return this;
+  };
 
 
   /*
@@ -4204,7 +4215,7 @@ ARERenderer = (function() {
           rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > windowWidth_h;
           topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < -windowHeight_h;
           bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > windowHeight_h;
-          if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
+          if (!this._culling || !(bottomEdge || topEdge || leftEdge || rightEdge)) {
             if (a._attachedTexture) {
               a = a.updateAttachment();
             }
@@ -4823,7 +4834,7 @@ AREBezAnimation = (function() {
     if (dryRun) {
       this.bezOpt.startPos = options.startVal;
     } else {
-      if (this._property === "rotation") {
+      if (this._property[0] === "rotation") {
         this.bezOpt.startPos = this.actor.getRotation();
       }
       if (this._property[0] === "position") {
@@ -4860,8 +4871,11 @@ AREBezAnimation = (function() {
     var val, _Mt, _Mt2, _Mt3, _t2, _t3;
     param.required(t);
     apply || (apply = true);
-    if (t > 1 || t < 0) {
-      throw new Error("t out of bounds! " + t);
+    if (t < 0) {
+      t = 0;
+    }
+    if (t > 1) {
+      t = 1;
     }
     if (this.bezOpt.degree === 0) {
       val = this.bezOpt.startPos + ((this.bezOpt.endPos - this.bezOpt.startPos) * t);
@@ -4882,7 +4896,7 @@ AREBezAnimation = (function() {
     }
     if (apply) {
       this._applyValue(val);
-      if (this.options.cbStep !== void 0) {
+      if (this.options.cbStep) {
         this.options.cbStep(val);
       }
     }
@@ -4925,17 +4939,21 @@ AREBezAnimation = (function() {
    */
 
   AREBezAnimation.prototype._applyValue = function(val) {
-    var pos, _b, _g, _r;
-    if (this._property === "rotation") {
+    var _b, _g, _r;
+    if (this._property[0] === "rotation") {
       this.actor.setRotation(val);
     }
     if (this._property[0] === "position") {
       if (this._property[1] === "x") {
-        pos = new cp.v(val, this.actor.getPosition().y);
-        this.actor.setPosition(pos);
+        this.actor.setPosition({
+          x: val,
+          y: this.actor.getPosition().y
+        });
       } else if (this._property[1] === "y") {
-        pos = new cp.v(this.actor.getPosition().x, val);
-        this.actor.setPosition(pos);
+        this.actor.setPosition({
+          x: this.actor.getPosition().x,
+          y: val
+        });
       }
     }
     if (this._property[0] === "color") {
@@ -4979,13 +4997,16 @@ AREBezAnimation = (function() {
       return function() {
         t += _this.tIncr;
         if (t > 1) {
+          t = 1;
+        }
+        _this._update(t);
+        if (t === 1) {
           clearInterval(_this._intervalID);
-          if (_this.options.cbEnd !== void 0) {
+          if (_this.options.cbEnd) {
             return _this.options.cbEnd();
           }
         } else {
-          _this._update(t);
-          if (_this.options.cbStep !== void 0) {
+          if (_this.options.cbStep) {
             return _this.options.cbStep();
           }
         }
@@ -5746,17 +5767,17 @@ AREActorInterface = (function() {
 
 
   /*
-   * Refresh actor vertices, passed in as a JSON representation of a flat array
+   * Refresh actor vertices, passed in as a flat array
    *
    * @param [Number] id actor id
-   * @param [String] verts
+   * @param [Array<Number<] verts
    * @return [Boolean] success
    */
 
   AREActorInterface.prototype.setVertices = function(id, verts) {
     var a;
     if (a = this._findActor(id)) {
-      a.updateVertices(JSON.parse(verts));
+      a.updateVertices(verts);
       return true;
     } else {
       return false;
@@ -6161,7 +6182,9 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.initialize = function(width, height, ad, log, id) {
     param.required(ad);
-    log || (log = 4);
+    if (isNaN(log)) {
+      log = 4;
+    }
     id || (id = "");
     if (this._engine) {
       ARELog.warn("Re-initialize attempt, ignoring and passing through");
@@ -6180,7 +6203,6 @@ AREEngineInterface = (function() {
     })(this), log, id);
     this._masterInterface.setEngine(this._engine);
     this._renderer = this._engine.getRenderer();
-    this._engine.startRendering();
     return this._engine;
   };
 
@@ -6546,8 +6568,6 @@ AREAnimationInterface = (function() {
 
   AREAnimationInterface.prototype.animate = function(actorID, property, options) {
     var a, actor, name, _i, _len, _ref, _spawnAnim;
-    property = JSON.parse(param.required(property));
-    options = JSON.parse(param.required(options));
     options.start || (options.start = 0);
     actor = null;
     _ref = this._renderer._actors;
@@ -6586,12 +6606,9 @@ AREAnimationInterface = (function() {
   };
 
   AREAnimationInterface.prototype.preCalculateBez = function(options) {
-    var ret;
-    options = JSON.parse(param.required(options));
     options.controlPoints || (options.controlPoints = 0);
     options.fps || (options.fps = 30);
-    ret = new AREBezAnimation(null, options, true).preCalculate();
-    return JSON.stringify(ret);
+    return new AREBezAnimation(null, options, true).preCalculate();
   };
 
   return AREAnimationInterface;
@@ -6628,6 +6645,7 @@ AREInterface = (function() {
 
 ARE = (function() {
   ARE.config = {
+    physics: true,
     deps: {
       physics: {
         chipmunk: "/components/chipmunk/cp.js",
@@ -6639,9 +6657,9 @@ ARE = (function() {
   ARE.Version = {
     MAJOR: 1,
     MINOR: 5,
-    PATCH: 0,
+    PATCH: 1,
     BUILD: null,
-    STRING: "1.5.0"
+    STRING: "1.5.1"
   };
 
 
@@ -6665,9 +6683,13 @@ ARE = (function() {
     param.required(width);
     param.required(height);
     param.required(cb);
-    ARELog.level = logLevel || 4;
+    if (isNaN(logLevel)) {
+      logLevel = 4;
+    }
+    ARELog.level = logLevel;
     canvas || (canvas = "");
     this._renderIntervalId = null;
+    this._currentlyRendering = false;
     this.benchmark = false;
     this.setFPS(60);
     if (window._ === null || window._ === void 0) {
@@ -6678,19 +6700,29 @@ ARE = (function() {
       width: width,
       height: height
     });
+    if (ARE.config.physics) {
 
-    /*
-     * We expose the physics manager to the window, so actors can directly
-     * communicate with it
-     */
-    this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
-      return function() {
-        _this._currentlyRendering = false;
-        _this.startRendering();
-        return cb(_this);
-      };
-    })(this));
-    window.AREPhysicsManager = this._physics;
+      /*
+       * We expose the physics manager to the window, so actors can directly
+       * communicate with it
+       */
+      this._physics = new PhysicsManager(this._renderer, ARE.config.deps.physics, (function(_this) {
+        return function() {
+          _this.startRendering();
+          return cb(_this);
+        };
+      })(this));
+      window.AREPhysicsManager = this._physics;
+    } else {
+      ARELog.info("Proceeding without physics...");
+      setTimeout((function(_this) {
+        return function() {
+          _this.startRendering();
+          return cb(_this);
+        };
+      })(this));
+    }
+    this;
   }
 
 

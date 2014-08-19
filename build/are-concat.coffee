@@ -2267,6 +2267,7 @@ class ARERenderer
     @_actors = []           # Internal actors collection
     @_actor_hash = {}       # Actors keyed by id for faster access
     @_textures = []         # Texture objects, with names and gl textures
+    @_culling = false       # Whether we cull off-screen actors
 
     @_currentMaterial = "none" # When this changes, the shader program changes
     @_activeRendererMode = null
@@ -2447,6 +2448,14 @@ class ARERenderer
   # methods.
   ###
   render: ->
+
+  enableCulling: ->
+    @_culling = true
+    @
+
+  disableCulling: ->
+    @_culling = false
+    @
 
   ###
   # Called once per frame, we perform various internal updates if needed
@@ -2758,7 +2767,7 @@ class ARERenderer
           topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < -windowHeight_h
           bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > windowHeight_h
 
-          unless bottomEdge or topEdge or leftEdge or rightEdge
+          if !@_culling or !(bottomEdge or topEdge or leftEdge or rightEdge)
 
             a = a.updateAttachment() if a._attachedTexture
 
@@ -3317,7 +3326,7 @@ class AREBezAnimation
     else
 
       # Getting our starting value based on our animated property
-      if @_property == "rotation"
+      if @_property[0] == "rotation"
         @bezOpt.startPos = @actor.getRotation()
 
       if @_property[0] == "position"
@@ -3347,10 +3356,8 @@ class AREBezAnimation
     param.required t
     apply ||= true
 
-    # Throw an error if t is out of bounds. We could just cap it, but it should
-    # never be provided out of bounds. If it is, something is wrong with the
-    # code calling us
-    if t > 1 or t < 0 then throw new Error "t out of bounds! #{t}"
+    t = 0 if t < 0
+    t = 1 if t > 1
 
     # 0th degree, linear interpolation
     if @bezOpt.degree == 0
@@ -3390,7 +3397,7 @@ class AREBezAnimation
     # provided
     if apply
       @_applyValue val
-      if @options.cbStep != undefined then @options.cbStep val
+      @options.cbStep val if @options.cbStep
 
     val
 
@@ -3422,15 +3429,17 @@ class AREBezAnimation
   # @private
   ###
   _applyValue: (val) ->
-    if @_property == "rotation" then @actor.setRotation val
+    if @_property[0] == "rotation" then @actor.setRotation val
 
     if @_property[0] == "position"
       if @_property[1] == "x"
-        pos = new cp.v val, @actor.getPosition().y
-        @actor.setPosition pos
+        @actor.setPosition
+          x: val
+          y: @actor.getPosition().y
       else if @_property[1] == "y"
-        pos = new cp.v @actor.getPosition().x, val
-        @actor.setPosition pos
+        @actor.setPosition
+          x: @actor.getPosition().x
+          y: val
 
     if @_property[0] == "color"
       if @_property[1] == "r"
@@ -3461,13 +3470,15 @@ class AREBezAnimation
 
     @_intervalID = setInterval =>
       t += @tIncr
+      t = 1 if t > 1
 
-      if t > 1
+      @_update t
+
+      if t == 1
         clearInterval @_intervalID
-        if @options.cbEnd != undefined then @options.cbEnd()
+        @options.cbEnd() if @options.cbEnd
       else
-        @_update t
-        if @options.cbStep != undefined then @options.cbStep()
+        @options.cbStep() if @options.cbStep
 
     , 1000 / @_fps
 
@@ -4059,15 +4070,15 @@ class AREActorInterface
       false
 
   ###
-  # Refresh actor vertices, passed in as a JSON representation of a flat array
+  # Refresh actor vertices, passed in as a flat array
   #
   # @param [Number] id actor id
-  # @param [String] verts
+  # @param [Array<Number<] verts
   # @return [Boolean] success
   ###
   setVertices: (id, verts) ->
     if a = @_findActor id
-      a.updateVertices JSON.parse verts
+      a.updateVertices verts
       true
     else
       false
@@ -4343,7 +4354,7 @@ class AREEngineInterface
   ###
   initialize: (width, height, ad, log, id) ->
     param.required ad
-    log ||= 4
+    log = 4 if isNaN log
     id ||= ""
 
     # If we've already initialised once, show a warning and just callback
@@ -4366,8 +4377,6 @@ class AREEngineInterface
     # Initiliase our engine as everything is ready at this point (except psyx)
     @_masterInterface.setEngine @_engine
     @_renderer = @_engine.getRenderer()
-    @_engine.startRendering()
-
     @_engine
 
   ###
@@ -4696,14 +4705,10 @@ class AREAnimationInterface
   # signifying when to initiate the animation. (< 0) means now, (> 0) after
   # 'start' ms, and 0 as default no auto start
   #
-  # Options and property are passed in as JSON strings
-  #
   # @param [Number] actorID id of actor to animate, as per AREActorInterface
-  # @param [String] property property array, second element is component
-  # @param [String] options options to pass to animation, varies by property
+  # @param [Array<String>] property property array, second element is component
+  # @param [Object] options options to pass to animation, varies by property
   animate: (actorID, property, options) ->
-    property = JSON.parse param.required property
-    options = JSON.parse param.required options
     options.start ||= 0
 
     actor = null
@@ -4733,29 +4738,26 @@ class AREAnimationInterface
 
     if options.start > 0
       setTimeout (-> _spawnAnim name, actor, options), options.start
-    else _spawnAnim name, actor, options
+    else
+      _spawnAnim name, actor, options
 
   # Return bezier output for a specific set of animation options. Requires
   # a startVal on the options object!
   #
   # Result contains a "values" key, and a "stepTime" key
   #
-  # Note that both the options object and the returned object are JSON strings
-  #
-  # @param [String] options
+  # @param [Object] options
   # @option options [Number] startVal
   # @option options [Number] endVal
   # @option options [Array<Object>] controlPoints
   # @option options [Number] duration
   # @option options [Number] fps framerate, defaults to 30
-  # @return [String] bezValues
+  # @return [Array<Number>] bezValues
   preCalculateBez: (options) ->
-    options = JSON.parse param.required options
     options.controlPoints ||= 0
     options.fps ||= 30
 
-    ret = new AREBezAnimation(null, options, true).preCalculate()
-    JSON.stringify ret
+    new AREBezAnimation(null, options, true).preCalculate()
 
 # Engine interface, used by the ads themselves, serves as an API
 #
@@ -4813,6 +4815,11 @@ class AREInterface
 class ARE
 
   @config:
+
+    # When false, the physics engine will not be available, and chipmunk is
+    # not needed!
+    physics: true
+
     deps:
       physics:
         chipmunk: "/components/chipmunk/cp.js"
@@ -4821,9 +4828,9 @@ class ARE
   @Version:
     MAJOR: 1
     MINOR: 5
-    PATCH: 0
+    PATCH: 1
     BUILD: null
-    STRING: "1.5.0"
+    STRING: "1.5.1"
 
   ###
   # Instantiates the engine, starting the render loop and physics handler.
@@ -4845,12 +4852,13 @@ class ARE
     param.required height
     param.required cb
 
-    ARELog.level = logLevel or 4
+    logLevel = 4 if isNaN logLevel
+    ARELog.level = logLevel
     canvas ||= ""
 
     # Holds a handle on the render loop interval
     @_renderIntervalId = null
-
+    @_currentlyRendering = false
     @benchmark = false
 
     # Framerate for renderer, defaults to 60FPS
@@ -4866,16 +4874,28 @@ class ARE
       width: width
       height: height
 
-    ###
-    # We expose the physics manager to the window, so actors can directly
-    # communicate with it
-    ###
-    @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
-      @_currentlyRendering = false
-      @startRendering()
-      cb @
+    # Don't initialise physics if flagged otherwise
+    if ARE.config.physics
 
-    window.AREPhysicsManager = @_physics
+      ###
+      # We expose the physics manager to the window, so actors can directly
+      # communicate with it
+      ###
+      @_physics = new PhysicsManager @_renderer, ARE.config.deps.physics, =>
+        @startRendering()
+        cb @
+
+      window.AREPhysicsManager = @_physics
+
+    else
+
+      # We call the cb in a timeout so any init after us can finish
+      ARELog.info "Proceeding without physics..."
+      setTimeout =>
+        @startRendering()
+        cb @
+
+    @
 
   ###
   # Get our internal ARERenderer instance

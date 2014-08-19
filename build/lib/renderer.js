@@ -108,6 +108,7 @@ ARERenderer = (function() {
     this._actors = [];
     this._actor_hash = {};
     this._textures = [];
+    this._culling = false;
     this._currentMaterial = "none";
     this._activeRendererMode = null;
     this._cameraPosition = {
@@ -258,6 +259,16 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.render = function() {};
+
+  ARERenderer.prototype.enableCulling = function() {
+    this._culling = true;
+    return this;
+  };
+
+  ARERenderer.prototype.disableCulling = function() {
+    this._culling = false;
+    return this;
+  };
 
 
   /*
@@ -596,7 +607,7 @@ ARERenderer = (function() {
           rightEdge = (a._position.x - camPos.x) - (a._bounds.w / 2) > windowWidth_h;
           topEdge = (a._position.y - camPos.y) + (a._bounds.h / 2) < -windowHeight_h;
           bottomEdge = (a._position.y - camPos.y) - (a._bounds.h / 2) > windowHeight_h;
-          if (!(bottomEdge || topEdge || leftEdge || rightEdge)) {
+          if (!this._culling || !(bottomEdge || topEdge || leftEdge || rightEdge)) {
             if (a._attachedTexture) {
               a = a.updateAttachment();
             }

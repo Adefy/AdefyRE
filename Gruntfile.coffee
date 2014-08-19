@@ -6,6 +6,7 @@ module.exports = (grunt) ->
   productionNameMin = "are-prod.min.js"
   productionNameFull = "are-prod-full.js"
   productionNameFullMin = "are-prod-full.min.js"
+  productionNameNoPhysics = "are-prod-no-psyx.min.js"
 
   # Directories
   buildDir = "build"
@@ -15,14 +16,19 @@ module.exports = (grunt) ->
   production = "#{buildDir}/#{productionName}"
   productionMin = "#{buildDir}/#{productionNameMin}"
   productionFull = "#{buildDir}/#{productionNameFull}"
+  productionNoPhysics = "#{buildDir}/#{productionNameNoPhysics}"
   productionFullMin = "#{buildDir}/#{productionNameFullMin}"
 
   productionConcatFull = [
     "#{devDir}/components/lodash/dist/lodash.min.js"
     "#{devDir}/components/chipmunk/cp.min.js"
     "#{devDir}/components/async/lib/async.js"
-    # "#{devDir}/js/EWGL_math.js"
-    # "#{devDir}/js/inkyEWGL.js"
+    "#{devDir}/are.js"
+  ]
+
+  productionConcatNoPhysics = [
+    "#{devDir}/components/lodash/dist/lodash.min.js"
+    "#{devDir}/components/async/lib/async.js"
     "#{devDir}/are.js"
   ]
 
@@ -165,6 +171,9 @@ module.exports = (grunt) ->
       distFull:
         src: productionConcatFull
         dest: productionFull
+      distNoPhysics:
+        src: productionConcatNoPhysics
+        dest: productionNoPhysics
 
     uglify:
       options:

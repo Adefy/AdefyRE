@@ -28,7 +28,7 @@ class AREEngineInterface
   ###
   initialize: (width, height, ad, log, id) ->
     param.required ad
-    log ||= 4
+    log = 4 if isNaN log
     id ||= ""
 
     # If we've already initialised once, show a warning and just callback
@@ -51,8 +51,6 @@ class AREEngineInterface
     # Initiliase our engine as everything is ready at this point (except psyx)
     @_masterInterface.setEngine @_engine
     @_renderer = @_engine.getRenderer()
-    @_engine.startRendering()
-
     @_engine
 
   ###

@@ -371,15 +371,15 @@ class AREActorInterface
       false
 
   ###
-  # Refresh actor vertices, passed in as a JSON representation of a flat array
+  # Refresh actor vertices, passed in as a flat array
   #
   # @param [Number] id actor id
-  # @param [String] verts
+  # @param [Array<Number<] verts
   # @return [Boolean] success
   ###
   setVertices: (id, verts) ->
     if a = @_findActor id
-      a.updateVertices JSON.parse verts
+      a.updateVertices verts
       true
     else
       false

@@ -56,14 +56,10 @@ class AREAnimationInterface
   # signifying when to initiate the animation. (< 0) means now, (> 0) after
   # 'start' ms, and 0 as default no auto start
   #
-  # Options and property are passed in as JSON strings
-  #
   # @param [Number] actorID id of actor to animate, as per AREActorInterface
-  # @param [String] property property array, second element is component
-  # @param [String] options options to pass to animation, varies by property
+  # @param [Array<String>] property property array, second element is component
+  # @param [Object] options options to pass to animation, varies by property
   animate: (actorID, property, options) ->
-    property = JSON.parse param.required property
-    options = JSON.parse param.required options
     options.start ||= 0
 
     actor = null
@@ -93,26 +89,23 @@ class AREAnimationInterface
 
     if options.start > 0
       setTimeout (-> _spawnAnim name, actor, options), options.start
-    else _spawnAnim name, actor, options
+    else
+      _spawnAnim name, actor, options
 
   # Return bezier output for a specific set of animation options. Requires
   # a startVal on the options object!
   #
   # Result contains a "values" key, and a "stepTime" key
   #
-  # Note that both the options object and the returned object are JSON strings
-  #
-  # @param [String] options
+  # @param [Object] options
   # @option options [Number] startVal
   # @option options [Number] endVal
   # @option options [Array<Object>] controlPoints
   # @option options [Number] duration
   # @option options [Number] fps framerate, defaults to 30
-  # @return [String] bezValues
+  # @return [Array<Number>] bezValues
   preCalculateBez: (options) ->
-    options = JSON.parse param.required options
     options.controlPoints ||= 0
     options.fps ||= 30
 
-    ret = new AREBezAnimation(null, options, true).preCalculate()
-    JSON.stringify ret
+    new AREBezAnimation(null, options, true).preCalculate()
