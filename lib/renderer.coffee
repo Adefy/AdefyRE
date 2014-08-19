@@ -80,8 +80,8 @@ class ARERenderer
   # @return [Boolean] success
   ###
   constructor: (opts) ->
-    @_width = param.required opts.width
-    @_height = param.required opts.height
+    @_width = opts.width
+    @_height = opts.height
     canvasId = opts.canvasId or ""
     renderMode = opts.renderMode or ARERenderer.RENDER_MODE_WGL
 
@@ -474,8 +474,6 @@ class ARERenderer
   # @param [Method] cb cb to call post-render
   ###
   requestPickingRenderWGL: (buffer, cb) ->
-    param.required buffer
-    param.required cb
 
     if @_pickRenderRequested
       return ARELog.warn "Pick render already requested! No request queue"
@@ -498,8 +496,6 @@ class ARERenderer
   # @param [Method] cb cb to call post-render
   ###
   requestPickingRenderCanvas: (selectionRect, cb) ->
-    param.required selectionRect
-    param.required cb
 
     if @_pickRenderRequested
       return ARELog.warn "Pick render already requested! No request queue"
@@ -781,8 +777,7 @@ class ARERenderer
   # @return [ARERawActor] actor added actor
   ###
   addActor: (actor, layer) ->
-    param.required actor
-    actor.layer = layer or actor.layer
+    actor.layer = layer unless isNaN layer
 
     # Find index to insert at to maintain layer order
     layerIndex = _.sortedIndex @_actors, actor, "layer"
@@ -800,7 +795,6 @@ class ARERenderer
   # @return [Boolean] success
   ###
   removeActor: (actorId) ->
-    param.required actorId
 
     # Extract id if given actor
     actorId = actorId.getId() if actorId instanceof ARERawActor
@@ -861,7 +855,6 @@ class ARERenderer
   # @param [String] material
   ###
   switchMaterial: (material) ->
-    param.required material
     return false if material == @_currentMaterial
 
     if @isWGLRendererActive()
@@ -889,7 +882,6 @@ class ARERenderer
   # @param [Object] texture
   ###
   getTexture: (name) ->
-    param.required name
     _.find @_textures, (t) -> t.name == name
 
   ###
@@ -899,8 +891,6 @@ class ARERenderer
   # @param [Object] size
   ###
   getTextureSize: (name) ->
-    param.required name
-
     if t = @getTexture name
       w: t.width * t.scaleX, h: t.height * t.scaleY
     else
@@ -912,9 +902,5 @@ class ARERenderer
   # @param [Object] texture texture object with name and gl texture
   ###
   addTexture: (tex) ->
-    param.required tex
-    param.required tex.name
-    param.required tex.texture
-
     @_textures.push tex
     @

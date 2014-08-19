@@ -1110,46 +1110,9 @@ return m?[m]:Oi};X.prototype.collisionCode=0,$.prototype.collisionCode=1,ii.prot
 
 }());
 
-var ARE, AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, ARETriangleActor, AREUtilParam, AREVector2, AREVertAnimation, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
+var ARE, AREActorInterface, AREAnimationInterface, AREBezAnimation, ARECircleActor, AREColor3, AREEngineInterface, AREInterface, ARELog, AREPolygonActor, AREPsyxAnimation, ARERawActor, ARERectangleActor, ARERenderer, AREShader, ARETriangleActor, AREVector2, AREVertAnimation, PhysicsManager, nextHighestPowerOfTwo, precision, precision_declaration, varying_precision,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-AREUtilParam = (function() {
-  function AREUtilParam() {}
-
-  AREUtilParam.required = function(p, valid, canBeNull) {
-    var isValid, v, _i, _len;
-    if (p === null && canBeNull !== true) {
-      p = void 0;
-    }
-    if (p === void 0) {
-      throw new Error("Required argument missing!");
-    }
-    if (valid instanceof Array) {
-      if (valid.length > 0) {
-        isValid = false;
-        for (_i = 0, _len = valid.length; _i < _len; _i++) {
-          v = valid[_i];
-          if (p === v) {
-            isValid = true;
-            break;
-          }
-        }
-        if (!isValid) {
-          throw new Error("Required argument is not of a valid value!");
-        }
-      }
-    }
-    return p;
-  };
-
-  return AREUtilParam;
-
-})();
-
-if (window.param === void 0) {
-  window.param = AREUtilParam;
-}
 
 ARERawActor = (function() {
   ARERawActor.defaultFriction = 0.3;
@@ -1173,8 +1136,6 @@ ARERawActor = (function() {
 
   function ARERawActor(_renderer, verts, texverts) {
     this._renderer = _renderer;
-    param.required(_renderer);
-    param.required(verts);
     this._initializeValues();
     this._id = this._renderer.getNextId();
     this._renderer.addActor(this);
@@ -1199,10 +1160,8 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype._initializeValues = function() {
-    if (this._renderer.isWGLRendererActive()) {
-      if (!(this._gl = this._renderer.getGL())) {
-        throw new Error("GL context is required for actor initialization!");
-      }
+    if (this._renderer.isWGLRendererActive() && !(this._gl = this._renderer.getGL())) {
+      throw new Error("GL context is required for actor initialization!");
     }
     this._color = null;
     this._strokeColor = null;
@@ -1449,7 +1408,6 @@ ARERawActor = (function() {
 
   ARERawActor.prototype.setLayer = function(layer) {
     this.layer = layer;
-    param.required(layer);
     this._renderer.removeActor(this, true);
     return this._renderer.addActor(this, layer);
   };
@@ -1475,7 +1433,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setTexture = function(name) {
-    param.required(name);
     if (!this._renderer.hasTexture(name)) {
       throw new Error("No such texture loaded: " + name);
     }
@@ -1542,7 +1499,6 @@ ARERawActor = (function() {
     if (!this._renderer.isWGLRendererActive()) {
       return;
     }
-    param.required(shader);
     if (!shader.getProgram()) {
       throw new Error("Shader has to be built before it can be used!");
     }
@@ -1579,7 +1535,7 @@ ARERawActor = (function() {
     if (this._physics) {
       return;
     }
-    if (!(this._mass !== null && this._mass !== void 0)) {
+    if (isNaN(this._mass)) {
       return;
     }
     refresh = !!refresh;
@@ -1867,7 +1823,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setPhysicsLayer = function(layer) {
-    this._physicsLayer = 1 << param.required(layer, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    this._physicsLayer = 1 << layer;
     return window.AREPhysicsManager.sendMessage({
       id: this._id,
       layer: this._physicsLayer
@@ -2006,7 +1962,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setPhysicsVertices = function(verts) {
-    this._psyxVertices = param.required(verts);
+    this._psyxVertices = verts;
     return this.refreshPhysics();
   };
 
@@ -2033,9 +1989,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.attachTexture = function(texture, width, height, offx, offy, angle) {
-    param.required(texture);
-    param.required(width);
-    param.required(height);
     this.attachedTextureAnchor.width = width;
     this.attachedTextureAnchor.height = height;
     this.attachedTextureAnchor.x = offx || 0;
@@ -2076,7 +2029,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setAttachmentVisibility = function(visible) {
-    param.required(visible);
     if (!this._attachedTexture) {
       return false;
     }
@@ -2429,12 +2381,12 @@ ARERawActor = (function() {
    * @return [self]
    */
 
-  ARERawActor.prototype.setPosition = function(position) {
-    this._position = param.required(position);
+  ARERawActor.prototype.setPosition = function(_position) {
+    this._position = _position;
     if (this.hasPhysics()) {
       window.AREPhysicsManager.sendMessage({
         id: this._id,
-        position: position
+        position: this._position
       }, "physics.body.set.position");
     }
     if (this._onOrientationChange) {
@@ -2456,7 +2408,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setRotation = function(rotation, radians) {
-    param.required(rotation);
     radians = !!radians;
     if (!radians) {
       rotation = Number(rotation) * 0.0174532925;
@@ -2514,19 +2465,15 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setColor_ext = function(target, colOrR, g, b) {
-    param.required(colOrR);
     if (colOrR instanceof AREColor3) {
       target.setR(colOrR.getR());
       target.setG(colOrR.getG());
       target.setB(colOrR.getB());
     } else {
-      if (colOrR.g !== void 0 && colOrR.b !== void 0) {
+      if (!(isNaN(colOrR.g) || isNaN(colOrR.b))) {
         g = colOrR.g;
         b = colOrR.b;
         colOrR = colOrR.r;
-      } else {
-        param.required(g);
-        param.required(b);
       }
       target.setR(Number(colOrR));
       target.setG(Number(g));
@@ -2552,10 +2499,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setColor = function(colOrR, g, b) {
-    param.required(colOrR);
-    if (!this._color) {
-      this._color = new AREColor3;
-    }
+    this._color || (this._color = new AREColor3);
     this.setColor_ext(this._color, colOrR, g, b);
     this._colArray = [this._color.getR(true), this._color.getG(true), this._color.getB(true)];
     return this;
@@ -2578,10 +2522,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setStrokeColor = function(colOrR, g, b) {
-    param.required(colOrR);
-    if (!this._strokeColor) {
-      this._strokeColor = new AREColor3;
-    }
+    this._strokeColor || (this._strokeColor = new AREColor3);
     this.setColor_ext(this._strokeColor, colOrR, g, b);
     this._strokeColorArray = [this._strokeColor.getR(true), this._strokeColor.getG(true), this._strokeColor.getB(true)];
     return this;
@@ -2634,10 +2575,10 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.getRotation = function(radians) {
-    if (!radians) {
-      return this._rotation * 57.2957795;
-    } else {
+    if (!!radians) {
       return this._rotation;
+    } else {
+      return this._rotation * 57.2957795;
     }
   };
 
@@ -2730,8 +2671,6 @@ ARERectangleActor = (function(_super) {
     var uvs, verts;
     this.width = width;
     this.height = height;
-    param.required(width);
-    param.required(height);
     if (width <= 0) {
       throw new Error("Invalid width: " + width);
     }
@@ -2843,7 +2782,6 @@ AREPolygonActor = (function(_super) {
     var psyxVerts, uvs, verts;
     this.radius = radius;
     this.segments = segments;
-    param.required(radius);
     if (this.radius instanceof Array) {
       this._verts = this.radius;
       this.radius = null;
@@ -2851,12 +2789,11 @@ AREPolygonActor = (function(_super) {
       AREPolygonActor.__super__.constructor.call(this, renderer, this._verts, uvs);
       this.setPhysicsVertices(this._verts);
     } else {
-      param.required(segments);
       if (radius <= 0) {
         throw new Error("Invalid radius: " + radius);
       }
       if (segments <= 2) {
-        throw new ERror("Invalid segment count: " + segments);
+        throw new Error("Invalid segment count: " + segments);
       }
       verts = this.generateVertices();
       psyxVerts = this.generateVertices({
@@ -2927,18 +2864,15 @@ AREPolygonActor = (function(_super) {
    */
 
   AREPolygonActor.prototype.generateUVs = function(vertices) {
-    var cacheLookup, cachedUVSet, uvs, v, _i, _len;
-    param.required(vertices);
+    var cacheLookup, cachedUVSet, uvs;
     cacheLookup = "" + this.radius + "." + this.segments;
     cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup];
     if (cachedUVSet) {
       return cachedUVSet;
     }
-    uvs = [];
-    for (_i = 0, _len = vertices.length; _i < _len; _i++) {
-      v = vertices[_i];
-      uvs.push(((v / this.radius) / 2) + 0.5);
-    }
+    uvs = _.map(vertices, function(v) {
+      return ((v / this.radius) / 2) + 0.5;
+    });
     AREPolygonActor._UV_CACHE[cacheLookup] = uvs;
     return uvs;
   };
@@ -3042,7 +2976,7 @@ AREPolygonActor = (function(_super) {
   AREPolygonActor.prototype.setSegments = function(segments) {
     this.segments = segments;
     if (segments <= 2) {
-      throw new ERror("Invalid segment count: " + segments);
+      throw new Error("Invalid segment count: " + segments);
     }
     this.fullVertRefresh();
     return this.validateCacheEntry();
@@ -3094,8 +3028,6 @@ ARETriangleActor = (function(_super) {
     var uvs, verts;
     this.base = base;
     this.height = height;
-    param.required(base);
-    param.required(height);
     if (base <= 0) {
       throw new Error("Invalid base: " + base);
     }
@@ -3335,9 +3267,6 @@ AREShader = (function() {
     this._vertSrc = _vertSrc;
     this._fragSrc = _fragSrc;
     this._gl = _gl;
-    param.required(this._vertSrc);
-    param.required(this._fragSrc);
-    param.required(this._gl);
     build = !!build;
     this.errors = [];
     this._prog = null;
@@ -3363,7 +3292,6 @@ AREShader = (function() {
   AREShader.prototype.build = function(_gl) {
     var gl;
     this._gl = _gl;
-    param.required(this._gl);
     gl = this._gl;
     this.errors = [];
     if (gl === void 0 || gl === null) {
@@ -3698,8 +3626,8 @@ ARERenderer = (function() {
 
   function ARERenderer(opts) {
     var canvasId, renderMode, _createCanvas;
-    this._width = param.required(opts.width);
-    this._height = param.required(opts.height);
+    this._width = opts.width;
+    this._height = opts.height;
     canvasId = opts.canvasId || "";
     renderMode = opts.renderMode || ARERenderer.RENDER_MODE_WGL;
     opts.premultipliedAlpha || (opts.premultipliedAlpha = true);
@@ -4121,8 +4049,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.requestPickingRenderWGL = function(buffer, cb) {
-    param.required(buffer);
-    param.required(cb);
     if (this._pickRenderRequested) {
       return ARELog.warn("Pick render already requested! No request queue");
     }
@@ -4146,8 +4072,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.requestPickingRenderCanvas = function(selectionRect, cb) {
-    param.required(selectionRect);
-    param.required(cb);
     if (this._pickRenderRequested) {
       return ARELog.warn("Pick render already requested! No request queue");
     }
@@ -4420,8 +4344,9 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.addActor = function(actor, layer) {
     var layerIndex;
-    param.required(actor);
-    actor.layer = layer || actor.layer;
+    if (!isNaN(layer)) {
+      actor.layer = layer;
+    }
     layerIndex = _.sortedIndex(this._actors, actor, "layer");
     this._actors.splice(layerIndex, 0, actor);
     this._actor_hash[actor.getId()] = actor;
@@ -4438,7 +4363,6 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.removeActor = function(actorId) {
     var removedActor;
-    param.required(actorId);
     if (actorId instanceof ARERawActor) {
       actorId = actorId.getId();
     }
@@ -4496,7 +4420,6 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.switchMaterial = function(material) {
     var shader;
-    param.required(material);
     if (material === this._currentMaterial) {
       return false;
     }
@@ -4533,7 +4456,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.getTexture = function(name) {
-    param.required(name);
     return _.find(this._textures, function(t) {
       return t.name === name;
     });
@@ -4549,7 +4471,6 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.getTextureSize = function(name) {
     var t;
-    param.required(name);
     if (t = this.getTexture(name)) {
       return {
         w: t.width * t.scaleX,
@@ -4568,9 +4489,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.addTexture = function(tex) {
-    param.required(tex);
-    param.required(tex.name);
-    param.required(tex.texture);
     this._textures.push(tex);
     return this;
   };
@@ -4589,8 +4507,6 @@ PhysicsManager = (function() {
   function PhysicsManager(_renderer, depPaths, cb) {
     var dependencies;
     this._renderer = _renderer;
-    param.required(_renderer);
-    param.required(depPaths);
     this._backlog = [];
     dependencies = [
       {
@@ -4802,34 +4718,21 @@ AREBezAnimation = (function() {
   function AREBezAnimation(actor, options, dryRun) {
     this.actor = actor;
     dryRun = !!dryRun;
-    this.options = param.required(options);
-    this._duration = param.required(options.duration);
-    param.required(options.endVal);
-    this._property = param.required(options.property);
-    options.controlPoints = options.controlPoints || [];
+    this._duration = options.duration;
+    this._property = options.property;
+    this._controlPoints = options.controlPoints || [];
     this._fps = options.fps || 30;
-    if (dryRun) {
-      param.required(options.startVal);
-    } else {
-      param.required(this.actor);
-    }
+    this._cbStep = options.cbStep || function() {};
+    this._cbEnd = options.cbEnd || function() {};
+    this._cbStart = options.cbStart || function() {};
     this._animated = false;
     this.bezOpt = {};
+    this.bezOpt.degree = 0;
     if (options.controlPoints.length > 0) {
       this.bezOpt.degree = options.controlPoints.length;
-      if (this.bezOpt.degree > 0) {
-        param.required(options.controlPoints[0].x);
-        param.required(options.controlPoints[0].y);
-        if (this.bezOpt.degree === 2) {
-          param.required(options.controlPoints[1].x);
-          param.required(options.controlPoints[1].y);
-        }
-      }
       this.bezOpt.ctrl = options.controlPoints;
-    } else {
-      this.bezOpt.degree = 0;
     }
-    this.bezOpt.endPos = param.required(options.endVal);
+    this.bezOpt.endPos = options.endVal;
     this.tIncr = 1 / (this._duration * (this._fps / 1000));
     if (dryRun) {
       this.bezOpt.startPos = options.startVal;
@@ -4869,7 +4772,6 @@ AREBezAnimation = (function() {
 
   AREBezAnimation.prototype._update = function(t, apply) {
     var val, _Mt, _Mt2, _Mt3, _t2, _t3;
-    param.required(t);
     apply || (apply = true);
     if (t < 0) {
       t = 0;
@@ -4896,9 +4798,7 @@ AREBezAnimation = (function() {
     }
     if (apply) {
       this._applyValue(val);
-      if (this.options.cbStep) {
-        this.options.cbStep(val);
-      }
+      this._cbStep(val);
     }
     return val;
   };
@@ -4941,22 +4841,20 @@ AREBezAnimation = (function() {
   AREBezAnimation.prototype._applyValue = function(val) {
     var _b, _g, _r;
     if (this._property[0] === "rotation") {
-      this.actor.setRotation(val);
-    }
-    if (this._property[0] === "position") {
+      return this.actor.setRotation(val);
+    } else if (this._property[0] === "position") {
       if (this._property[1] === "x") {
-        this.actor.setPosition({
+        return this.actor.setPosition({
           x: val,
           y: this.actor.getPosition().y
         });
       } else if (this._property[1] === "y") {
-        this.actor.setPosition({
+        return this.actor.setPosition({
           x: this.actor.getPosition().x,
           y: val
         });
       }
-    }
-    if (this._property[0] === "color") {
+    } else if (this._property[0] === "color") {
       if (this._property[1] === "r") {
         _r = val;
         _g = this.actor.getColor().getG();
@@ -4989,9 +4887,7 @@ AREBezAnimation = (function() {
     } else {
       this._animated = true;
     }
-    if (this.options.cbStart !== void 0) {
-      this.options.cbStart();
-    }
+    this._cbStart();
     t = -this.tIncr;
     return this._intervalID = setInterval((function(_this) {
       return function() {
@@ -5002,13 +4898,9 @@ AREBezAnimation = (function() {
         _this._update(t);
         if (t === 1) {
           clearInterval(_this._intervalID);
-          if (_this.options.cbEnd) {
-            return _this.options.cbEnd();
-          }
+          return _this._cbEnd();
         } else {
-          if (_this.options.cbStep) {
-            return _this.options.cbStep();
-          }
+          return _this._cbStep();
         }
       };
     })(this), 1000 / this._fps);
@@ -5075,12 +4967,13 @@ AREVertAnimation = (function() {
    */
   function AREVertAnimation(actor, options) {
     this.actor = actor;
-    this.options = options;
-    param.required(this.actor);
-    param.required(this.options);
-    param.required(this.options.delays);
-    param.required(this.options.deltas);
-    if (this.options.delays.length !== this.options.deltas.length) {
+    this._delays = options.delays;
+    this._deltas = options.deltas;
+    this._udata = options.udata;
+    this._cbStep = options.cbStep || function() {};
+    this._cbEnd = options.cbEnd || function() {};
+    this._cbStart = options.cbStart || function() {};
+    if (this._delays.length !== this._deltas.length) {
       ARELog.warn("Vert animation delay count != delta set count! Bailing.");
       this._animated = true;
       return;
@@ -5100,18 +4993,14 @@ AREVertAnimation = (function() {
    */
 
   AREVertAnimation.prototype._setTimeout = function(deltaSet, delay, udata, last) {
-    param.required(deltaSet);
-    param.required(delay);
-    return setTimeout(((function(_this) {
+    return setTimeout((function(_this) {
       return function() {
         _this._applyDeltas(deltaSet, udata);
         if (last) {
-          if (_this.options.cbEnd !== void 0) {
-            return _this.options.cbEnd();
-          }
+          return _this._cbEnd();
         }
       };
-    })(this)), delay);
+    })(this), delay);
   };
 
 
@@ -5125,16 +5014,9 @@ AREVertAnimation = (function() {
 
   AREVertAnimation.prototype._applyDeltas = function(deltaSet, udata) {
     var d, finalVerts, i, repeat, val, _i, _ref;
-    param.required(deltaSet);
-    if (this.options.cbStep !== void 0) {
-      this.options.cbStep(udata);
-    }
+    this._cbStep(udata);
     finalVerts = this.actor.getVertices();
-    if (deltaSet.join("_").indexOf("...") !== -1) {
-      repeat = true;
-    } else {
-      repeat = false;
-    }
+    repeat = deltaSet.join("_").indexOf("...") !== -1;
     for (i = _i = 0, _ref = deltaSet.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
       d = deltaSet[i];
       if (i >= finalVerts.length) {
@@ -5148,7 +5030,7 @@ AREVertAnimation = (function() {
       if (typeof d === "number") {
         val = d;
       } else if (typeof d === "string") {
-        if (val === void 0) {
+        if (!val) {
           ARELog.warn("Vertex does not exist, yet delta is relative!");
           return;
         }
@@ -5193,27 +5075,21 @@ AREVertAnimation = (function() {
     } else {
       this._animated = true;
     }
-    if (this.options.cbStart !== void 0) {
-      this.options.cbStart();
-    }
+    this._cbStart();
     _results = [];
-    for (i = _i = 0, _ref = this.options.deltas.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+    for (i = _i = 0, _ref = this._deltas.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
       udata = null;
-      if (this.options.udata !== void 0) {
-        if (this.options.udata instanceof Array) {
-          if (i < this.options.udata.length) {
-            udata = this.options.udata[i];
+      if (this._udata) {
+        if (this._udata instanceof Array) {
+          if (i < this._udata.length) {
+            udata = this._udata[i];
           }
         } else {
-          udata = this.options.udata;
+          udata = this._udata;
         }
       }
-      if (i === (this.options.deltas.length - 1)) {
-        last = true;
-      } else {
-        last = false;
-      }
-      _results.push(this._setTimeout(this.options.deltas[i], this.options.delays[i], udata, last));
+      last = i === (this._deltas.length - 1);
+      _results.push(this._setTimeout(this._deltas[i], this._delays[i], udata, last));
     }
     return _results;
   };
@@ -5239,12 +5115,13 @@ AREPsyxAnimation = (function() {
    */
   function AREPsyxAnimation(actor, options) {
     this.actor = actor;
-    this.options = options;
-    param.required(this.actor);
-    param.required(this.options.mass);
-    param.required(this.options.friction);
-    param.required(this.options.elasticity);
-    param.required(this.options.timeout);
+    this._mass = options.mass || 0;
+    this._friction = options.friction || 0;
+    this._elasticity = options.elasticity || 0;
+    this._timeout = options.timeout;
+    this._cbStep = options.cbStep || function() {};
+    this._cbEnd = options.cbEnd || function() {};
+    this._cbStart = options.cbStart || function() {};
     this._animated = false;
   }
 
@@ -5259,17 +5136,13 @@ AREPsyxAnimation = (function() {
     } else {
       this._animated = true;
     }
-    if (this.options.cbStart !== void 0) {
-      this.options.cbStart();
-    }
+    this._cbStart();
     return setTimeout((function(_this) {
       return function() {
-        _this.actor.createPhysicsBody(_this.options.mass, _this.options.friction, _this.options.elasticity);
-        if (_this.options.cbEnd !== void 0) {
-          return _this.options.cbEnd();
-        }
+        _this.actor.createPhysicsBody(_this._mass, _this._friction, _this._elasticity);
+        return _this._cbEnd();
       };
-    })(this), this.options.timeout);
+    })(this), this._timeout);
   };
 
   return AREPsyxAnimation;
@@ -5291,7 +5164,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype._findActor = function(id) {
     var a, _i, _len, _ref;
-    param.required(id);
     _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];
@@ -6181,7 +6053,6 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.initialize = function(width, height, ad, log, id) {
-    param.required(ad);
     if (isNaN(log)) {
       log = 4;
     }
@@ -6410,7 +6281,9 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.loadManifest = function(manifest, cb) {
-    param.required(manifest.version);
+    if (!manifest.version) {
+      throw new Error("No manifest version provided!");
+    }
     if (manifest.version.split(",")[0] > this.getNRAIDVersion().split(",")[0]) {
       throw new Error("Unsupported NRAID version");
     }
@@ -6439,8 +6312,6 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.loadTexture = function(textureDef, cb, flipTexture) {
     var gl, img, tex;
-    param.required(textureDef.name);
-    param.required(textureDef.file);
     if (typeof flipTexture !== "boolean") {
       flipTexture = this.wglFlipTextureY;
     }
@@ -6680,9 +6551,6 @@ ARE = (function() {
    */
 
   function ARE(width, height, cb, logLevel, canvas) {
-    param.required(width);
-    param.required(height);
-    param.required(cb);
     if (isNaN(logLevel)) {
       logLevel = 4;
     }

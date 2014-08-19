@@ -12,8 +12,6 @@ class AREActorInterface
   # @private
   ###
   _findActor: (id) ->
-    param.required id
-
     for a in @_renderer._actors
       if a.getId() == id then return a
 

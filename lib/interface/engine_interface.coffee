@@ -27,7 +27,6 @@ class AREEngineInterface
   # @param [String] id id of element to instantiate on
   ###
   initialize: (width, height, ad, log, id) ->
-    param.required ad
     log = 4 if isNaN log
     id ||= ""
 
@@ -202,7 +201,8 @@ class AREEngineInterface
   # @param [Method] cb callback to call once the load completes (textures)
   ###
   loadManifest: (manifest, cb) ->
-    param.required manifest.version
+    unless manifest.version
+      throw new Error "No manifest version provided!"
 
     # Ensure we are of the proper version
     if manifest.version.split(",")[0] > @getNRAIDVersion().split(",")[0]
@@ -228,9 +228,6 @@ class AREEngineInterface
   # @param [Boolean] flipTexture optional
   ###
   loadTexture: (textureDef, cb, flipTexture) ->
-    param.required textureDef.name
-    param.required textureDef.file
-
     flipTexture = @wglFlipTextureY if typeof flipTexture != "boolean"
     
     if !!textureDef.atlas

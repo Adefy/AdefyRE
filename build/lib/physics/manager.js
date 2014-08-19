@@ -9,8 +9,6 @@ PhysicsManager = (function() {
   function PhysicsManager(_renderer, depPaths, cb) {
     var dependencies;
     this._renderer = _renderer;
-    param.required(_renderer);
-    param.required(depPaths);
     this._backlog = [];
     dependencies = [
       {

@@ -1,38 +1,3 @@
-# This class implements some helper methods for function param enforcement
-# It simply serves to standardize error messages for missing/incomplete
-# parameters, and set them to default values if such values are provided.
-#
-# Since it can be used in every method of every class, it is created static
-# and attached to the window object as 'param'
-class AREUtilParam
-
-  # Defines an argument as required. Ensures it is defined and valid
-  #
-  # @param [Object] p parameter to check
-  # @param [Array] valid optional array of valid values the param can have
-  # @param [Boolean] canBeNull true if the value can be null
-  # @return [Object] p
-  @required: (p, valid, canBeNull) ->
-
-    if p == null and canBeNull != true then p = undefined
-    if p == undefined then throw new Error "Required argument missing!"
-
-    # Check for validity if required
-    if valid instanceof Array
-      if valid.length > 0
-        isValid = false
-        for v in valid
-          if p == v
-            isValid = true
-            break
-        if not isValid
-          throw new Error "Required argument is not of a valid value!"
-
-    # Ship
-    p
-
-if window.param == undefined then window.param = AREUtilParam
-
 # Raw actor class, handles rendering and physics simulation. Offers a base
 # for the specialized actor classes.
 #
@@ -55,9 +20,6 @@ class ARERawActor
   # @param [Array<Number>] texverts flat array of texture coords, optional
   ###
   constructor: (@_renderer, verts, texverts) ->
-    param.required _renderer
-    param.required verts
-
     @_initializeValues()
 
     @_id = @_renderer.getNextId()
@@ -84,9 +46,8 @@ class ARERawActor
   ###
   _initializeValues: ->
 
-    if @_renderer.isWGLRendererActive()
-      if !(@_gl = @_renderer.getGL())
-        throw new Error "GL context is required for actor initialization!"
+    if @_renderer.isWGLRendererActive() and !(@_gl = @_renderer.getGL())
+      throw new Error "GL context is required for actor initialization!"
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
@@ -289,9 +250,6 @@ class ARERawActor
   # @param [Number] layer
   ###
   setLayer: (@layer) ->
-    param.required layer
-
-    # Re-insert ourselves with new layer
     @_renderer.removeActor @, true
     @_renderer.addActor @, layer
 
@@ -311,8 +269,6 @@ class ARERawActor
   # @return [this]
   ###
   setTexture: (name) ->
-    param.required name
-
     unless @_renderer.hasTexture name
       throw new Error "No such texture loaded: #{name}"
 
@@ -364,7 +320,6 @@ class ARERawActor
   ###
   setShader: (shader) ->
     return unless @_renderer.isWGLRendererActive()
-    param.required shader
 
     # Ensure shader is built, and generate handles if not already done
     if !shader.getProgram()
@@ -388,7 +343,7 @@ class ARERawActor
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity, refresh) ->
     return if @_physics
-    return unless @_mass != null and @_mass != undefined
+    return if isNaN @_mass
 
     refresh = !!refresh
     @_friction ||= ARERawActor.defaultFriction
@@ -605,7 +560,7 @@ class ARERawActor
   # @param [Number] layer
   ###
   setPhysicsLayer: (layer) ->
-    @_physicsLayer = 1 << param.required(layer, [0...16])
+    @_physicsLayer = 1 << layer
 
     window.AREPhysicsManager.sendMessage
       id: @_id
@@ -724,7 +679,7 @@ class ARERawActor
   # @param [Array<Number>] verts flat array of vertices
   ###
   setPhysicsVertices: (verts) ->
-    @_psyxVertices = param.required verts
+    @_psyxVertices = verts
     @refreshPhysics()
 
   ###
@@ -748,9 +703,6 @@ class ARERawActor
   # @return [ARERawActor] actor attached actor
   ###
   attachTexture: (texture, width, height, offx, offy, angle) ->
-    param.required texture
-    param.required width
-    param.required height
     @attachedTextureAnchor.width = width
     @attachedTextureAnchor.height = height
     @attachedTextureAnchor.x = offx or 0
@@ -787,7 +739,6 @@ class ARERawActor
   # @return [Boolean] success
   ###
   setAttachmentVisibility: (visible) ->
-    param.required visible
     return false unless @_attachedTexture
 
     @_attachedTexture._visible = visible
@@ -1115,13 +1066,12 @@ class ARERawActor
   # @param [Object] position x, y
   # @return [self]
   ###
-  setPosition: (position) ->
-    @_position = param.required position
+  setPosition: (@_position) ->
 
     if @hasPhysics()
       window.AREPhysicsManager.sendMessage
         id: @_id
-        position: position
+        position: @_position
       ,"physics.body.set.position"
 
     @_onOrientationChange position: @_position if @_onOrientationChange
@@ -1136,7 +1086,6 @@ class ARERawActor
   # @return [self]
   ###
   setRotation: (rotation, radians) ->
-    param.required rotation
     radians = !!radians
 
     rotation = Number(rotation) * 0.0174532925 unless radians
@@ -1182,20 +1131,16 @@ class ARERawActor
   # @return [self]
   ###
   setColor_ext: (target, colOrR, g, b) ->
-    param.required colOrR
 
     if colOrR instanceof AREColor3
       target.setR colOrR.getR()
       target.setG colOrR.getG()
       target.setB colOrR.getB()
     else
-      if colOrR.g != undefined && colOrR.b != undefined
+      unless isNaN(colOrR.g) or isNaN colOrR.b
         g = colOrR.g
         b = colOrR.b
         colOrR = colOrR.r
-      else
-        param.required g
-        param.required b
 
       target.setR Number colOrR
       target.setG Number g
@@ -1218,9 +1163,7 @@ class ARERawActor
   # @return [self]
   ###
   setColor: (colOrR, g, b) ->
-    param.required colOrR
-
-    unless @_color then @_color = new AREColor3
+    @_color ||= new AREColor3
 
     @setColor_ext @_color, colOrR, g, b
 
@@ -1247,9 +1190,7 @@ class ARERawActor
   # @return [self]
   ###
   setStrokeColor: (colOrR, g, b) ->
-    param.required colOrR
-
-    unless @_strokeColor then @_strokeColor = new AREColor3
+    @_strokeColor ||= new AREColor3
 
     @setColor_ext @_strokeColor, colOrR, g, b
 
@@ -1293,10 +1234,10 @@ class ARERawActor
   # @return [Number] angle rotation in degrees on z axis
   ###
   getRotation: (radians) ->
-    unless !!radians
-      return @_rotation * 57.2957795
+    if !!radians
+      @_rotation
     else
-      return @_rotation
+      @_rotation * 57.2957795
 
   ###
   # Get array of vertices
@@ -1358,11 +1299,8 @@ class ARERectangleActor extends ARERawActor
   # @param [Number] height
   ###
   constructor: (renderer, @width, @height) ->
-    param.required width
-    param.required height
-
-    if width <= 0 then throw new Error "Invalid width: #{width}"
-    if height <= 0 then throw new Error "Invalid height: #{height}"
+    throw new Error "Invalid width: #{width}" if width <= 0
+    throw new Error "Invalid height: #{height}" if height <= 0
 
     verts = @generateVertices()
     uvs = @generateUVs()
@@ -1456,7 +1394,6 @@ class AREPolygonActor extends ARERawActor
   # @param [Number] segments
   ###
   constructor: (renderer, @radius, @segments) ->
-    param.required radius
 
     ##
     ## NOTE: Things are a bit funky now. The Android engine doesn't implement
@@ -1479,10 +1416,9 @@ class AREPolygonActor extends ARERawActor
       @setPhysicsVertices @_verts
 
     else
-      param.required segments
 
-      if radius <= 0 then throw new Error "Invalid radius: #{radius}"
-      if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
+      throw new Error "Invalid radius: #{radius}" if radius <= 0
+      throw new Error "Invalid segment count: #{segments}" if segments <= 2
 
       verts = @generateVertices()
       psyxVerts = @generateVertices mode: "physics"
@@ -1561,20 +1497,14 @@ class AREPolygonActor extends ARERawActor
   # @return [Array<Number>] uvs
   ###
   generateUVs: (vertices) ->
-    param.required vertices
 
     # Check if we've already generated this UV set
     cacheLookup = "#{@radius}.#{@segments}"
     cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup]
     return cachedUVSet if cachedUVSet
 
-    uvs = []
-    for v in vertices
-      uvs.push ((v / @radius) / 2) + 0.5
-
-    # Add set to cache
+    uvs = _.map vertices, (v) -> ((v / @radius) / 2) + 0.5
     AREPolygonActor._UV_CACHE[cacheLookup] = uvs
-
     uvs
 
   ###
@@ -1639,7 +1569,7 @@ class AREPolygonActor extends ARERawActor
   # @param [Number] radius
   ###
   setRadius: (@radius) ->
-    if radius <= 0 then throw new Error "Invalid radius: #{radius}"
+    throw new Error "Invalid radius: #{radius}" if radius <= 0
     @fullVertRefresh()
     @validateCacheEntry()
 
@@ -1649,7 +1579,7 @@ class AREPolygonActor extends ARERawActor
   # @param [Number] segments
   ###
   setSegments: (@segments) ->
-    if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
+    throw new Error "Invalid segment count: #{segments}" if segments <= 2
     @fullVertRefresh()
     @validateCacheEntry()
 
@@ -1690,11 +1620,8 @@ class ARETriangleActor extends ARERawActor
   # @param [Number] height
   ###
   constructor: (renderer, @base, @height) ->
-    param.required base
-    param.required height
-
-    if base <= 0 then throw new Error "Invalid base: #{base}"
-    if height <= 0 then throw new Error "Invalid height: #{height}"
+    throw new Error "Invalid base: #{base}" if base <= 0
+    throw new Error "Invalid height: #{height}" if height <= 0
 
     verts = @generateVertices()
     uvs = @generateUVs()
@@ -1867,10 +1794,6 @@ class AREShader
   # @param [Boolean] build if true, builds the shader now
   ###
   constructor: (@_vertSrc, @_fragSrc, @_gl, build) ->
-
-    param.required @_vertSrc
-    param.required @_fragSrc
-    param.required @_gl
     build = !!build
 
     # errors generated errors are pushed into this
@@ -1894,8 +1817,6 @@ class AREShader
   # @return [Boolean] success false implies an error stored in @errors
   ###
   build: (@_gl) ->
-    param.required @_gl
-
     gl = @_gl
     @errors = [] # Clear errors
 
@@ -2247,8 +2168,8 @@ class ARERenderer
   # @return [Boolean] success
   ###
   constructor: (opts) ->
-    @_width = param.required opts.width
-    @_height = param.required opts.height
+    @_width = opts.width
+    @_height = opts.height
     canvasId = opts.canvasId or ""
     renderMode = opts.renderMode or ARERenderer.RENDER_MODE_WGL
 
@@ -2641,8 +2562,6 @@ class ARERenderer
   # @param [Method] cb cb to call post-render
   ###
   requestPickingRenderWGL: (buffer, cb) ->
-    param.required buffer
-    param.required cb
 
     if @_pickRenderRequested
       return ARELog.warn "Pick render already requested! No request queue"
@@ -2665,8 +2584,6 @@ class ARERenderer
   # @param [Method] cb cb to call post-render
   ###
   requestPickingRenderCanvas: (selectionRect, cb) ->
-    param.required selectionRect
-    param.required cb
 
     if @_pickRenderRequested
       return ARELog.warn "Pick render already requested! No request queue"
@@ -2948,8 +2865,7 @@ class ARERenderer
   # @return [ARERawActor] actor added actor
   ###
   addActor: (actor, layer) ->
-    param.required actor
-    actor.layer = layer or actor.layer
+    actor.layer = layer unless isNaN layer
 
     # Find index to insert at to maintain layer order
     layerIndex = _.sortedIndex @_actors, actor, "layer"
@@ -2967,7 +2883,6 @@ class ARERenderer
   # @return [Boolean] success
   ###
   removeActor: (actorId) ->
-    param.required actorId
 
     # Extract id if given actor
     actorId = actorId.getId() if actorId instanceof ARERawActor
@@ -3028,7 +2943,6 @@ class ARERenderer
   # @param [String] material
   ###
   switchMaterial: (material) ->
-    param.required material
     return false if material == @_currentMaterial
 
     if @isWGLRendererActive()
@@ -3056,7 +2970,6 @@ class ARERenderer
   # @param [Object] texture
   ###
   getTexture: (name) ->
-    param.required name
     _.find @_textures, (t) -> t.name == name
 
   ###
@@ -3066,8 +2979,6 @@ class ARERenderer
   # @param [Object] size
   ###
   getTextureSize: (name) ->
-    param.required name
-
     if t = @getTexture name
       w: t.width * t.scaleX, h: t.height * t.scaleY
     else
@@ -3079,10 +2990,6 @@ class ARERenderer
   # @param [Object] texture texture object with name and gl texture
   ###
   addTexture: (tex) ->
-    param.required tex
-    param.required tex.name
-    param.required tex.texture
-
     @_textures.push tex
     @
 
@@ -3093,8 +3000,6 @@ class ARERenderer
 class PhysicsManager
 
   constructor: (@_renderer, depPaths, cb) ->
-    param.required _renderer
-    param.required depPaths
 
     # Messages that are sent before our worker is initialised
     @_backlog = []
@@ -3288,17 +3193,13 @@ class AREBezAnimation
   ###
   constructor: (@actor, options, dryRun) ->
     dryRun = !!dryRun
-    @options = param.required options
-    @_duration = param.required options.duration
-    param.required options.endVal
-    @_property = param.required options.property
-    options.controlPoints = options.controlPoints or []
-    @_fps = options.fps or 30
-
-    if dryRun
-      param.required options.startVal
-    else
-      param.required @actor
+    @_duration = options.duration
+    @_property = options.property
+    @_controlPoints = options.controlPoints || []
+    @_fps = options.fps || 30
+    @_cbStep = options.cbStep || ->
+    @_cbEnd = options.cbEnd || ->
+    @_cbStart = options.cbStart || ->
 
     # Guards against multiple exeuctions
     @_animated = false
@@ -3307,22 +3208,17 @@ class AREBezAnimation
     # which means degree, starting value, final value and the position of
     # the control points provided
     @bezOpt = {}
+    @bezOpt.degree = 0
 
     if options.controlPoints.length > 0
       @bezOpt.degree = options.controlPoints.length
-      if @bezOpt.degree > 0
-        param.required options.controlPoints[0].x
-        param.required options.controlPoints[0].y
-        if @bezOpt.degree == 2
-          param.required options.controlPoints[1].x
-          param.required options.controlPoints[1].y
       @bezOpt.ctrl = options.controlPoints
-    else @bezOpt.degree = 0
 
-    @bezOpt.endPos = param.required options.endVal
+    @bezOpt.endPos = options.endVal
     @tIncr = 1 / (@_duration * (@_fps / 1000))
 
-    if dryRun then @bezOpt.startPos = options.startVal
+    if dryRun
+      @bezOpt.startPos = options.startVal
     else
 
       # Getting our starting value based on our animated property
@@ -3353,7 +3249,6 @@ class AREBezAnimation
   # @private
   ###
   _update: (t, apply) ->
-    param.required t
     apply ||= true
 
     t = 0 if t < 0
@@ -3397,7 +3292,7 @@ class AREBezAnimation
     # provided
     if apply
       @_applyValue val
-      @options.cbStep val if @options.cbStep
+      @_cbStep val
 
     val
 
@@ -3416,7 +3311,10 @@ class AREBezAnimation
       t += @tIncr
 
       # Round last t
-      if t > 1 and t < (1 + @tIncr) then t = 1 else if t > 1 then break
+      if t > 1 and t < (1 + @tIncr)
+        t = 1
+      else if t > 1
+        break
 
       bezValues.values.push @_update t, false
 
@@ -3429,9 +3327,9 @@ class AREBezAnimation
   # @private
   ###
   _applyValue: (val) ->
-    if @_property[0] == "rotation" then @actor.setRotation val
-
-    if @_property[0] == "position"
+    if @_property[0] == "rotation"
+      @actor.setRotation val
+    else if @_property[0] == "position"
       if @_property[1] == "x"
         @actor.setPosition
           x: val
@@ -3441,7 +3339,7 @@ class AREBezAnimation
           x: @actor.getPosition().x
           y: val
 
-    if @_property[0] == "color"
+    else if @_property[0] == "color"
       if @_property[1] == "r"
         _r = val
         _g = @actor.getColor().getG()
@@ -3464,7 +3362,7 @@ class AREBezAnimation
   ###
   animate: ->
     if @_animated then return else @_animated = true
-    if @options.cbStart != undefined then @options.cbStart()
+    @_cbStart()
 
     t = -@tIncr
 
@@ -3476,9 +3374,9 @@ class AREBezAnimation
 
       if t == 1
         clearInterval @_intervalID
-        @options.cbEnd() if @options.cbEnd
+        @_cbEnd()
       else
-        @options.cbStep() if @options.cbStep
+        @_cbStep()
 
     , 1000 / @_fps
 
@@ -3540,13 +3438,15 @@ class AREVertAnimation
   # @option options [Method] cbStep callback to call on each delta application
   # @option options [Method] cbEnd callback to call after animating
   ###
-  constructor: (@actor, @options) ->
-    param.required @actor
-    param.required @options
-    param.required @options.delays
-    param.required @options.deltas
+  constructor: (@actor, options) ->
+    @_delays = options.delays
+    @_deltas = options.deltas
+    @_udata = options.udata
+    @_cbStep = options.cbStep || ->
+    @_cbEnd = options.cbEnd || ->
+    @_cbStart = options.cbStart || ->
 
-    if @options.delays.length != @options.deltas.length
+    if @_delays.length != @_deltas.length
       ARELog.warn "Vert animation delay count != delta set count! Bailing."
       @_animated = true
       return
@@ -3564,13 +3464,11 @@ class AREVertAnimation
   # @private
   ###
   _setTimeout: (deltaSet, delay, udata, last) ->
-    param.required deltaSet
-    param.required delay
 
-    setTimeout (=>
+    setTimeout =>
       @_applyDeltas deltaSet, udata
-      if last then if @options.cbEnd != undefined then @options.cbEnd()
-    ), delay
+      @_cbEnd() if last
+    , delay
 
   ###
   # @private
@@ -3580,15 +3478,12 @@ class AREVertAnimation
   # @param [Object] udata optional userdata to send to callback
   ###
   _applyDeltas: (deltaSet, udata) ->
-    param.required deltaSet
-    if @options.cbStep != undefined then @options.cbStep udata
+    @_cbStep udata
 
     finalVerts = @actor.getVertices()
 
     # Check for repeat
-    if deltaSet.join("_").indexOf("...") != -1
-      repeat = true
-    else repeat = false
+    repeat = deltaSet.join("_").indexOf("...") != -1
 
     # Apply deltas.
     #
@@ -3604,14 +3499,16 @@ class AREVertAnimation
       if i >= finalVerts.length
 
         # Break if repeating and we have surpassed the last vert
-        if repeat then break
-
+        break if repeat
         val = undefined
-      else val = finalVerts[i]
 
-      if typeof d == "number" then val = d
+      else
+        val = finalVerts[i]
+
+      if typeof d == "number"
+        val = d
       else if typeof d == "string"
-        if val == undefined
+        if !val
           ARELog.warn "Vertex does not exist, yet delta is relative!"
           return
 
@@ -3632,7 +3529,8 @@ class AREVertAnimation
         return
       else if i == finalVerts.length
         finalVerts.push val
-      else finalVerts[i] = val
+      else
+        finalVerts[i] = val
 
     @actor.updateVertices finalVerts
 
@@ -3642,19 +3540,21 @@ class AREVertAnimation
   ###
   animate: ->
     if @_animated then return else @_animated = true
-    if @options.cbStart != undefined then @options.cbStart()
+    @_cbStart()
 
-    for i in [0...@options.deltas.length]
+    for i in [0...@_deltas.length]
 
       # Send proper user data if provided
       udata = null
-      if @options.udata != undefined
-        if @options.udata instanceof Array
-          if i < @options.udata.length then udata = @options.udata[i]
-        else udata = @options.udata
+      if @_udata
+        if @_udata instanceof Array
+          if i < @_udata.length
+            udata = @_udata[i]
+        else
+          udata = @_udata
 
-      if i == (@options.deltas.length - 1) then last = true else last = false
-      @_setTimeout @options.deltas[i], @options.delays[i], udata, last
+      last = i == (@_deltas.length - 1)
+      @_setTimeout @_deltas[i], @_delays[i], udata, last
 
 # AREPsyxAnimation
 #
@@ -3674,12 +3574,14 @@ class AREPsyxAnimation
   # @option options [Method] cbStart callback to call before animating
   # @option options [Method] cbEnd callback to call after animating
   ###
-  constructor: (@actor, @options) ->
-    param.required @actor
-    param.required @options.mass
-    param.required @options.friction
-    param.required @options.elasticity
-    param.required @options.timeout
+  constructor: (@actor, options) ->
+    @_mass = options.mass || 0
+    @_friction = options.friction || 0
+    @_elasticity = options.elasticity || 0
+    @_timeout = options.timeout
+    @_cbStep = options.cbStep || ->
+    @_cbEnd = options.cbEnd || ->
+    @_cbStart = options.cbStart || ->
 
     # Guards against multiple exeuctions
     @_animated = false
@@ -3689,13 +3591,12 @@ class AREPsyxAnimation
   ###
   animate: ->
     if @_animated then return else @_animated = true
-    if @options.cbStart != undefined then @options.cbStart()
+    @_cbStart()
 
     setTimeout =>
-      @actor.createPhysicsBody @options.mass, \
-        @options.friction, @options.elasticity
-      if @options.cbEnd != undefined then @options.cbEnd()
-    , @options.timeout
+      @actor.createPhysicsBody @_mass, @_friction, @_elasticity
+      @_cbEnd()
+    , @_timeout
 
 # Actor interface class
 class AREActorInterface
@@ -3711,8 +3612,6 @@ class AREActorInterface
   # @private
   ###
   _findActor: (id) ->
-    param.required id
-
     for a in @_renderer._actors
       if a.getId() == id then return a
 
@@ -4353,7 +4252,6 @@ class AREEngineInterface
   # @param [String] id id of element to instantiate on
   ###
   initialize: (width, height, ad, log, id) ->
-    param.required ad
     log = 4 if isNaN log
     id ||= ""
 
@@ -4528,7 +4426,8 @@ class AREEngineInterface
   # @param [Method] cb callback to call once the load completes (textures)
   ###
   loadManifest: (manifest, cb) ->
-    param.required manifest.version
+    unless manifest.version
+      throw new Error "No manifest version provided!"
 
     # Ensure we are of the proper version
     if manifest.version.split(",")[0] > @getNRAIDVersion().split(",")[0]
@@ -4554,9 +4453,6 @@ class AREEngineInterface
   # @param [Boolean] flipTexture optional
   ###
   loadTexture: (textureDef, cb, flipTexture) ->
-    param.required textureDef.name
-    param.required textureDef.file
-
     flipTexture = @wglFlipTextureY if typeof flipTexture != "boolean"
     
     if !!textureDef.atlas
@@ -4791,8 +4687,6 @@ class AREInterface
     @_Actors.setEngine engine
     @_Animations.setEngine engine
 
-# @depend util/util_param.coffee
-#
 # @depend actors/rectangle_actor.coffee
 # @depend actors/circle_actor.coffee
 # @depend actors/polygon_actor.coffee
@@ -4848,10 +4742,6 @@ class ARE
   # @param [String] canvas optional canvas selector to initalize the renderer
   ###
   constructor: (width, height, cb, logLevel, canvas) ->
-    param.required width
-    param.required height
-    param.required cb
-
     logLevel = 4 if isNaN logLevel
     ARELog.level = logLevel
     canvas ||= ""

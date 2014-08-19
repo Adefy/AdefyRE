@@ -1,5 +1,3 @@
-# @depend util/util_param.coffee
-#
 # @depend actors/rectangle_actor.coffee
 # @depend actors/circle_actor.coffee
 # @depend actors/polygon_actor.coffee
@@ -55,10 +53,6 @@ class ARE
   # @param [String] canvas optional canvas selector to initalize the renderer
   ###
   constructor: (width, height, cb, logLevel, canvas) ->
-    param.required width
-    param.required height
-    param.required cb
-
     logLevel = 4 if isNaN logLevel
     ARELog.level = logLevel
     canvas ||= ""

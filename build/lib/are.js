@@ -37,9 +37,6 @@ ARE = (function() {
    */
 
   function ARE(width, height, cb, logLevel, canvas) {
-    param.required(width);
-    param.required(height);
-    param.required(cb);
     if (isNaN(logLevel)) {
       logLevel = 4;
     }

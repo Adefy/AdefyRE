@@ -33,7 +33,6 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.initialize = function(width, height, ad, log, id) {
-    param.required(ad);
     if (isNaN(log)) {
       log = 4;
     }
@@ -262,7 +261,9 @@ AREEngineInterface = (function() {
    */
 
   AREEngineInterface.prototype.loadManifest = function(manifest, cb) {
-    param.required(manifest.version);
+    if (!manifest.version) {
+      throw new Error("No manifest version provided!");
+    }
     if (manifest.version.split(",")[0] > this.getNRAIDVersion().split(",")[0]) {
       throw new Error("Unsupported NRAID version");
     }
@@ -291,8 +292,6 @@ AREEngineInterface = (function() {
 
   AREEngineInterface.prototype.loadTexture = function(textureDef, cb, flipTexture) {
     var gl, img, tex;
-    param.required(textureDef.name);
-    param.required(textureDef.file);
     if (typeof flipTexture !== "boolean") {
       flipTexture = this.wglFlipTextureY;
     }

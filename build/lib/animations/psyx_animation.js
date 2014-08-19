@@ -17,12 +17,13 @@ AREPsyxAnimation = (function() {
    */
   function AREPsyxAnimation(actor, options) {
     this.actor = actor;
-    this.options = options;
-    param.required(this.actor);
-    param.required(this.options.mass);
-    param.required(this.options.friction);
-    param.required(this.options.elasticity);
-    param.required(this.options.timeout);
+    this._mass = options.mass || 0;
+    this._friction = options.friction || 0;
+    this._elasticity = options.elasticity || 0;
+    this._timeout = options.timeout;
+    this._cbStep = options.cbStep || function() {};
+    this._cbEnd = options.cbEnd || function() {};
+    this._cbStart = options.cbStart || function() {};
     this._animated = false;
   }
 
@@ -37,17 +38,13 @@ AREPsyxAnimation = (function() {
     } else {
       this._animated = true;
     }
-    if (this.options.cbStart !== void 0) {
-      this.options.cbStart();
-    }
+    this._cbStart();
     return setTimeout((function(_this) {
       return function() {
-        _this.actor.createPhysicsBody(_this.options.mass, _this.options.friction, _this.options.elasticity);
-        if (_this.options.cbEnd !== void 0) {
-          return _this.options.cbEnd();
-        }
+        _this.actor.createPhysicsBody(_this._mass, _this._friction, _this._elasticity);
+        return _this._cbEnd();
       };
-    })(this), this.options.timeout);
+    })(this), this._timeout);
   };
 
   return AREPsyxAnimation;

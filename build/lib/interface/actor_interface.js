@@ -15,7 +15,6 @@ AREActorInterface = (function() {
 
   AREActorInterface.prototype._findActor = function(id) {
     var a, _i, _len, _ref;
-    param.required(id);
     _ref = this._renderer._actors;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       a = _ref[_i];

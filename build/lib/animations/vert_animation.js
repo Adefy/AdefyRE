@@ -57,12 +57,13 @@ AREVertAnimation = (function() {
    */
   function AREVertAnimation(actor, options) {
     this.actor = actor;
-    this.options = options;
-    param.required(this.actor);
-    param.required(this.options);
-    param.required(this.options.delays);
-    param.required(this.options.deltas);
-    if (this.options.delays.length !== this.options.deltas.length) {
+    this._delays = options.delays;
+    this._deltas = options.deltas;
+    this._udata = options.udata;
+    this._cbStep = options.cbStep || function() {};
+    this._cbEnd = options.cbEnd || function() {};
+    this._cbStart = options.cbStart || function() {};
+    if (this._delays.length !== this._deltas.length) {
       ARELog.warn("Vert animation delay count != delta set count! Bailing.");
       this._animated = true;
       return;
@@ -82,18 +83,14 @@ AREVertAnimation = (function() {
    */
 
   AREVertAnimation.prototype._setTimeout = function(deltaSet, delay, udata, last) {
-    param.required(deltaSet);
-    param.required(delay);
-    return setTimeout(((function(_this) {
+    return setTimeout((function(_this) {
       return function() {
         _this._applyDeltas(deltaSet, udata);
         if (last) {
-          if (_this.options.cbEnd !== void 0) {
-            return _this.options.cbEnd();
-          }
+          return _this._cbEnd();
         }
       };
-    })(this)), delay);
+    })(this), delay);
   };
 
 
@@ -107,16 +104,9 @@ AREVertAnimation = (function() {
 
   AREVertAnimation.prototype._applyDeltas = function(deltaSet, udata) {
     var d, finalVerts, i, repeat, val, _i, _ref;
-    param.required(deltaSet);
-    if (this.options.cbStep !== void 0) {
-      this.options.cbStep(udata);
-    }
+    this._cbStep(udata);
     finalVerts = this.actor.getVertices();
-    if (deltaSet.join("_").indexOf("...") !== -1) {
-      repeat = true;
-    } else {
-      repeat = false;
-    }
+    repeat = deltaSet.join("_").indexOf("...") !== -1;
     for (i = _i = 0, _ref = deltaSet.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
       d = deltaSet[i];
       if (i >= finalVerts.length) {
@@ -130,7 +120,7 @@ AREVertAnimation = (function() {
       if (typeof d === "number") {
         val = d;
       } else if (typeof d === "string") {
-        if (val === void 0) {
+        if (!val) {
           ARELog.warn("Vertex does not exist, yet delta is relative!");
           return;
         }
@@ -175,27 +165,21 @@ AREVertAnimation = (function() {
     } else {
       this._animated = true;
     }
-    if (this.options.cbStart !== void 0) {
-      this.options.cbStart();
-    }
+    this._cbStart();
     _results = [];
-    for (i = _i = 0, _ref = this.options.deltas.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+    for (i = _i = 0, _ref = this._deltas.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
       udata = null;
-      if (this.options.udata !== void 0) {
-        if (this.options.udata instanceof Array) {
-          if (i < this.options.udata.length) {
-            udata = this.options.udata[i];
+      if (this._udata) {
+        if (this._udata instanceof Array) {
+          if (i < this._udata.length) {
+            udata = this._udata[i];
           }
         } else {
-          udata = this.options.udata;
+          udata = this._udata;
         }
       }
-      if (i === (this.options.deltas.length - 1)) {
-        last = true;
-      } else {
-        last = false;
-      }
-      _results.push(this._setTimeout(this.options.deltas[i], this.options.delays[i], udata, last));
+      last = i === (this._deltas.length - 1);
+      _results.push(this._setTimeout(this._deltas[i], this._delays[i], udata, last));
     }
     return _results;
   };

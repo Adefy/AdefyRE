@@ -56,13 +56,15 @@ class AREVertAnimation
   # @option options [Method] cbStep callback to call on each delta application
   # @option options [Method] cbEnd callback to call after animating
   ###
-  constructor: (@actor, @options) ->
-    param.required @actor
-    param.required @options
-    param.required @options.delays
-    param.required @options.deltas
+  constructor: (@actor, options) ->
+    @_delays = options.delays
+    @_deltas = options.deltas
+    @_udata = options.udata
+    @_cbStep = options.cbStep || ->
+    @_cbEnd = options.cbEnd || ->
+    @_cbStart = options.cbStart || ->
 
-    if @options.delays.length != @options.deltas.length
+    if @_delays.length != @_deltas.length
       ARELog.warn "Vert animation delay count != delta set count! Bailing."
       @_animated = true
       return
@@ -80,13 +82,11 @@ class AREVertAnimation
   # @private
   ###
   _setTimeout: (deltaSet, delay, udata, last) ->
-    param.required deltaSet
-    param.required delay
 
-    setTimeout (=>
+    setTimeout =>
       @_applyDeltas deltaSet, udata
-      if last then if @options.cbEnd != undefined then @options.cbEnd()
-    ), delay
+      @_cbEnd() if last
+    , delay
 
   ###
   # @private
@@ -96,15 +96,12 @@ class AREVertAnimation
   # @param [Object] udata optional userdata to send to callback
   ###
   _applyDeltas: (deltaSet, udata) ->
-    param.required deltaSet
-    if @options.cbStep != undefined then @options.cbStep udata
+    @_cbStep udata
 
     finalVerts = @actor.getVertices()
 
     # Check for repeat
-    if deltaSet.join("_").indexOf("...") != -1
-      repeat = true
-    else repeat = false
+    repeat = deltaSet.join("_").indexOf("...") != -1
 
     # Apply deltas.
     #
@@ -120,14 +117,16 @@ class AREVertAnimation
       if i >= finalVerts.length
 
         # Break if repeating and we have surpassed the last vert
-        if repeat then break
-
+        break if repeat
         val = undefined
-      else val = finalVerts[i]
 
-      if typeof d == "number" then val = d
+      else
+        val = finalVerts[i]
+
+      if typeof d == "number"
+        val = d
       else if typeof d == "string"
-        if val == undefined
+        if !val
           ARELog.warn "Vertex does not exist, yet delta is relative!"
           return
 
@@ -148,7 +147,8 @@ class AREVertAnimation
         return
       else if i == finalVerts.length
         finalVerts.push val
-      else finalVerts[i] = val
+      else
+        finalVerts[i] = val
 
     @actor.updateVertices finalVerts
 
@@ -158,16 +158,18 @@ class AREVertAnimation
   ###
   animate: ->
     if @_animated then return else @_animated = true
-    if @options.cbStart != undefined then @options.cbStart()
+    @_cbStart()
 
-    for i in [0...@options.deltas.length]
+    for i in [0...@_deltas.length]
 
       # Send proper user data if provided
       udata = null
-      if @options.udata != undefined
-        if @options.udata instanceof Array
-          if i < @options.udata.length then udata = @options.udata[i]
-        else udata = @options.udata
+      if @_udata
+        if @_udata instanceof Array
+          if i < @_udata.length
+            udata = @_udata[i]
+        else
+          udata = @_udata
 
-      if i == (@options.deltas.length - 1) then last = true else last = false
-      @_setTimeout @options.deltas[i], @options.delays[i], udata, last
+      last = i == (@_deltas.length - 1)
+      @_setTimeout @_deltas[i], @_delays[i], udata, last

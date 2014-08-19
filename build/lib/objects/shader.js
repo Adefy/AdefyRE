@@ -15,9 +15,6 @@ AREShader = (function() {
     this._vertSrc = _vertSrc;
     this._fragSrc = _fragSrc;
     this._gl = _gl;
-    param.required(this._vertSrc);
-    param.required(this._fragSrc);
-    param.required(this._gl);
     build = !!build;
     this.errors = [];
     this._prog = null;
@@ -43,7 +40,6 @@ AREShader = (function() {
   AREShader.prototype.build = function(_gl) {
     var gl;
     this._gl = _gl;
-    param.required(this._gl);
     gl = this._gl;
     this.errors = [];
     if (gl === void 0 || gl === null) {

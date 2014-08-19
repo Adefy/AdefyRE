@@ -13,11 +13,8 @@ class ARETriangleActor extends ARERawActor
   # @param [Number] height
   ###
   constructor: (renderer, @base, @height) ->
-    param.required base
-    param.required height
-
-    if base <= 0 then throw new Error "Invalid base: #{base}"
-    if height <= 0 then throw new Error "Invalid height: #{height}"
+    throw new Error "Invalid base: #{base}" if base <= 0
+    throw new Error "Invalid height: #{height}" if height <= 0
 
     verts = @generateVertices()
     uvs = @generateUVs()

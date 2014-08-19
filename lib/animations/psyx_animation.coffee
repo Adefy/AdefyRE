@@ -16,12 +16,14 @@ class AREPsyxAnimation
   # @option options [Method] cbStart callback to call before animating
   # @option options [Method] cbEnd callback to call after animating
   ###
-  constructor: (@actor, @options) ->
-    param.required @actor
-    param.required @options.mass
-    param.required @options.friction
-    param.required @options.elasticity
-    param.required @options.timeout
+  constructor: (@actor, options) ->
+    @_mass = options.mass || 0
+    @_friction = options.friction || 0
+    @_elasticity = options.elasticity || 0
+    @_timeout = options.timeout
+    @_cbStep = options.cbStep || ->
+    @_cbEnd = options.cbEnd || ->
+    @_cbStart = options.cbStart || ->
 
     # Guards against multiple exeuctions
     @_animated = false
@@ -31,10 +33,9 @@ class AREPsyxAnimation
   ###
   animate: ->
     if @_animated then return else @_animated = true
-    if @options.cbStart != undefined then @options.cbStart()
+    @_cbStart()
 
     setTimeout =>
-      @actor.createPhysicsBody @options.mass, \
-        @options.friction, @options.elasticity
-      if @options.cbEnd != undefined then @options.cbEnd()
-    , @options.timeout
+      @actor.createPhysicsBody @_mass, @_friction, @_elasticity
+      @_cbEnd()
+    , @_timeout

@@ -20,9 +20,6 @@ class ARERawActor
   # @param [Array<Number>] texverts flat array of texture coords, optional
   ###
   constructor: (@_renderer, verts, texverts) ->
-    param.required _renderer
-    param.required verts
-
     @_initializeValues()
 
     @_id = @_renderer.getNextId()
@@ -49,9 +46,8 @@ class ARERawActor
   ###
   _initializeValues: ->
 
-    if @_renderer.isWGLRendererActive()
-      if !(@_gl = @_renderer.getGL())
-        throw new Error "GL context is required for actor initialization!"
+    if @_renderer.isWGLRendererActive() and !(@_gl = @_renderer.getGL())
+      throw new Error "GL context is required for actor initialization!"
 
     # Color used for drawing, colArray is pre-computed for the render routine
     @_color = null
@@ -254,9 +250,6 @@ class ARERawActor
   # @param [Number] layer
   ###
   setLayer: (@layer) ->
-    param.required layer
-
-    # Re-insert ourselves with new layer
     @_renderer.removeActor @, true
     @_renderer.addActor @, layer
 
@@ -276,8 +269,6 @@ class ARERawActor
   # @return [this]
   ###
   setTexture: (name) ->
-    param.required name
-
     unless @_renderer.hasTexture name
       throw new Error "No such texture loaded: #{name}"
 
@@ -329,7 +320,6 @@ class ARERawActor
   ###
   setShader: (shader) ->
     return unless @_renderer.isWGLRendererActive()
-    param.required shader
 
     # Ensure shader is built, and generate handles if not already done
     if !shader.getProgram()
@@ -353,7 +343,7 @@ class ARERawActor
   ###
   createPhysicsBody: (@_mass, @_friction, @_elasticity, refresh) ->
     return if @_physics
-    return unless @_mass != null and @_mass != undefined
+    return if isNaN @_mass
 
     refresh = !!refresh
     @_friction ||= ARERawActor.defaultFriction
@@ -570,7 +560,7 @@ class ARERawActor
   # @param [Number] layer
   ###
   setPhysicsLayer: (layer) ->
-    @_physicsLayer = 1 << param.required(layer, [0...16])
+    @_physicsLayer = 1 << layer
 
     window.AREPhysicsManager.sendMessage
       id: @_id
@@ -689,7 +679,7 @@ class ARERawActor
   # @param [Array<Number>] verts flat array of vertices
   ###
   setPhysicsVertices: (verts) ->
-    @_psyxVertices = param.required verts
+    @_psyxVertices = verts
     @refreshPhysics()
 
   ###
@@ -713,9 +703,6 @@ class ARERawActor
   # @return [ARERawActor] actor attached actor
   ###
   attachTexture: (texture, width, height, offx, offy, angle) ->
-    param.required texture
-    param.required width
-    param.required height
     @attachedTextureAnchor.width = width
     @attachedTextureAnchor.height = height
     @attachedTextureAnchor.x = offx or 0
@@ -752,7 +739,6 @@ class ARERawActor
   # @return [Boolean] success
   ###
   setAttachmentVisibility: (visible) ->
-    param.required visible
     return false unless @_attachedTexture
 
     @_attachedTexture._visible = visible
@@ -1080,13 +1066,12 @@ class ARERawActor
   # @param [Object] position x, y
   # @return [self]
   ###
-  setPosition: (position) ->
-    @_position = param.required position
+  setPosition: (@_position) ->
 
     if @hasPhysics()
       window.AREPhysicsManager.sendMessage
         id: @_id
-        position: position
+        position: @_position
       ,"physics.body.set.position"
 
     @_onOrientationChange position: @_position if @_onOrientationChange
@@ -1101,7 +1086,6 @@ class ARERawActor
   # @return [self]
   ###
   setRotation: (rotation, radians) ->
-    param.required rotation
     radians = !!radians
 
     rotation = Number(rotation) * 0.0174532925 unless radians
@@ -1147,20 +1131,16 @@ class ARERawActor
   # @return [self]
   ###
   setColor_ext: (target, colOrR, g, b) ->
-    param.required colOrR
 
     if colOrR instanceof AREColor3
       target.setR colOrR.getR()
       target.setG colOrR.getG()
       target.setB colOrR.getB()
     else
-      if colOrR.g != undefined && colOrR.b != undefined
+      unless isNaN(colOrR.g) or isNaN colOrR.b
         g = colOrR.g
         b = colOrR.b
         colOrR = colOrR.r
-      else
-        param.required g
-        param.required b
 
       target.setR Number colOrR
       target.setG Number g
@@ -1183,9 +1163,7 @@ class ARERawActor
   # @return [self]
   ###
   setColor: (colOrR, g, b) ->
-    param.required colOrR
-
-    unless @_color then @_color = new AREColor3
+    @_color ||= new AREColor3
 
     @setColor_ext @_color, colOrR, g, b
 
@@ -1212,9 +1190,7 @@ class ARERawActor
   # @return [self]
   ###
   setStrokeColor: (colOrR, g, b) ->
-    param.required colOrR
-
-    unless @_strokeColor then @_strokeColor = new AREColor3
+    @_strokeColor ||= new AREColor3
 
     @setColor_ext @_strokeColor, colOrR, g, b
 
@@ -1258,10 +1234,10 @@ class ARERawActor
   # @return [Number] angle rotation in degrees on z axis
   ###
   getRotation: (radians) ->
-    unless !!radians
-      return @_rotation * 57.2957795
+    if !!radians
+      @_rotation
     else
-      return @_rotation
+      @_rotation * 57.2957795
 
   ###
   # Get array of vertices

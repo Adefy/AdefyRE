@@ -27,7 +27,6 @@ AREPolygonActor = (function(_super) {
     var psyxVerts, uvs, verts;
     this.radius = radius;
     this.segments = segments;
-    param.required(radius);
     if (this.radius instanceof Array) {
       this._verts = this.radius;
       this.radius = null;
@@ -35,12 +34,11 @@ AREPolygonActor = (function(_super) {
       AREPolygonActor.__super__.constructor.call(this, renderer, this._verts, uvs);
       this.setPhysicsVertices(this._verts);
     } else {
-      param.required(segments);
       if (radius <= 0) {
         throw new Error("Invalid radius: " + radius);
       }
       if (segments <= 2) {
-        throw new ERror("Invalid segment count: " + segments);
+        throw new Error("Invalid segment count: " + segments);
       }
       verts = this.generateVertices();
       psyxVerts = this.generateVertices({
@@ -111,18 +109,15 @@ AREPolygonActor = (function(_super) {
    */
 
   AREPolygonActor.prototype.generateUVs = function(vertices) {
-    var cacheLookup, cachedUVSet, uvs, v, _i, _len;
-    param.required(vertices);
+    var cacheLookup, cachedUVSet, uvs;
     cacheLookup = "" + this.radius + "." + this.segments;
     cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup];
     if (cachedUVSet) {
       return cachedUVSet;
     }
-    uvs = [];
-    for (_i = 0, _len = vertices.length; _i < _len; _i++) {
-      v = vertices[_i];
-      uvs.push(((v / this.radius) / 2) + 0.5);
-    }
+    uvs = _.map(vertices, function(v) {
+      return ((v / this.radius) / 2) + 0.5;
+    });
     AREPolygonActor._UV_CACHE[cacheLookup] = uvs;
     return uvs;
   };
@@ -226,7 +221,7 @@ AREPolygonActor = (function(_super) {
   AREPolygonActor.prototype.setSegments = function(segments) {
     this.segments = segments;
     if (segments <= 2) {
-      throw new ERror("Invalid segment count: " + segments);
+      throw new Error("Invalid segment count: " + segments);
     }
     this.fullVertRefresh();
     return this.validateCacheEntry();

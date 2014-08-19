@@ -19,8 +19,6 @@ ARETriangleActor = (function(_super) {
     var uvs, verts;
     this.base = base;
     this.height = height;
-    param.required(base);
-    param.required(height);
     if (base <= 0) {
       throw new Error("Invalid base: " + base);
     }

@@ -26,7 +26,6 @@ class AREPolygonActor extends ARERawActor
   # @param [Number] segments
   ###
   constructor: (renderer, @radius, @segments) ->
-    param.required radius
 
     ##
     ## NOTE: Things are a bit funky now. The Android engine doesn't implement
@@ -49,10 +48,9 @@ class AREPolygonActor extends ARERawActor
       @setPhysicsVertices @_verts
 
     else
-      param.required segments
 
-      if radius <= 0 then throw new Error "Invalid radius: #{radius}"
-      if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
+      throw new Error "Invalid radius: #{radius}" if radius <= 0
+      throw new Error "Invalid segment count: #{segments}" if segments <= 2
 
       verts = @generateVertices()
       psyxVerts = @generateVertices mode: "physics"
@@ -131,20 +129,14 @@ class AREPolygonActor extends ARERawActor
   # @return [Array<Number>] uvs
   ###
   generateUVs: (vertices) ->
-    param.required vertices
 
     # Check if we've already generated this UV set
     cacheLookup = "#{@radius}.#{@segments}"
     cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup]
     return cachedUVSet if cachedUVSet
 
-    uvs = []
-    for v in vertices
-      uvs.push ((v / @radius) / 2) + 0.5
-
-    # Add set to cache
+    uvs = _.map vertices, (v) -> ((v / @radius) / 2) + 0.5
     AREPolygonActor._UV_CACHE[cacheLookup] = uvs
-
     uvs
 
   ###
@@ -209,7 +201,7 @@ class AREPolygonActor extends ARERawActor
   # @param [Number] radius
   ###
   setRadius: (@radius) ->
-    if radius <= 0 then throw new Error "Invalid radius: #{radius}"
+    throw new Error "Invalid radius: #{radius}" if radius <= 0
     @fullVertRefresh()
     @validateCacheEntry()
 
@@ -219,6 +211,6 @@ class AREPolygonActor extends ARERawActor
   # @param [Number] segments
   ###
   setSegments: (@segments) ->
-    if segments <= 2 then throw new ERror "Invalid segment count: #{segments}"
+    throw new Error "Invalid segment count: #{segments}" if segments <= 2
     @fullVertRefresh()
     @validateCacheEntry()

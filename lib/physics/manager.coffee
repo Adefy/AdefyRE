@@ -5,8 +5,6 @@
 class PhysicsManager
 
   constructor: (@_renderer, depPaths, cb) ->
-    param.required _renderer
-    param.required depPaths
 
     # Messages that are sent before our worker is initialised
     @_backlog = []

@@ -26,34 +26,21 @@ AREBezAnimation = (function() {
   function AREBezAnimation(actor, options, dryRun) {
     this.actor = actor;
     dryRun = !!dryRun;
-    this.options = param.required(options);
-    this._duration = param.required(options.duration);
-    param.required(options.endVal);
-    this._property = param.required(options.property);
-    options.controlPoints = options.controlPoints || [];
+    this._duration = options.duration;
+    this._property = options.property;
+    this._controlPoints = options.controlPoints || [];
     this._fps = options.fps || 30;
-    if (dryRun) {
-      param.required(options.startVal);
-    } else {
-      param.required(this.actor);
-    }
+    this._cbStep = options.cbStep || function() {};
+    this._cbEnd = options.cbEnd || function() {};
+    this._cbStart = options.cbStart || function() {};
     this._animated = false;
     this.bezOpt = {};
+    this.bezOpt.degree = 0;
     if (options.controlPoints.length > 0) {
       this.bezOpt.degree = options.controlPoints.length;
-      if (this.bezOpt.degree > 0) {
-        param.required(options.controlPoints[0].x);
-        param.required(options.controlPoints[0].y);
-        if (this.bezOpt.degree === 2) {
-          param.required(options.controlPoints[1].x);
-          param.required(options.controlPoints[1].y);
-        }
-      }
       this.bezOpt.ctrl = options.controlPoints;
-    } else {
-      this.bezOpt.degree = 0;
     }
-    this.bezOpt.endPos = param.required(options.endVal);
+    this.bezOpt.endPos = options.endVal;
     this.tIncr = 1 / (this._duration * (this._fps / 1000));
     if (dryRun) {
       this.bezOpt.startPos = options.startVal;
@@ -93,7 +80,6 @@ AREBezAnimation = (function() {
 
   AREBezAnimation.prototype._update = function(t, apply) {
     var val, _Mt, _Mt2, _Mt3, _t2, _t3;
-    param.required(t);
     apply || (apply = true);
     if (t < 0) {
       t = 0;
@@ -120,9 +106,7 @@ AREBezAnimation = (function() {
     }
     if (apply) {
       this._applyValue(val);
-      if (this.options.cbStep) {
-        this.options.cbStep(val);
-      }
+      this._cbStep(val);
     }
     return val;
   };
@@ -165,22 +149,20 @@ AREBezAnimation = (function() {
   AREBezAnimation.prototype._applyValue = function(val) {
     var _b, _g, _r;
     if (this._property[0] === "rotation") {
-      this.actor.setRotation(val);
-    }
-    if (this._property[0] === "position") {
+      return this.actor.setRotation(val);
+    } else if (this._property[0] === "position") {
       if (this._property[1] === "x") {
-        this.actor.setPosition({
+        return this.actor.setPosition({
           x: val,
           y: this.actor.getPosition().y
         });
       } else if (this._property[1] === "y") {
-        this.actor.setPosition({
+        return this.actor.setPosition({
           x: this.actor.getPosition().x,
           y: val
         });
       }
-    }
-    if (this._property[0] === "color") {
+    } else if (this._property[0] === "color") {
       if (this._property[1] === "r") {
         _r = val;
         _g = this.actor.getColor().getG();
@@ -213,9 +195,7 @@ AREBezAnimation = (function() {
     } else {
       this._animated = true;
     }
-    if (this.options.cbStart !== void 0) {
-      this.options.cbStart();
-    }
+    this._cbStart();
     t = -this.tIncr;
     return this._intervalID = setInterval((function(_this) {
       return function() {
@@ -226,13 +206,9 @@ AREBezAnimation = (function() {
         _this._update(t);
         if (t === 1) {
           clearInterval(_this._intervalID);
-          if (_this.options.cbEnd) {
-            return _this.options.cbEnd();
-          }
+          return _this._cbEnd();
         } else {
-          if (_this.options.cbStep) {
-            return _this.options.cbStep();
-          }
+          return _this._cbStep();
         }
       };
     })(this), 1000 / this._fps);

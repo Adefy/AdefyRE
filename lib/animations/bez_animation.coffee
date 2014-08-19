@@ -28,17 +28,13 @@ class AREBezAnimation
   ###
   constructor: (@actor, options, dryRun) ->
     dryRun = !!dryRun
-    @options = param.required options
-    @_duration = param.required options.duration
-    param.required options.endVal
-    @_property = param.required options.property
-    options.controlPoints = options.controlPoints or []
-    @_fps = options.fps or 30
-
-    if dryRun
-      param.required options.startVal
-    else
-      param.required @actor
+    @_duration = options.duration
+    @_property = options.property
+    @_controlPoints = options.controlPoints || []
+    @_fps = options.fps || 30
+    @_cbStep = options.cbStep || ->
+    @_cbEnd = options.cbEnd || ->
+    @_cbStart = options.cbStart || ->
 
     # Guards against multiple exeuctions
     @_animated = false
@@ -47,22 +43,17 @@ class AREBezAnimation
     # which means degree, starting value, final value and the position of
     # the control points provided
     @bezOpt = {}
+    @bezOpt.degree = 0
 
     if options.controlPoints.length > 0
       @bezOpt.degree = options.controlPoints.length
-      if @bezOpt.degree > 0
-        param.required options.controlPoints[0].x
-        param.required options.controlPoints[0].y
-        if @bezOpt.degree == 2
-          param.required options.controlPoints[1].x
-          param.required options.controlPoints[1].y
       @bezOpt.ctrl = options.controlPoints
-    else @bezOpt.degree = 0
 
-    @bezOpt.endPos = param.required options.endVal
+    @bezOpt.endPos = options.endVal
     @tIncr = 1 / (@_duration * (@_fps / 1000))
 
-    if dryRun then @bezOpt.startPos = options.startVal
+    if dryRun
+      @bezOpt.startPos = options.startVal
     else
 
       # Getting our starting value based on our animated property
@@ -93,7 +84,6 @@ class AREBezAnimation
   # @private
   ###
   _update: (t, apply) ->
-    param.required t
     apply ||= true
 
     t = 0 if t < 0
@@ -137,7 +127,7 @@ class AREBezAnimation
     # provided
     if apply
       @_applyValue val
-      @options.cbStep val if @options.cbStep
+      @_cbStep val
 
     val
 
@@ -156,7 +146,10 @@ class AREBezAnimation
       t += @tIncr
 
       # Round last t
-      if t > 1 and t < (1 + @tIncr) then t = 1 else if t > 1 then break
+      if t > 1 and t < (1 + @tIncr)
+        t = 1
+      else if t > 1
+        break
 
       bezValues.values.push @_update t, false
 
@@ -169,9 +162,9 @@ class AREBezAnimation
   # @private
   ###
   _applyValue: (val) ->
-    if @_property[0] == "rotation" then @actor.setRotation val
-
-    if @_property[0] == "position"
+    if @_property[0] == "rotation"
+      @actor.setRotation val
+    else if @_property[0] == "position"
       if @_property[1] == "x"
         @actor.setPosition
           x: val
@@ -181,7 +174,7 @@ class AREBezAnimation
           x: @actor.getPosition().x
           y: val
 
-    if @_property[0] == "color"
+    else if @_property[0] == "color"
       if @_property[1] == "r"
         _r = val
         _g = @actor.getColor().getG()
@@ -204,7 +197,7 @@ class AREBezAnimation
   ###
   animate: ->
     if @_animated then return else @_animated = true
-    if @options.cbStart != undefined then @options.cbStart()
+    @_cbStart()
 
     t = -@tIncr
 
@@ -216,8 +209,8 @@ class AREBezAnimation
 
       if t == 1
         clearInterval @_intervalID
-        @options.cbEnd() if @options.cbEnd
+        @_cbEnd()
       else
-        @options.cbStep() if @options.cbStep
+        @_cbStep()
 
     , 1000 / @_fps

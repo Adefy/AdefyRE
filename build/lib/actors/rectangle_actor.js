@@ -19,8 +19,6 @@ ARERectangleActor = (function(_super) {
     var uvs, verts;
     this.width = width;
     this.height = height;
-    param.required(width);
-    param.required(height);
     if (width <= 0) {
       throw new Error("Invalid width: " + width);
     }

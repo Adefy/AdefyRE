@@ -90,8 +90,8 @@ ARERenderer = (function() {
 
   function ARERenderer(opts) {
     var canvasId, renderMode, _createCanvas;
-    this._width = param.required(opts.width);
-    this._height = param.required(opts.height);
+    this._width = opts.width;
+    this._height = opts.height;
     canvasId = opts.canvasId || "";
     renderMode = opts.renderMode || ARERenderer.RENDER_MODE_WGL;
     opts.premultipliedAlpha || (opts.premultipliedAlpha = true);
@@ -513,8 +513,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.requestPickingRenderWGL = function(buffer, cb) {
-    param.required(buffer);
-    param.required(cb);
     if (this._pickRenderRequested) {
       return ARELog.warn("Pick render already requested! No request queue");
     }
@@ -538,8 +536,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.requestPickingRenderCanvas = function(selectionRect, cb) {
-    param.required(selectionRect);
-    param.required(cb);
     if (this._pickRenderRequested) {
       return ARELog.warn("Pick render already requested! No request queue");
     }
@@ -812,8 +808,9 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.addActor = function(actor, layer) {
     var layerIndex;
-    param.required(actor);
-    actor.layer = layer || actor.layer;
+    if (!isNaN(layer)) {
+      actor.layer = layer;
+    }
     layerIndex = _.sortedIndex(this._actors, actor, "layer");
     this._actors.splice(layerIndex, 0, actor);
     this._actor_hash[actor.getId()] = actor;
@@ -830,7 +827,6 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.removeActor = function(actorId) {
     var removedActor;
-    param.required(actorId);
     if (actorId instanceof ARERawActor) {
       actorId = actorId.getId();
     }
@@ -888,7 +884,6 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.switchMaterial = function(material) {
     var shader;
-    param.required(material);
     if (material === this._currentMaterial) {
       return false;
     }
@@ -925,7 +920,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.getTexture = function(name) {
-    param.required(name);
     return _.find(this._textures, function(t) {
       return t.name === name;
     });
@@ -941,7 +935,6 @@ ARERenderer = (function() {
 
   ARERenderer.prototype.getTextureSize = function(name) {
     var t;
-    param.required(name);
     if (t = this.getTexture(name)) {
       return {
         w: t.width * t.scaleX,
@@ -960,9 +953,6 @@ ARERenderer = (function() {
    */
 
   ARERenderer.prototype.addTexture = function(tex) {
-    param.required(tex);
-    param.required(tex.name);
-    param.required(tex.texture);
     this._textures.push(tex);
     return this;
   };

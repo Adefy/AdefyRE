@@ -10,10 +10,6 @@ class AREShader
   # @param [Boolean] build if true, builds the shader now
   ###
   constructor: (@_vertSrc, @_fragSrc, @_gl, build) ->
-
-    param.required @_vertSrc
-    param.required @_fragSrc
-    param.required @_gl
     build = !!build
 
     # errors generated errors are pushed into this
@@ -37,8 +33,6 @@ class AREShader
   # @return [Boolean] success false implies an error stored in @errors
   ###
   build: (@_gl) ->
-    param.required @_gl
-
     gl = @_gl
     @errors = [] # Clear errors
 

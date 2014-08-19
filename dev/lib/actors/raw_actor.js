@@ -22,8 +22,6 @@ ARERawActor = (function() {
 
   function ARERawActor(_renderer, verts, texverts) {
     this._renderer = _renderer;
-    param.required(_renderer);
-    param.required(verts);
     this._initializeValues();
     this._id = this._renderer.getNextId();
     this._renderer.addActor(this);
@@ -48,10 +46,8 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype._initializeValues = function() {
-    if (this._renderer.isWGLRendererActive()) {
-      if (!(this._gl = this._renderer.getGL())) {
-        throw new Error("GL context is required for actor initialization!");
-      }
+    if (this._renderer.isWGLRendererActive() && !(this._gl = this._renderer.getGL())) {
+      throw new Error("GL context is required for actor initialization!");
     }
     this._color = null;
     this._strokeColor = null;
@@ -298,7 +294,6 @@ ARERawActor = (function() {
 
   ARERawActor.prototype.setLayer = function(layer) {
     this.layer = layer;
-    param.required(layer);
     this._renderer.removeActor(this, true);
     return this._renderer.addActor(this, layer);
   };
@@ -324,7 +319,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setTexture = function(name) {
-    param.required(name);
     if (!this._renderer.hasTexture(name)) {
       throw new Error("No such texture loaded: " + name);
     }
@@ -391,7 +385,6 @@ ARERawActor = (function() {
     if (!this._renderer.isWGLRendererActive()) {
       return;
     }
-    param.required(shader);
     if (!shader.getProgram()) {
       throw new Error("Shader has to be built before it can be used!");
     }
@@ -428,7 +421,7 @@ ARERawActor = (function() {
     if (this._physics) {
       return;
     }
-    if (!(this._mass !== null && this._mass !== void 0)) {
+    if (isNaN(this._mass)) {
       return;
     }
     refresh = !!refresh;
@@ -716,7 +709,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setPhysicsLayer = function(layer) {
-    this._physicsLayer = 1 << param.required(layer, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    this._physicsLayer = 1 << layer;
     return window.AREPhysicsManager.sendMessage({
       id: this._id,
       layer: this._physicsLayer
@@ -855,7 +848,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setPhysicsVertices = function(verts) {
-    this._psyxVertices = param.required(verts);
+    this._psyxVertices = verts;
     return this.refreshPhysics();
   };
 
@@ -882,9 +875,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.attachTexture = function(texture, width, height, offx, offy, angle) {
-    param.required(texture);
-    param.required(width);
-    param.required(height);
     this.attachedTextureAnchor.width = width;
     this.attachedTextureAnchor.height = height;
     this.attachedTextureAnchor.x = offx || 0;
@@ -925,7 +915,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setAttachmentVisibility = function(visible) {
-    param.required(visible);
     if (!this._attachedTexture) {
       return false;
     }
@@ -1278,12 +1267,12 @@ ARERawActor = (function() {
    * @return [self]
    */
 
-  ARERawActor.prototype.setPosition = function(position) {
-    this._position = param.required(position);
+  ARERawActor.prototype.setPosition = function(_position) {
+    this._position = _position;
     if (this.hasPhysics()) {
       window.AREPhysicsManager.sendMessage({
         id: this._id,
-        position: position
+        position: this._position
       }, "physics.body.set.position");
     }
     if (this._onOrientationChange) {
@@ -1305,7 +1294,6 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setRotation = function(rotation, radians) {
-    param.required(rotation);
     radians = !!radians;
     if (!radians) {
       rotation = Number(rotation) * 0.0174532925;
@@ -1363,19 +1351,15 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setColor_ext = function(target, colOrR, g, b) {
-    param.required(colOrR);
     if (colOrR instanceof AREColor3) {
       target.setR(colOrR.getR());
       target.setG(colOrR.getG());
       target.setB(colOrR.getB());
     } else {
-      if (colOrR.g !== void 0 && colOrR.b !== void 0) {
+      if (!(isNaN(colOrR.g) || isNaN(colOrR.b))) {
         g = colOrR.g;
         b = colOrR.b;
         colOrR = colOrR.r;
-      } else {
-        param.required(g);
-        param.required(b);
       }
       target.setR(Number(colOrR));
       target.setG(Number(g));
@@ -1401,10 +1385,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setColor = function(colOrR, g, b) {
-    param.required(colOrR);
-    if (!this._color) {
-      this._color = new AREColor3;
-    }
+    this._color || (this._color = new AREColor3);
     this.setColor_ext(this._color, colOrR, g, b);
     this._colArray = [this._color.getR(true), this._color.getG(true), this._color.getB(true)];
     return this;
@@ -1427,10 +1408,7 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.setStrokeColor = function(colOrR, g, b) {
-    param.required(colOrR);
-    if (!this._strokeColor) {
-      this._strokeColor = new AREColor3;
-    }
+    this._strokeColor || (this._strokeColor = new AREColor3);
     this.setColor_ext(this._strokeColor, colOrR, g, b);
     this._strokeColorArray = [this._strokeColor.getR(true), this._strokeColor.getG(true), this._strokeColor.getB(true)];
     return this;
@@ -1483,10 +1461,10 @@ ARERawActor = (function() {
    */
 
   ARERawActor.prototype.getRotation = function(radians) {
-    if (!radians) {
-      return this._rotation * 57.2957795;
-    } else {
+    if (!!radians) {
       return this._rotation;
+    } else {
+      return this._rotation * 57.2957795;
     }
   };
 
