@@ -135,9 +135,8 @@ class AREPolygonActor extends ARERawActor
     cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup]
     return cachedUVSet if cachedUVSet
 
-    uvs = _.map vertices, (v) -> ((v / @radius) / 2) + 0.5
-    AREPolygonActor._UV_CACHE[cacheLookup] = uvs
-    uvs
+    AREPolygonActor._UV_CACHE[cacheLookup] = _.map vertices, (v) =>
+      ((v / @radius) / 2) + 0.5
 
   ###
   # Preforms a full vert refresh (vertices, physics vertics, and UVs)

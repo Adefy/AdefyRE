@@ -150,7 +150,7 @@ class ARE
     g ||= 0
     b ||= 0
 
-    if @_renderer instanceof ARERenderer
+    if @_renderer
       @_renderer.setClearColor r, g, b
 
     @
@@ -161,7 +161,7 @@ class ARE
   # @return [AREColor3] color
   ###
   getClearColor: ->
-    if @_renderer instanceof ARERenderer
+    if @_renderer
       @_renderer.getClearColor()
     else
       null

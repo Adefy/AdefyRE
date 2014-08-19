@@ -148,7 +148,7 @@ ARE = (function() {
     r || (r = 0);
     g || (g = 0);
     b || (b = 0);
-    if (this._renderer instanceof ARERenderer) {
+    if (this._renderer) {
       this._renderer.setClearColor(r, g, b);
     }
     return this;
@@ -162,7 +162,7 @@ ARE = (function() {
    */
 
   ARE.prototype.getClearColor = function() {
-    if (this._renderer instanceof ARERenderer) {
+    if (this._renderer) {
       return this._renderer.getClearColor();
     } else {
       return null;

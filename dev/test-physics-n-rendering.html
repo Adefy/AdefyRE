@@ -40,7 +40,9 @@
     window.AdefyRE.Engine().loadManifest(manifest, function() {
 
       var renderer = window.renderer = engine.getRenderer();
-      engine.setClearColor(0, 128, 128);
+      renderer._alwaysClearScreen = true;
+      renderer.setCameraPosition({ x: width / 2, y: height / 2 });
+      renderer.setClearColor(0, 128, 128);
 
       var ground = new ARERectangleActor(renderer, width, height * 0.05);
       ground.setPosition({ x: width / 2, y: height - ground.getHeight() / 2 })
@@ -53,7 +55,6 @@
         .setTexture("roundThing")
         .setPosition({ x: width / 2, y: height / 2 })
         .setLayer(5)
-        .setRotation(90)
         .createPhysicsBody(100, 0.8, 0.7);
 
       var createBall = function() {

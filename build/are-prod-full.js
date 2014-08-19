@@ -2864,17 +2864,17 @@ AREPolygonActor = (function(_super) {
    */
 
   AREPolygonActor.prototype.generateUVs = function(vertices) {
-    var cacheLookup, cachedUVSet, uvs;
+    var cacheLookup, cachedUVSet;
     cacheLookup = "" + this.radius + "." + this.segments;
     cachedUVSet = AREPolygonActor._UV_CACHE[cacheLookup];
     if (cachedUVSet) {
       return cachedUVSet;
     }
-    uvs = _.map(vertices, function(v) {
-      return ((v / this.radius) / 2) + 0.5;
-    });
-    AREPolygonActor._UV_CACHE[cacheLookup] = uvs;
-    return uvs;
+    return AREPolygonActor._UV_CACHE[cacheLookup] = _.map(vertices, (function(_this) {
+      return function(v) {
+        return ((v / _this.radius) / 2) + 0.5;
+      };
+    })(this));
   };
 
 
@@ -6662,7 +6662,7 @@ ARE = (function() {
     r || (r = 0);
     g || (g = 0);
     b || (b = 0);
-    if (this._renderer instanceof ARERenderer) {
+    if (this._renderer) {
       this._renderer.setClearColor(r, g, b);
     }
     return this;
@@ -6676,7 +6676,7 @@ ARE = (function() {
    */
 
   ARE.prototype.getClearColor = function() {
-    if (this._renderer instanceof ARERenderer) {
+    if (this._renderer) {
       return this._renderer.getClearColor();
     } else {
       return null;
