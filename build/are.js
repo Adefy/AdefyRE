@@ -5407,7 +5407,7 @@ ARE = (function() {
     physics: true,
     deps: {
       physics: {
-        chipmunk: "/components/chipmunk/cp.js",
+        chipmunk: "/components/chipmunk/cp.min.js",
         physics_worker: "/lib/physics/worker.js"
       }
     }
